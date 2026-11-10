@@ -1,16 +1,18 @@
-<template>
-  <main class="home container">
-    <p class="t-label t-muted">Portfolio © 2026</p>
-    <h1 class="t-hero">Aryan <em>Singh</em></h1>
-    <p class="t-body">Building things that actually matter.</p>
-  </main>
-</template>
+<script setup lang="ts">
+useSeoMeta({
+  description:
+    'Aryan Singh, Full Stack Developer and AI/ML Engineer in the Greater Delhi Area. Computer vision, NLP and full-stack products built to ship.',
+})
+</script>
 
-<style scoped lang="scss">
-.home {
-  min-height: 100svh;
-  display: grid;
-  align-content: center;
-  gap: 1.5rem;
-}
-</style>
+<template>
+  <div>
+    <SectionsHeroScenes />
+    <SectionsAbout />
+    <SectionsStack />
+    <SectionsSelectedWork />
+    <SectionsRecognition />
+    <SectionsBackground />
+    <SectionsContactCta />
+  </div>
+</template>
