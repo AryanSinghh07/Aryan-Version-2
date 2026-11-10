@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "node scripts/copy-decoders.mjs && nuxt prepare",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@nuxt/content": "3.16.2",
@@ -38,6 +39,8 @@
     "prettier": "3.9.10",
     "sass": "1.108.1",
     "stats.js": "0.17.0",
-    "vite-plugin-glsl": "1.6.2"
+    "typescript": "6.0.3",
+    "vite-plugin-glsl": "1.6.2",
+    "vue-tsc": "3.3.14"
   }
 }

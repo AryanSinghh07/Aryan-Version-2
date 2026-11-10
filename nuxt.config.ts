@@ -13,6 +13,20 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
   ],
 
+  app: {
+    head: {
+      htmlAttrs: { lang: 'en' },
+      title: 'Aryan Singh — Full Stack Developer and AI/ML Engineer',
+      meta: [
+        {
+          name: 'description',
+          content:
+            'Aryan Singh, Full Stack Developer and AI/ML Engineer. Building things that actually matter.',
+        },
+      ],
+    },
+  },
+
   // Static output: every page is prerendered at build time
   ssr: true,
   nitro: {
