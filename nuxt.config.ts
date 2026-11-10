@@ -13,7 +13,25 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
   ],
 
-  css: ['~/assets/styles/themes.scss'],
+  css: [
+    '~/assets/styles/themes.scss',
+    '~/assets/styles/typography.scss',
+    '~/assets/styles/base.scss',
+  ],
+
+  // Self-hosted at build time; fallback metrics are generated to avoid layout shift
+  fonts: {
+    families: [
+      {
+        name: 'Instrument Serif',
+        provider: 'google',
+        weights: [400],
+        styles: ['normal', 'italic'],
+      },
+      { name: 'JetBrains Mono', provider: 'google', weights: [500] },
+      { name: 'Satoshi', provider: 'fontshare', weights: [400, 500] },
+    ],
+  },
 
   app: {
     head: {
