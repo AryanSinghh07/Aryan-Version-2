@@ -1,0 +1,64 @@
+{
+  "scenes": [
+    {
+      "label": "Who",
+      "headline": "Hello — I'm *Aryan*",
+      "text": "Full-Stack Developer and AI/ML Engineer based in the Greater Delhi Area, studying BCA with an AI and ML specialization at Galgotias University."
+    },
+    {
+      "label": "Why",
+      "headline": "Problems *first*",
+      "text": "From cattle classification for the Rashtriya Gokul Mission to mental-health platforms for students, I start from a real problem, not a tech demo."
+    },
+    {
+      "label": "How",
+      "headline": "Built to *ship*",
+      "text": "My work has been presented at government missions and industry events, which shaped how I approach every project: build to ship, not just to demo."
+    },
+    {
+      "label": "Proof",
+      "headline": "On *stage*",
+      "text": "IEEE Code Astraa 2025 finalist, Smart India Hackathon 2024 and 2025, and a live presentation to 2,000+ stakeholders at UP International Trade Show 2024."
+    },
+    {
+      "label": "Next",
+      "headline": "What's *next*",
+      "text": "Currently seeking internship opportunities to build impactful products at scale, and open to freelance work."
+    }
+  ],
+  "approach": {
+    "headline": "How I *work*",
+    "steps": [
+      {
+        "title": "Understand the problem",
+        "text": "Talk to the people who have it. Farmers, students and shelters shaped my last projects more than any spec."
+      },
+      {
+        "title": "Build the smallest real thing",
+        "text": "Get a working model or app in front of users early, then improve it with what they actually do."
+      },
+      {
+        "title": "Ship and present",
+        "text": "Deploy it, measure it, and explain it clearly, whether to a hackathon jury or 2,000 people at a trade show."
+      }
+    ]
+  },
+  "faq": [
+    {
+      "question": "Are you open to internships?",
+      "answer": "Yes. I'm actively seeking internship opportunities in full-stack and AI/ML engineering, remote or in the Greater Delhi Area."
+    },
+    {
+      "question": "Do you take freelance projects?",
+      "answer": "Yes. I take on web apps, AI/ML prototypes and portfolio sites. Use the contact form and tell me what you're building."
+    },
+    {
+      "question": "What do you work with most?",
+      "answer": "Python, React, Node.js, FastAPI, TensorFlow, LangChain, OpenCV and TypeScript day to day."
+    },
+    {
+      "question": "Where are you based?",
+      "answer": "Greater Delhi Area, India (IST). I work with people in any time zone."
+    }
+  ]
+}

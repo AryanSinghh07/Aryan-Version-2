@@ -1,0 +1,99 @@
+{
+  "name": "Aryan Singh",
+  "firstName": "Aryan",
+  "lastName": "Singh",
+  "role": "Full Stack Developer and AI/ML Engineer",
+  "tagline": "Building things that actually matter.",
+  "intro": "Hello — I'm Aryan.",
+  "experience": "Less than 1 year",
+  "location": "Greater Delhi Area",
+  "timezone": "IST",
+  "status": "Open to work / freelance; seeking internship opportunities",
+  "email": "aryan.singhh04@gmail.com",
+  "phone": "+91 84334 19387",
+  "resume": "/Aryan_Singh_Resume.pdf",
+  "socials": [
+    { "label": "GitHub", "handle": "@AryanSinghh07", "url": "https://github.com/AryanSinghh07" },
+    {
+      "label": "LinkedIn",
+      "handle": "@thearyansingh07",
+      "url": "https://www.linkedin.com/in/thearyansingh07"
+    },
+    { "label": "X / Twitter", "handle": "@the_aryansingh_", "url": "https://x.com/the_aryansingh_" }
+  ],
+  "marquee": [
+    "Full Stack",
+    "AI / ML",
+    "Computer Vision",
+    "NLP",
+    "React",
+    "Python",
+    "Next.js",
+    "TensorFlow"
+  ],
+  "heroScenes": [
+    {
+      "label": "Portfolio © 2026",
+      "headline": "Aryan *Singh*",
+      "text": "Building things that actually matter.",
+      "side": "right",
+      "particleShape": "letter-a"
+    },
+    {
+      "label": "Who",
+      "headline": "*Full stack* meets AI / ML",
+      "text": "Full-Stack Developer and AI/ML Engineer building systems that solve real problems.",
+      "side": "left",
+      "particleShape": "neural-net"
+    },
+    {
+      "label": "Approach",
+      "headline": "Built to *ship*, not to demo",
+      "text": "Presented at government missions and industry events, which shaped how I approach every project.",
+      "side": "right",
+      "particleShape": "leaf"
+    },
+    {
+      "label": "Impact",
+      "headline": "AI that *cares*",
+      "text": "I train AI models that help real farmers and build chatbots that calm 2 AM anxiety.",
+      "side": "left",
+      "particleShape": "chat-bubble"
+    },
+    {
+      "label": "Open to work",
+      "headline": "Got an idea? *Let's build it*",
+      "text": "Open to freelance, collaborations, and full-time opportunities.",
+      "side": "center",
+      "particleShape": "constellation"
+    }
+  ],
+  "about": {
+    "headline": "Behind the *build*",
+    "paragraphs": [
+      "Full-Stack Developer and AI/ML Engineer building systems that solve real problems, from cattle classification for the Rashtriya Gokul Mission to mental-health platforms for students. IEEE Code Astraa 2025 finalist; presented to 2,000+ industry stakeholders at UP International Trade Show 2024.",
+      "My work has been presented at government missions and industry events, which shaped how I approach every project: build to ship, not just to demo. Currently seeking internship opportunities to build impactful products at scale."
+    ],
+    "funLine": "I train AI models that help real farmers, build chatbots that calm 2 AM anxiety, and craft web apps that feel alive. Slap my code on any problem and act surprised when it actually ships."
+  },
+  "stats": [
+    { "value": 7, "suffix": "+", "label": "Projects built" },
+    { "value": 3, "label": "Hackathons" },
+    { "value": 2000, "suffix": "+", "label": "Trade show audience" },
+    { "value": 5, "label": "Certifications" }
+  ],
+  "contact": {
+    "headline": "Got an idea? *Let's build it*",
+    "body": "Open to freelance, collaborations, and full-time opportunities. Drop a message and I'll get back to you.",
+    "marquee": ["Let's talk", "Have an idea?", "Open to work", "Freelance"],
+    "availability": "Available for internships and freelance work. Usually replies within 24 hours (IST).",
+    "lookingFor": [
+      "an internship hire",
+      "a full-stack web app",
+      "an AI / ML project",
+      "a portfolio or landing site",
+      "something else"
+    ],
+    "budgets": ["not set yet", "under $1k", "$1k – $5k", "$5k+"]
+  }
+}

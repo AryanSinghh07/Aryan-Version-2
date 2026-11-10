@@ -1,0 +1,44 @@
+{
+  "headline": "Proof of *work*",
+  "items": [
+    {
+      "id": "sih-2025",
+      "title": "Smart India Hackathon 2025",
+      "type": "Hackathon",
+      "detail": "Built Gopalan AI for the Rashtriya Gokul Mission; 34th place at Galgotias University.",
+      "year": 2025,
+      "images": []
+    },
+    {
+      "id": "code-astraa-2025",
+      "title": "Code Astraa Hackathon 2025",
+      "type": "Finalist",
+      "detail": "CBT mental-health chatbot; organised by Galgotias University and IEEE.",
+      "year": 2025,
+      "images": []
+    },
+    {
+      "id": "up-trade-show-2024",
+      "title": "UP International Trade Show 2024",
+      "type": "Presentation",
+      "detail": "Presented the Crop Disease Detection System to 2,000+ attendees.",
+      "year": 2024,
+      "images": []
+    },
+    {
+      "id": "sih-2024",
+      "title": "Smart India Hackathon 2024",
+      "type": "Hackathon",
+      "detail": "11th place at Galgotias University for the Crop Disease Detection System.",
+      "year": 2024,
+      "images": []
+    },
+    {
+      "id": "open-source",
+      "title": "Open Source Contributor",
+      "type": "Open Source",
+      "detail": "Active contributor on GitHub, focused on web tools and automation.",
+      "images": []
+    }
+  ]
+}

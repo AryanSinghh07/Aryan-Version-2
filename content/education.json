@@ -1,0 +1,24 @@
+{
+  "headline": "Background",
+  "education": [
+    {
+      "item": "BCA, AI and ML Specialization",
+      "institution": "Galgotias University",
+      "years": "2023–2026",
+      "note": "Industry-oriented programme in software development and AI/ML"
+    },
+    {
+      "item": "High School",
+      "institution": "Dr. A.K. Public School",
+      "years": "2019–2021",
+      "note": "Distinction in Computer Science"
+    }
+  ],
+  "certifications": [
+    { "title": "AWS Academy Graduate — Cloud Foundations", "issuer": "Amazon Web Services" },
+    { "title": "CCNA Cyber Ops", "issuer": "Cisco" },
+    { "title": "Machine Learning with Python", "issuer": "IBM" },
+    { "title": "Web Development", "issuer": "EduSkills by AICTE" },
+    { "title": "AI for Beginners", "issuer": "HP LIFE" }
+  ]
+}

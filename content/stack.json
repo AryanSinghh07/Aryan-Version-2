@@ -1,0 +1,62 @@
+{
+  "headline": "Stack that *ships*",
+  "groups": [
+    {
+      "title": "Frontend",
+      "tools": [
+        "React.js",
+        "Next.js",
+        "Three.js",
+        "GSAP",
+        "TypeScript",
+        "JavaScript",
+        "Tailwind CSS",
+        "HTML5",
+        "CSS3"
+      ]
+    },
+    {
+      "title": "Backend",
+      "tools": [
+        "Python",
+        "Node.js",
+        "Express.js",
+        "FastAPI",
+        "Java",
+        "C++",
+        "REST APIs",
+        "WebSockets"
+      ]
+    },
+    {
+      "title": "AI / ML",
+      "tools": [
+        "PyTorch",
+        "TensorFlow",
+        "Scikit-learn",
+        "Hugging Face",
+        "LangChain",
+        "OpenCV",
+        "NLP",
+        "Computer Vision",
+        "RAG",
+        "Model Deployment"
+      ]
+    },
+    {
+      "title": "Database and DevOps",
+      "tools": [
+        "Docker",
+        "Kubernetes",
+        "AWS",
+        "MySQL",
+        "Git",
+        "GitHub Actions",
+        "Nginx",
+        "MLflow",
+        "Vercel",
+        "Render"
+      ]
+    }
+  ]
+}
