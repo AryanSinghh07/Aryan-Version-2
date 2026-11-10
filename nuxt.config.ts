@@ -37,7 +37,16 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'en' },
       title: 'Aryan Singh — Full Stack Developer and AI/ML Engineer',
+      // Sets the theme before the first paint so dark-mode visitors never see a light flash.
+      // The storage key must match STORAGE_KEYS.theme in app/stores/app.ts.
+      script: [
+        {
+          tagPosition: 'head',
+          innerHTML: `(function(){var d=document.documentElement,t;try{t=localStorage.getItem('aryan-theme')}catch(e){}if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}d.dataset.theme=t})()`,
+        },
+      ],
       meta: [
+        { name: 'color-scheme', content: 'light dark' },
         {
           name: 'description',
           content:
