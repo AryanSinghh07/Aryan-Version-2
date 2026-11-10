@@ -30,6 +30,27 @@ onKeyStroke('Escape', () => {
   if (props.open) emit('close')
 })
 
+// Keep keyboard focus inside the open menu
+const menu = ref<HTMLElement | null>(null)
+function trapFocus(e: KeyboardEvent) {
+  if (e.key !== 'Tab' || !menu.value) return
+  const focusable = [
+    ...menu.value.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ),
+  ].filter((el) => el.offsetParent !== null)
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (!first || !last) return
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
 onBeforeUnmount(() => {
   if (import.meta.client) document.documentElement.style.overflow = ''
 })
@@ -39,10 +60,12 @@ onBeforeUnmount(() => {
   <div
     v-show="open"
     id="mobile-menu"
+    ref="menu"
     class="menu"
     role="dialog"
     aria-modal="true"
     aria-label="Menu"
+    @keydown="trapFocus"
   >
     <div class="menu__top container">
       <span class="t-label t-muted">Menu</span>
