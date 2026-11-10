@@ -36,7 +36,6 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      title: 'Aryan Singh — Full Stack Developer and AI/ML Engineer',
       // Sets the theme before the first paint so dark-mode visitors never see a light flash.
       // The storage key must match STORAGE_KEYS.theme in app/stores/app.ts.
       script: [
