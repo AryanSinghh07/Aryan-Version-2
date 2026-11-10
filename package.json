@@ -10,7 +10,8 @@
     "postinstall": "node scripts/copy-decoders.mjs && nuxt prepare",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
     "@nuxt/content": "3.16.2",

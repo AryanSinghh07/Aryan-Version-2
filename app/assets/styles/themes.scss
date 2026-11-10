@@ -1,0 +1,41 @@
+// Light and dark theme variables, switched by data-theme on <html>.
+// Any element can also carry data-theme to force a theme locally (used by the style guide).
+@use 'sass:color';
+@use 'sass:map';
+@use 'sass:math';
+@use 'tokens' as *;
+
+@function rgb-triplet($c) {
+  @return math.round(color.channel($c, 'red', $space: rgb)),
+    math.round(color.channel($c, 'green', $space: rgb)),
+    math.round(color.channel($c, 'blue', $space: rgb));
+}
+
+@mixin color-vars($map, $prefix: '') {
+  @each $name, $value in $map {
+    --#{$prefix}#{$name}: #{$value};
+    @if color.alpha($value) == 1 {
+      --#{$prefix}#{$name}-rgb: #{rgb-triplet($value)};
+    }
+  }
+}
+
+:root {
+  @include color-vars($palette, 'color-');
+}
+
+:root,
+[data-theme='light'] {
+  @include color-vars(map.get($themes, 'light'));
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  @include color-vars(map.get($themes, 'dark'));
+  color-scheme: dark;
+}
+
+[data-theme] {
+  background-color: var(--background);
+  color: var(--foreground);
+}

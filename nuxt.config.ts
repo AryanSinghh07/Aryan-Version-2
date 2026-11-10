@@ -13,6 +13,8 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
   ],
 
+  css: ['~/assets/styles/themes.scss'],
+
   app: {
     head: {
       htmlAttrs: { lang: 'en' },

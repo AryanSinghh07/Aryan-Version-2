@@ -1,0 +1,57 @@
+// Brand palette and theme tokens. Single source of truth for every colour on the site.
+// themes.scss turns these maps into CSS variables (plus an "-rgb" triplet for each solid colour).
+
+$palette: (
+  'paper-white': #fbfaff,
+  'lilac-mist': #ede7ff,
+  'lavender': #c9b8ff,
+  'electric-violet': #7b3ff2,
+  'bright-violet': #9b6bff,
+  'deep-plum': #1e1033,
+  'night-plum': #120a1f,
+  'electric-lime': #d4ff3a,
+  'apricot': #ff9b6a,
+);
+
+$themes: (
+  'light': (
+    'background': #fbfaff,
+    'surface': #ede7ff,
+    'foreground': #1e1033,
+    'foreground-muted': #6b5b8c,
+    'primary': #7b3ff2,
+    'primary-active': #6326d9,
+    'on-primary': #fbfaff,
+    'accent': #d4ff3a,
+    'on-accent': #1e1033,
+    'border': #ddd3f5,
+    'glass': rgba(255, 255, 255, 0.55),
+    'backdrop': rgba(30, 16, 51, 0.6),
+    'danger': #bc3b3f,
+    'success': #227742,
+  ),
+  'dark': (
+    'background': #120a1f,
+    'surface': #1e1033,
+    'foreground': #fbfaff,
+    'foreground-muted': #a99bc9,
+    'primary': #9b6bff,
+    'primary-active': #b48cff,
+    'on-primary': #120a1f,
+    'accent': #d4ff3a,
+    'on-accent': #1e1033,
+    'border': #2e2148,
+    'glass': rgba(30, 16, 51, 0.55),
+    'backdrop': rgba(0, 0, 0, 0.75),
+    'danger': #ff6369,
+    'success': #4cc38a,
+  ),
+);
+
+// Breakpoints (min-width)
+$breakpoints: (
+  'sm': 480px,
+  'md': 768px,
+  'lg': 1024px,
+  'xl': 1440px,
+);
