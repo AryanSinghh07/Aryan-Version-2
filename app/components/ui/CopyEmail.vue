@@ -2,9 +2,12 @@
 // Email address as a mailto link, plus a button that copies it and says "Copied".
 const props = defineProps<{ email: string }>()
 
-const { copy, copied, isSupported } = useClipboard({
+// legacy: falls back to execCommand('copy') where the Clipboard API is missing,
+// so the button can always render (same HTML on server and client, no hydration mismatch)
+const { copy, copied } = useClipboard({
   source: () => props.email,
   copiedDuring: 2000,
+  legacy: true,
 })
 </script>
 
@@ -12,7 +15,6 @@ const { copy, copied, isSupported } = useClipboard({
   <span class="copy-email">
     <a :href="`mailto:${email}`" class="copy-email__link">{{ email }}</a>
     <button
-      v-if="isSupported"
       type="button"
       class="copy-email__button t-label"
       :aria-label="copied ? 'Email copied' : 'Copy email address'"
