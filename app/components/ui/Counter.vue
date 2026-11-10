@@ -21,29 +21,44 @@ const display = ref(props.value)
 const formatted = computed(() => display.value.toFixed(props.decimals))
 
 let tween: gsap.core.Tween | null = null
+let animate = false
+
+// Created in setup (not in onMounted) so Vue disconnects it automatically on unmount
+const { stop } = useIntersectionObserver(
+  el,
+  ([entry]) => {
+    if (!animate || !entry?.isIntersecting) return
+    stop()
+    const state = { n: 0 }
+    tween = gsap.to(state, {
+      n: props.value,
+      duration: props.duration,
+      ease: 'power2.out',
+      onUpdate: () => {
+        display.value = state.n
+      },
+    })
+  },
+  { threshold: 0.4 }
+)
 
 onMounted(() => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    stop()
+    return
+  }
+  animate = true
   display.value = 0
-  const { stop } = useIntersectionObserver(
-    el,
-    ([entry]) => {
-      if (!entry?.isIntersecting) return
-      stop()
-      const state = { n: 0 }
-      tween = gsap.to(state, {
-        n: props.value,
-        duration: props.duration,
-        ease: 'power2.out',
-        onUpdate: () => {
-          display.value = state.n
-        },
-      })
-    },
-    { threshold: 0.4 }
-  )
 })
+
+// If the value changes after the count-up, show the new value straight away
+watch(
+  () => props.value,
+  (value) => {
+    tween?.kill()
+    display.value = value
+  }
+)
 
 onBeforeUnmount(() => tween?.kill())
 </script>
