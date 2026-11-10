@@ -104,3 +104,32 @@ ol[role='list'] {
     scroll-behavior: auto !important;
   }
 }
+
+// Page sections
+.section {
+  padding-block: clamp(5rem, 12vw, 10rem);
+}
+
+.section__head {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: clamp(2.5rem, 6vw, 5rem);
+}
+
+// Top padding for pages under the fixed header
+.page-top {
+  padding-top: clamp(7rem, 14vw, 11rem);
+}
+
+// Underlined text link
+.text-link {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+
+  &:hover {
+    color: var(--primary-active);
+  }
+}

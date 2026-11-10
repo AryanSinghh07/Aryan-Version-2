@@ -32,7 +32,7 @@ const toggles = reactive({ light: true, dark: false })
 </script>
 
 <template>
-  <main class="styleguide">
+  <div class="styleguide">
     <header class="container styleguide__header">
       <UiSectionLabel :index="0" label="Style guide" />
       <h1 class="t-h2">Design <em>system</em></h1>
@@ -104,7 +104,7 @@ const toggles = reactive({ light: true, dark: false })
         <UiMarquee :items="marquee" class="t-h3" :duration="25" />
       </section>
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -112,7 +112,7 @@ const toggles = reactive({ light: true, dark: false })
   display: grid;
   gap: 1rem;
   justify-items: start;
-  padding-block: 3rem 2rem;
+  padding-block: 7rem 2rem;
 }
 
 .styleguide__panels {
