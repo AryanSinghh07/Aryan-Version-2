@@ -13,7 +13,7 @@ const pages = [
 <template>
   <footer v-if="profile" class="footer">
     <div class="footer__inner container">
-      <p class="footer__headline t-h2"><UiAccentText text="Let's *talk*" /></p>
+      <p v-reveal class="footer__headline t-h2"><UiAccentText text="Let's *talk*" /></p>
 
       <div class="footer__grid">
         <div class="footer__col">

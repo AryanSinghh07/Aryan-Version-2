@@ -6,7 +6,7 @@ const { data: stack } = await useStack()
   <section v-if="stack" class="stack section container" aria-labelledby="stack-title">
     <div class="section__head">
       <UiSectionLabel :index="2" label="Stack" />
-      <h2 id="stack-title" class="t-h2"><UiAccentText :text="stack.headline" /></h2>
+      <h2 id="stack-title" v-reveal class="t-h2"><UiAccentText :text="stack.headline" /></h2>
     </div>
 
     <ol role="list" class="stack__groups">

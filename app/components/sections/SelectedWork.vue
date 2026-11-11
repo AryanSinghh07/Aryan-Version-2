@@ -9,7 +9,7 @@ const total = computed(() => projectNumber(projects.value?.length ?? 0))
   <section class="work section container" aria-labelledby="work-title">
     <div class="section__head work__head">
       <UiSectionLabel :index="3" label="Selected work" />
-      <h2 id="work-title" class="t-h2"><UiAccentText text="Built to *ship*" /></h2>
+      <h2 id="work-title" v-reveal class="t-h2"><UiAccentText text="Built to *ship*" /></h2>
     </div>
 
     <WorkProjectGrid :projects="featured" />

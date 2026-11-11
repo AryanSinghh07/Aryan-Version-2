@@ -11,7 +11,9 @@ const { data: recognition } = await useRecognition()
   >
     <div class="section__head">
       <UiSectionLabel :index="4" label="Recognition" />
-      <h2 id="recognition-title" class="t-h2"><UiAccentText :text="recognition.headline" /></h2>
+      <h2 id="recognition-title" v-reveal class="t-h2">
+        <UiAccentText :text="recognition.headline" />
+      </h2>
     </div>
 
     <ol role="list" class="recognition__list">

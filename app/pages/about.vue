@@ -40,7 +40,9 @@ const { data: profile } = await useProfile()
     <section class="section container" aria-labelledby="approach-title">
       <div class="section__head">
         <UiSectionLabel :index="2" label="Approach" />
-        <h2 id="approach-title" class="t-h2"><UiAccentText :text="about.approach.headline" /></h2>
+        <h2 id="approach-title" v-reveal class="t-h2">
+          <UiAccentText :text="about.approach.headline" />
+        </h2>
       </div>
       <ol role="list" class="approach">
         <li v-for="(step, i) in about.approach.steps" :key="step.title" class="approach__step">
@@ -54,7 +56,7 @@ const { data: profile } = await useProfile()
     <section class="section container" aria-labelledby="faq-title">
       <div class="section__head">
         <UiSectionLabel :index="3" label="FAQ" />
-        <h2 id="faq-title" class="t-h2"><UiAccentText text="Good *questions*" /></h2>
+        <h2 id="faq-title" v-reveal class="t-h2"><UiAccentText text="Good *questions*" /></h2>
       </div>
       <div class="faq">
         <details v-for="item in about.faq" :key="item.question" class="faq__item">

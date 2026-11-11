@@ -9,7 +9,7 @@ const { data: education } = await useEducation()
   <section v-if="education" class="background section container" aria-labelledby="background-title">
     <div class="section__head">
       <UiSectionLabel :index="index" label="Background" />
-      <h2 id="background-title" class="t-h2"><UiAccentText text="Always *learning*" /></h2>
+      <h2 id="background-title" v-reveal class="t-h2"><UiAccentText text="Always *learning*" /></h2>
     </div>
 
     <div class="background__grid">

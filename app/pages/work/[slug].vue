@@ -28,7 +28,7 @@ useSeoMeta({
         <NuxtLink to="/work" class="case__back">← All work</NuxtLink>
       </p>
       <p class="t-label case__number">[{{ projectNumber(project.order) }}] · {{ project.year }}</p>
-      <h1 class="t-h2">{{ project.title }}</h1>
+      <h1 v-reveal class="t-h2">{{ project.title }}</h1>
       <p class="case__subtitle">{{ project.subtitle }}</p>
     </header>
 

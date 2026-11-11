@@ -8,7 +8,9 @@ const { data: profile } = await useProfile()
 
     <div class="cta__body container">
       <UiSectionLabel :index="6" label="Contact" />
-      <h2 id="cta-title" class="t-h2"><UiAccentText :text="profile.contact.headline" /></h2>
+      <h2 id="cta-title" v-reveal class="t-h2">
+        <UiAccentText :text="profile.contact.headline" />
+      </h2>
       <p class="cta__text">{{ profile.contact.body }}</p>
       <UiGlassButton to="/contact" variant="primary">Start a project</UiGlassButton>
     </div>

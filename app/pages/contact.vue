@@ -12,7 +12,7 @@ const { data: profile } = await useProfile()
   <div v-if="profile" class="contact page-top container">
     <header class="section__head">
       <UiSectionLabel :index="3" label="Contact" />
-      <h1 class="t-hero"><UiAccentText :text="profile.contact.headline" /></h1>
+      <h1 v-reveal class="t-hero"><UiAccentText :text="profile.contact.headline" /></h1>
       <p class="contact__body">{{ profile.contact.body }}</p>
     </header>
 

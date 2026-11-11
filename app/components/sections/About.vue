@@ -6,7 +6,9 @@ const { data: profile } = await useProfile()
   <section v-if="profile" class="about section container" aria-labelledby="about-title">
     <div class="section__head">
       <UiSectionLabel :index="1" label="About" />
-      <h2 id="about-title" class="t-h2"><UiAccentText :text="profile.about.headline" /></h2>
+      <h2 id="about-title" v-reveal class="t-h2">
+        <UiAccentText :text="profile.about.headline" />
+      </h2>
     </div>
 
     <div class="about__body">

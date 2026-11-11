@@ -18,7 +18,7 @@ const visible = computed(() =>
   <div class="work-page page-top container">
     <header class="section__head">
       <UiSectionLabel :index="2" label="Work" />
-      <h1 class="t-hero"><UiAccentText text="All *work*" /></h1>
+      <h1 v-reveal class="t-hero"><UiAccentText text="All *work*" /></h1>
       <p class="work-page__count t-label t-muted">
         {{ projectNumber(projects?.length ?? 0) }} projects · 2023–2026
       </p>
