@@ -12,6 +12,13 @@ useHead({
 })
 useSeoMeta({ robots: 'noindex' })
 
+// A direct visit to a missing page has no preloader or entry gate: let it scroll right away
+const store = useAppStore()
+onMounted(() => {
+  store.loaded = true
+  store.entered = true
+})
+
 const home = () => clearError({ redirect: '/' })
 const work = () => clearError({ redirect: '/work' })
 </script>

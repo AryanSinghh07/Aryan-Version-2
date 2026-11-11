@@ -9,7 +9,8 @@ const store = useAppStore()
 
 const root = ref<HTMLElement | null>(null)
 const percent = ref(0)
-const visible = ref(true)
+// Hidden when the app remounts after an error page (loading already finished once)
+const visible = ref(!store.loaded)
 
 const MIN_TIME = 1.2 // seconds the counter takes at minimum, so it never flashes
 const MAX_WAIT = 10_000 // give up waiting on slow assets after this long
@@ -55,6 +56,7 @@ function finish() {
 }
 
 onMounted(() => {
+  if (!visible.value) return
   reduced = prefersReducedMotion()
   startedAt = performance.now()
 
