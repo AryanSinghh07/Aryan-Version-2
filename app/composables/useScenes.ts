@@ -35,6 +35,7 @@ export function useScenes(options: ScenesOptions) {
   let gestureTimer: ReturnType<typeof setTimeout> | undefined
   let observer: Observer | null = null
   let active = false
+  let timeline: gsap.core.Timeline | null = null
 
   function markGesture() {
     const fresh = !gestureActive
@@ -50,10 +51,13 @@ export function useScenes(options: ScenesOptions) {
     const direction = index > from ? 1 : -1
     current.value = index
     store.setScene(index)
-    const tl = options.transition(from, index, direction)
-    if (tl) {
+    timeline = options.transition(from, index, direction)
+    if (timeline) {
       animating = true
-      tl.eventCallback('onComplete', () => (animating = false))
+      timeline.eventCallback('onComplete', () => {
+        animating = false
+        timeline = null
+      })
     }
   }
 
@@ -80,9 +84,11 @@ export function useScenes(options: ScenesOptions) {
       wheelSpeed: -1,
       tolerance: 10,
       preventDefault: true,
+      // Let the mobile menu scroll on its own
+      ignore: '#mobile-menu',
       onChangeY: (self) => {
         const fresh = markGesture()
-        if (!fresh || animating) return
+        if (!fresh || animating || store.overlayOpen) return
         if (self.deltaY < 0) next()
         else prev()
       },
@@ -100,7 +106,7 @@ export function useScenes(options: ScenesOptions) {
   }
 
   function onKey(e: KeyboardEvent) {
-    if (!locked.value || e.altKey || e.ctrlKey || e.metaKey) return
+    if (!locked.value || store.overlayOpen || e.altKey || e.ctrlKey || e.metaKey) return
     const target = e.target as HTMLElement | null
     if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
     // Space activates focused buttons and links; only treat it as "next" on the page itself
@@ -143,12 +149,31 @@ export function useScenes(options: ScenesOptions) {
     window.removeEventListener('keydown', onKey)
     lenis?.off('scroll', onScroll)
     clearTimeout(gestureTimer)
+    timeline?.kill()
+    timeline = null
+    animating = false
     release(false)
     observer?.kill()
     observer = null
   }
 
+  /** Locks on the current scene (scrolling to the top). Starts scene control if needed. */
+  function enter() {
+    if (!active) start(true)
+    else lock()
+  }
+
   onBeforeUnmount(stop)
 
-  return { current, locked, goTo, next, prev, start, stop, release: () => release() }
+  return {
+    current,
+    locked,
+    goTo,
+    next,
+    prev,
+    start,
+    stop,
+    enter,
+    release: () => release(),
+  }
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SplitText } from 'gsap/SplitText'
 
 // Five full-screen hero scenes, switched by wheel, swipe or arrow keys while page scroll is
@@ -14,10 +15,13 @@ const total = computed(() => scenes.value.length)
 const plain = (text: string) => text.replace(/\*/g, '')
 
 const root = ref<HTMLElement | null>(null)
-const sceneEls = ref<HTMLElement[]>([])
+// Scene elements in DOM order (read from the DOM: a v-for ref array has no guaranteed order)
+const sceneEls = shallowRef<HTMLElement[]>([])
 const interactive = ref(false)
 let splits: SplitText[] = []
 let intro: gsap.core.Timeline | null = null
+let disposed = false
+let stopEnteredWatch: (() => void) | undefined
 
 const lines = (el?: HTMLElement) => (el ? [...el.querySelectorAll<HTMLElement>('.hero-line')] : [])
 const metas = (el?: HTMLElement) =>
@@ -53,7 +57,7 @@ function transition(from: number, to: number, direction: 1 | -1) {
     .set([...outLines, ...outMeta], { clearProps: 'transform,opacity,visibility' }, 0.6)
 }
 
-const { current, locked, goTo, start, release } = useScenes({
+const { current, locked, goTo, start, enter, release } = useScenes({
   count: total.value,
   transition,
   // Past the last scene: glide down to the content below the hero
@@ -87,11 +91,14 @@ function landsBelowHero() {
 }
 
 function begin() {
-  // Landing below the hero: show the last scene and leave scroll free
+  if (disposed) return
+  // Landing below the hero: show the last scene, ready for when the visitor scrolls back up
   if (landsBelowHero()) {
     const last = total.value - 1
     gsap.set(sceneEls.value, { autoAlpha: 0 })
     gsap.set(sceneEls.value[last] ?? [], { autoAlpha: 1 })
+    gsap.set(lines(sceneEls.value[0]), { clearProps: 'transform' })
+    gsap.set([...metas(sceneEls.value[0]), '.hero__nav'], { autoAlpha: 1 })
     goToWithoutAnimation(last)
     start(false)
     return
@@ -107,10 +114,7 @@ function goToWithoutAnimation(index: number) {
 }
 
 function onNavClick(index: number) {
-  if (!locked.value) {
-    lenis?.scrollTo(0, { immediate: true, force: true })
-    start(true)
-  }
+  if (!locked.value) enter()
   goTo(index)
 }
 
@@ -119,6 +123,12 @@ onMounted(async () => {
   interactive.value = true
   await nextTick()
   await document.fonts.ready
+  // The visitor may have left the page while fonts were loading
+  if (disposed || !root.value) return
+
+  sceneEls.value = [...root.value.querySelectorAll<HTMLElement>(':scope > .scene')]
+  // The hero just shrank from five screens to one: re-measure scroll-triggered reveals
+  ScrollTrigger.refresh()
 
   splits = sceneEls.value.map((el) =>
     SplitText.create(el.querySelectorAll('.scene__split'), {
@@ -138,11 +148,11 @@ onMounted(async () => {
 
   if (store.entered) begin()
   else {
-    const stopWatch = watch(
+    stopEnteredWatch = watch(
       () => store.entered,
       (entered) => {
         if (!entered) return
-        stopWatch()
+        stopEnteredWatch?.()
         begin()
       }
     )
@@ -150,6 +160,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  disposed = true
+  stopEnteredWatch?.()
   intro?.kill()
   splits.forEach((s) => s.revert())
 })
@@ -160,7 +172,6 @@ onBeforeUnmount(() => {
     <section
       v-for="(scene, i) in scenes"
       :key="scene.label"
-      ref="sceneEls"
       class="scene container"
       :class="[`scene--${scene.side}`, { 'is-active': interactive && current === i }]"
       :aria-label="`Scene ${i + 1} of ${total}`"
