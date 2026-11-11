@@ -1,10 +1,10 @@
-import { ACESFilmicToneMapping, SRGBColorSpace, WebGLRenderer } from 'three'
+import { NoToneMapping, SRGBColorSpace, WebGLRenderer } from 'three'
 import type { Camera } from './Camera'
 import type { Sizes } from './Sizes'
 import type { Scene } from 'three'
 
-// WebGL2 renderer with sRGB output and filmic tone mapping. The canvas is transparent,
-// so the page's theme background shows through until Phase 7 adds scene colours.
+// WebGL2 renderer with sRGB output. The 3D background (world/Background.ts) fills the canvas;
+// the page's own theme colour only shows if WebGL is unavailable.
 export class Renderer {
   instance: WebGLRenderer
 
@@ -21,8 +21,9 @@ export class Renderer {
       powerPreference: 'high-performance',
     })
     this.instance.outputColorSpace = SRGBColorSpace
-    this.instance.toneMapping = ACESFilmicToneMapping
-    this.instance.toneMappingExposure = 1
+    // No tone mapping: colours come straight from the brand palette, and the colour grade
+    // (post-processing) shapes the final look the same way on every quality tier
+    this.instance.toneMapping = NoToneMapping
     this.instance.setClearColor(0x000000, 0)
     this.resize()
   }
