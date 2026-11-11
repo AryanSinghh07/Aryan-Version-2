@@ -1,5 +1,5 @@
 // Round, softly lit particle: a bright core with a soft glow falling off to the edge.
-// Colours arrive already in display (sRGB) values, so no colour-space conversion here.
+// Colours arrive in linear values; three.js converts the output for the screen or render target.
 uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform vec3 uSparkColor;
@@ -25,4 +25,5 @@ void main() {
   color += core * 0.15;
 
   gl_FragColor = vec4(color, alpha);
+  #include <colorspace_fragment>
 }

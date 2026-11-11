@@ -71,7 +71,8 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    plugins: [glsl()],
+    // Shader chunks are pulled in with #import, leaving #include free for three.js' own chunks
+    plugins: [glsl({ importKeywords: ['#import'] })],
   },
 
   typescript: {

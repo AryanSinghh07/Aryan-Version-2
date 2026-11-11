@@ -1,7 +1,7 @@
 // Particle morph: each particle travels from its point in the old shape (aFrom) to its point
 // in the new one (aTo). Each particle starts a little later than the last (aParams.z), bursts
 // outward mid-flight, drifts on curl noise, and is pushed away from the pointer.
-#include ../includes/curl.glsl;
+#import ../includes/curl.glsl;
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
