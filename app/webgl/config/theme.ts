@@ -9,6 +9,8 @@ export interface SceneColors {
   particleB: string
   spark: string
   bloom: number
+  /** Particle glow strength (dark uses additive blending, which adds up quickly) */
+  intensity: number
 }
 
 export const SCENE_COLORS: Record<Theme, SceneColors> = {
@@ -19,6 +21,7 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     particleB: '#c9b8ff',
     spark: '#d4ff3a',
     bloom: 0.4,
+    intensity: 0.85,
   },
   dark: {
     background: '#120a1f',
@@ -27,5 +30,6 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     particleB: '#ede7ff',
     spark: '#d4ff3a',
     bloom: 0.9,
+    intensity: 0.36,
   },
 }

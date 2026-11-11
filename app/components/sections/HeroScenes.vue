@@ -12,6 +12,10 @@ const lenis = useLenis()
 
 const scenes = computed(() => profile.value?.heroScenes ?? [])
 const total = computed(() => scenes.value.length)
+
+// Tell the WebGL world which particle shape each scene shows (set during server render too,
+// so the shapes are ready before the page finishes loading)
+store.heroScenes = scenes.value.map((s) => ({ shape: s.particleShape, side: s.side }))
 const plain = (text: string) => text.replace(/\*/g, '')
 
 const root = ref<HTMLElement | null>(null)

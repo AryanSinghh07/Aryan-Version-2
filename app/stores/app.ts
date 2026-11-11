@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import type { HeroSceneInfo } from '~/webgl/config/scenes'
 
 export type Theme = 'light' | 'dark'
 export type Quality = 'auto' | 'high' | 'medium' | 'low'
@@ -55,6 +56,8 @@ export const useAppStore = defineStore('app', () => {
   const entered = ref(false)
   /** Home hero has page scroll locked while scenes play */
   const heroLocked = ref(false)
+  /** Particle shape and text side for each hero scene (from content, read by the WebGL world) */
+  const heroScenes = ref<HeroSceneInfo[]>([])
   /** A full-screen overlay (mobile menu) is open: page input and scrolling pause */
   const overlayOpen = ref(false)
 
@@ -125,6 +128,7 @@ export const useAppStore = defineStore('app', () => {
     entered,
     heroLocked,
     overlayOpen,
+    heroScenes,
     trackLoad,
     applyTheme,
     setTheme,

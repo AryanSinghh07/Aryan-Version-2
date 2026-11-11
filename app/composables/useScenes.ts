@@ -29,6 +29,8 @@ export function useScenes(options: ScenesOptions) {
 
   const current = ref(0)
   const locked = ref(false)
+  // A fresh hero starts on scene 1: reset the shared scene so the 3D world matches
+  store.setScene(0)
 
   let animating = false
   let gestureActive = false
