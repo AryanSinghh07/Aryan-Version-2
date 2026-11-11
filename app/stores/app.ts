@@ -44,6 +44,26 @@ export const useAppStore = defineStore('app', () => {
   /** True once the visitor has picked a theme themselves (stops following the system setting) */
   const themeChosen = ref(false)
 
+  // Loading and entry flow
+  /** Number of tracked assets, and how many have finished (loaded or failed) */
+  const loadTotal = ref(0)
+  const loadDone = ref(0)
+  const loadProgress = computed(() => (loadTotal.value ? loadDone.value / loadTotal.value : 0))
+  /** Preloader finished and removed */
+  const loaded = ref(false)
+  /** Visitor is past the entry gate (or landed on a page without one) */
+  const entered = ref(false)
+  /** Home hero has page scroll locked while scenes play */
+  const heroLocked = ref(false)
+
+  /** Counts a loading task towards the preloader progress. Failures still count as done. */
+  function trackLoad<T>(task: Promise<T>): Promise<T> {
+    loadTotal.value++
+    return task.finally(() => {
+      loadDone.value++
+    })
+  }
+
   function applyTheme(value: Theme) {
     theme.value = value
     if (import.meta.client) document.documentElement.dataset.theme = value
@@ -96,6 +116,13 @@ export const useAppStore = defineStore('app', () => {
     route,
     ready,
     themeChosen,
+    loadTotal,
+    loadDone,
+    loadProgress,
+    loaded,
+    entered,
+    heroLocked,
+    trackLoad,
     applyTheme,
     setTheme,
     toggleTheme,

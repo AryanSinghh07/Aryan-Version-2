@@ -36,12 +36,13 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      // Sets the theme before the first paint so dark-mode visitors never see a light flash.
+      // Before the first paint: marks JavaScript as on (the preloader only shows with it)
+      // and sets the theme so dark-mode visitors never see a light flash.
       // The storage key must match STORAGE_KEYS.theme in app/stores/app.ts.
       script: [
         {
           tagPosition: 'head',
-          innerHTML: `(function(){var d=document.documentElement,t;try{t=localStorage.getItem('aryan-theme')}catch(e){}if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}d.dataset.theme=t})()`,
+          innerHTML: `(function(){var d=document.documentElement,t;d.classList.add('js');try{t=localStorage.getItem('aryan-theme')}catch(e){}if(t!=='light'&&t!=='dark'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}d.dataset.theme=t})()`,
         },
       ],
       meta: [

@@ -3,15 +3,25 @@ useHead({
   titleTemplate: (title) =>
     title ? `${title} — Aryan Singh` : 'Aryan Singh — Full Stack Developer and AI/ML Engineer',
 })
+
+const store = useAppStore()
+
+// While the preloader or entry gate covers the screen, the page behind can't be focused.
+// Only applied in the browser, so the server HTML is never inert.
+const mounted = ref(false)
+onMounted(() => (mounted.value = true))
+const covered = computed(() => mounted.value && !store.entered)
 </script>
 
 <template>
   <a href="#main" class="skip-link t-label">Skip to content</a>
-  <LayoutHeader />
-  <main id="main" tabindex="-1">
+  <LayoutHeader :inert="covered || undefined" />
+  <main id="main" tabindex="-1" :inert="covered || undefined">
     <NuxtPage />
   </main>
-  <LayoutFooter />
+  <LayoutFooter :inert="covered || undefined" />
+  <LayoutEntryGate />
+  <LayoutPreloader />
 </template>
 
 <style lang="scss">
