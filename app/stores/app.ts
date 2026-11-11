@@ -55,6 +55,8 @@ export const useAppStore = defineStore('app', () => {
   const entered = ref(false)
   /** Home hero has page scroll locked while scenes play */
   const heroLocked = ref(false)
+  /** A full-screen overlay (mobile menu) is open: page input and scrolling pause */
+  const overlayOpen = ref(false)
 
   /** Counts a loading task towards the preloader progress. Failures still count as done. */
   function trackLoad<T>(task: Promise<T>): Promise<T> {
@@ -122,6 +124,7 @@ export const useAppStore = defineStore('app', () => {
     loaded,
     entered,
     heroLocked,
+    overlayOpen,
     trackLoad,
     applyTheme,
     setTheme,

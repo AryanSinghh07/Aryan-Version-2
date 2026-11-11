@@ -4,6 +4,7 @@ const props = defineProps<{ open: boolean; links: { to: string; label: string }[
 const emit = defineEmits<{ close: [] }>()
 
 const { data: profile } = await useProfile()
+const store = useAppStore()
 const route = useRoute()
 const closeButton = ref<HTMLButtonElement | null>(null)
 
@@ -11,6 +12,8 @@ watch(
   () => props.open,
   async (open) => {
     if (!import.meta.client) return
+    // Pauses smooth scroll and hero scene input behind the menu
+    store.overlayOpen = open
     document.documentElement.style.overflow = open ? 'hidden' : ''
     if (open) {
       await nextTick()
@@ -52,7 +55,9 @@ function trapFocus(e: KeyboardEvent) {
 }
 
 onBeforeUnmount(() => {
-  if (import.meta.client) document.documentElement.style.overflow = ''
+  if (!import.meta.client) return
+  document.documentElement.style.overflow = ''
+  store.overlayOpen = false
 })
 </script>
 
@@ -65,6 +70,7 @@ onBeforeUnmount(() => {
     role="dialog"
     aria-modal="true"
     aria-label="Menu"
+    data-lenis-prevent
     @keydown="trapFocus"
   >
     <div class="menu__top container">

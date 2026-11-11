@@ -21,6 +21,17 @@ export default defineNuxtPlugin({
     gsap.ticker.add((time) => lenis.raf(time * 1000))
     gsap.ticker.lagSmoothing(0)
 
+    // The page can't scroll behind the preloader, entry gate or an open menu.
+    // This watcher is created before any component's, so when the visitor enters it runs
+    // first and the home hero can lock again straight after.
+    const store = useAppStore()
+    const shouldRun = () => store.entered && !store.overlayOpen && !store.heroLocked
+    lenis.stop()
+    watch(
+      () => [store.entered, store.overlayOpen] as const,
+      () => (shouldRun() ? lenis.start() : lenis.stop())
+    )
+
     // New page content changes the scroll height and trigger positions
     nuxtApp.hook('page:finish', () => {
       requestAnimationFrame(() => {
