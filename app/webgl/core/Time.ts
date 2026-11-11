@@ -6,6 +6,8 @@ export interface TickEvent {
   elapsed: number
   /** Seconds since the last frame, clamped so a background tab never causes a huge jump */
   delta: number
+  /** Seconds since the last frame, unclamped (for measuring performance) */
+  rawDelta: number
 }
 
 // Frame clock driven by the GSAP ticker, the same ticker that drives Lenis and ScrollTrigger,
@@ -22,7 +24,7 @@ export class Time extends EventEmitter<{ tick: TickEvent }> {
   private onTick = (time: number, deltaMs: number) => {
     this.elapsed = time
     this.delta = Math.min(deltaMs / 1000, 0.1)
-    this.emit('tick', { elapsed: this.elapsed, delta: this.delta })
+    this.emit('tick', { elapsed: this.elapsed, delta: this.delta, rawDelta: deltaMs / 1000 })
   }
 
   dispose() {
