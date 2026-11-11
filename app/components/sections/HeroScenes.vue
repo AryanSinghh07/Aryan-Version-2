@@ -1,38 +1,213 @@
 <script setup lang="ts">
-// The five hero scenes, text only. In Phase 4 they become full-screen scenes switched
-// by wheel, swipe or arrow keys; this stacked version stays as the no-JS and
-// reduced-motion fallback.
+import { gsap } from 'gsap'
+import { SplitText } from 'gsap/SplitText'
+
+// Five full-screen hero scenes, switched by wheel, swipe or arrow keys while page scroll is
+// locked. Past the last scene the page scrolls normally.
+// Without JavaScript, or with reduced motion, the scenes stay stacked and scroll like a page.
 const { data: profile } = await useProfile()
-const total = computed(() => profile.value?.heroScenes.length ?? 0)
+const store = useAppStore()
+const lenis = useLenis()
+
+const scenes = computed(() => profile.value?.heroScenes ?? [])
+const total = computed(() => scenes.value.length)
+const plain = (text: string) => text.replace(/\*/g, '')
+
+const root = ref<HTMLElement | null>(null)
+const sceneEls = ref<HTMLElement[]>([])
+const interactive = ref(false)
+let splits: SplitText[] = []
+let intro: gsap.core.Timeline | null = null
+
+const lines = (el?: HTMLElement) => (el ? [...el.querySelectorAll<HTMLElement>('.hero-line')] : [])
+const metas = (el?: HTMLElement) =>
+  el ? [...el.querySelectorAll<HTMLElement>('.scene__meta, .scene__intro')] : []
+
+// One timeline per scene change: outgoing lines slide out of their masks, incoming slide in
+function transition(from: number, to: number, direction: 1 | -1) {
+  const outgoing = sceneEls.value[from]
+  const incoming = sceneEls.value[to]
+  if (!outgoing || !incoming) return null
+  const outLines = lines(outgoing)
+  const outMeta = metas(outgoing)
+
+  // About 1.3s in total: the incoming scene starts before the outgoing one has fully left
+  return gsap
+    .timeline()
+    .to(outLines, { yPercent: -110 * direction, duration: 0.5, stagger: 0.03, ease: 'power3.in' })
+    .to(outMeta, { autoAlpha: 0, y: -16 * direction, duration: 0.35, ease: 'power2.in' }, 0)
+    .set(incoming, { autoAlpha: 1 }, 0.45)
+    .fromTo(
+      lines(incoming),
+      { yPercent: 110 * direction },
+      { yPercent: 0, duration: 0.8, stagger: 0.05, ease: 'power4.out' },
+      0.45
+    )
+    .fromTo(
+      metas(incoming),
+      { autoAlpha: 0, y: 16 * direction },
+      { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' },
+      0.55
+    )
+    .set(outgoing, { autoAlpha: 0 }, 0.6)
+    .set([...outLines, ...outMeta], { clearProps: 'transform,opacity,visibility' }, 0.6)
+}
+
+const { current, locked, goTo, start, release } = useScenes({
+  count: total.value,
+  transition,
+  // Past the last scene: glide down to the content below the hero
+  onRelease: () => {
+    if (root.value) lenis?.scrollTo(root.value.offsetHeight, { duration: 1.2 })
+  },
+})
+
+function playIntro() {
+  const first = sceneEls.value[0]
+  if (!first) return
+  intro = gsap
+    .timeline()
+    .fromTo(
+      lines(first),
+      { yPercent: 110 },
+      { yPercent: 0, duration: 1.2, stagger: 0.08, ease: 'power4.out' }
+    )
+    .fromTo(metas(first), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.8 }, '<0.3')
+    .fromTo('.hero__nav', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, '<0.2')
+}
+
+// True on the first page load; false when arriving through an in-site link or Back/Forward
+const firstLoad = useNuxtApp().isHydrating
+
+// Will this visit land below the hero? (browser reload part-way down, or Back to a saved spot)
+function landsBelowHero() {
+  if (firstLoad) return window.scrollY > 5
+  const saved = (history.state as { scroll?: { top?: number } } | null)?.scroll?.top ?? 0
+  return saved > 5
+}
+
+function begin() {
+  // Landing below the hero: show the last scene and leave scroll free
+  if (landsBelowHero()) {
+    const last = total.value - 1
+    gsap.set(sceneEls.value, { autoAlpha: 0 })
+    gsap.set(sceneEls.value[last] ?? [], { autoAlpha: 1 })
+    goToWithoutAnimation(last)
+    start(false)
+    return
+  }
+  playIntro()
+  start(true)
+}
+
+// Jump straight to a scene (used when the page loads below the hero)
+function goToWithoutAnimation(index: number) {
+  current.value = index
+  store.setScene(index)
+}
+
+function onNavClick(index: number) {
+  if (!locked.value) {
+    lenis?.scrollTo(0, { immediate: true, force: true })
+    start(true)
+  }
+  goTo(index)
+}
+
+onMounted(async () => {
+  if (prefersReducedMotion() || !total.value) return
+  interactive.value = true
+  await nextTick()
+  await document.fonts.ready
+
+  splits = sceneEls.value.map((el) =>
+    SplitText.create(el.querySelectorAll('.scene__split'), {
+      type: 'lines',
+      mask: 'lines',
+      linesClass: 'hero-line',
+      aria: 'auto',
+      autoSplit: true,
+    })
+  )
+
+  // Only the first scene is visible; its lines wait below their masks for the intro
+  gsap.set(sceneEls.value, { autoAlpha: 0 })
+  gsap.set(sceneEls.value[0] ?? [], { autoAlpha: 1 })
+  gsap.set(lines(sceneEls.value[0]), { yPercent: 110 })
+  gsap.set([...metas(sceneEls.value[0]), '.hero__nav'], { autoAlpha: 0 })
+
+  if (store.entered) begin()
+  else {
+    const stopWatch = watch(
+      () => store.entered,
+      (entered) => {
+        if (!entered) return
+        stopWatch()
+        begin()
+      }
+    )
+  }
+})
+
+onBeforeUnmount(() => {
+  intro?.kill()
+  splits.forEach((s) => s.revert())
+})
 </script>
 
 <template>
-  <div v-if="profile" class="scenes">
+  <div v-if="profile" ref="root" class="hero" :class="{ 'is-interactive': interactive }">
     <section
-      v-for="(scene, i) in profile.heroScenes"
+      v-for="(scene, i) in scenes"
       :key="scene.label"
+      ref="sceneEls"
       class="scene container"
-      :class="`scene--${scene.side}`"
+      :class="[`scene--${scene.side}`, { 'is-active': interactive && current === i }]"
       :aria-label="`Scene ${i + 1} of ${total}`"
+      :aria-hidden="interactive && current !== i ? 'true' : undefined"
     >
       <div class="scene__content">
         <div class="scene__meta">
           <UiTag :variant="i === total - 1 ? 'accent' : 'outline'">{{ scene.label }}</UiTag>
-          <span class="t-label t-muted"
-            >[{{ projectNumber(i + 1) }}/{{ projectNumber(total) }}]</span
-          >
+          <span class="t-label t-muted">
+            [{{ projectNumber(i + 1) }}/{{ projectNumber(total) }}]
+          </span>
         </div>
 
-        <h1 v-if="i === 0" class="t-hero"><UiAccentText :text="scene.headline" /></h1>
-        <h2 v-else class="t-h2"><UiAccentText :text="scene.headline" /></h2>
+        <h1 v-if="i === 0" class="t-hero scene__split">
+          <UiAccentText :text="scene.headline" />
+        </h1>
+        <h2 v-else class="t-h2 scene__split"><UiAccentText :text="scene.headline" /></h2>
 
-        <p class="scene__text">{{ scene.text }}</p>
+        <p class="scene__text scene__split">{{ scene.text }}</p>
 
         <p v-if="i === 0" class="scene__intro t-label t-muted">
           {{ profile.intro }} {{ profile.role }}
         </p>
       </div>
     </section>
+
+    <nav v-if="interactive" class="hero__nav container" aria-label="Hero scenes">
+      <ol role="list" class="hero__dots">
+        <li v-for="(scene, i) in scenes" :key="scene.label">
+          <button
+            type="button"
+            class="hero__dot"
+            :aria-label="`Scene ${i + 1}: ${plain(scene.headline)}`"
+            :aria-current="current === i ? 'step' : undefined"
+            @click="onNavClick(i)"
+          />
+        </li>
+      </ol>
+      <span class="hero__count t-label" aria-hidden="true">
+        {{ projectNumber(current + 1) }} / {{ projectNumber(total) }}
+      </span>
+      <button type="button" class="hero__skip t-label" @click="release()">Skip intro ↓</button>
+    </nav>
+
+    <p v-if="interactive" class="sr-only" aria-live="polite">
+      Scene {{ current + 1 }} of {{ total }}: {{ plain(scenes[current]?.headline ?? '') }}
+    </p>
   </div>
 </template>
 
@@ -78,6 +253,80 @@ const total = computed(() => profile.value?.heroScenes.length ?? 0)
   .scene__content {
     justify-items: center;
     text-align: center;
+  }
+}
+
+// Interactive mode: scenes stack on top of each other inside one screen
+.hero.is-interactive {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    visibility: hidden;
+  }
+}
+
+.hero__nav {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.hero__dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.hero__dot {
+  position: relative;
+  width: 28px;
+  height: 28px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--foreground-muted);
+    transform: translate(-50%, -50%);
+    transition:
+      background-color 0.3s ease,
+      width 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  &:hover::after {
+    border-color: var(--primary);
+  }
+
+  &[aria-current='step']::after {
+    width: 22px;
+    border-radius: 999px;
+    border-color: var(--primary);
+    background: var(--primary);
+  }
+}
+
+.hero__count {
+  color: var(--foreground-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero__skip {
+  margin-left: auto;
+  min-height: 44px;
+
+  &:hover {
+    color: var(--primary);
   }
 }
 </style>
