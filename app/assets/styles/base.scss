@@ -133,3 +133,13 @@ ol[role='list'] {
     color: var(--primary-active);
   }
 }
+
+// Persistent WebGL canvas (created by the Experience): fixed behind every page
+.webgl {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
