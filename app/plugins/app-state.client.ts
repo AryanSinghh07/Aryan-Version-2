@@ -1,11 +1,18 @@
 // Applies saved settings after hydration and keeps the store in sync with the browser.
+
+/** Paths without a trailing slash, so /work and /work/ are the same page (/ stays /) */
+const normalize = (path: string) => path.replace(/(.)\/$/, '$1')
+
 export default defineNuxtPlugin((nuxtApp) => {
   const store = useAppStore()
   const router = useRouter()
 
+  // Known right away (no component shows it), so the WebGL world starts on the right page
+  store.route = normalize(window.location.pathname)
+
   nuxtApp.hook('app:mounted', () => {
     store.hydrateFromBrowser()
-    store.route = router.currentRoute.value.path
+    store.route = normalize(router.currentRoute.value.path)
 
     // Follow the system theme until the visitor picks one
     const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -15,6 +22,6 @@ export default defineNuxtPlugin((nuxtApp) => {
   })
 
   router.afterEach((to) => {
-    store.route = to.path
+    store.route = normalize(to.path)
   })
 })
