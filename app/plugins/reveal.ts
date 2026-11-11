@@ -1,3 +1,5 @@
+import { gsap } from 'gsap'
+import { SplitText } from 'gsap/SplitText'
 import type { Directive } from 'vue'
 
 // v-reveal: headline lines slide up out of a mask when they scroll into view.
@@ -9,14 +11,11 @@ type RevealEl = HTMLElement & { _reveal?: { revert: () => void } }
 export default defineNuxtPlugin({
   name: 'reveal',
   dependsOn: import.meta.client ? ['gsap'] : [],
-  async setup(nuxtApp) {
+  setup(nuxtApp) {
     if (import.meta.server) {
       nuxtApp.vueApp.directive('reveal', { getSSRProps: () => ({}) })
       return
     }
-
-    const { gsap } = await import('gsap')
-    const { SplitText } = await import('gsap/SplitText')
 
     const reveal: Directive<RevealEl> = {
       mounted(el) {

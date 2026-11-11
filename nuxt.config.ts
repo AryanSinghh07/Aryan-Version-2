@@ -77,4 +77,19 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
   },
+
+  hooks: {
+    // three.js references its own copies of the Draco and Basis decoders, so the bundler
+    // emits them and Nuxt would preload them on every page (~190 KB gzip of unused JS plus
+    // the .wasm files). The loaders use /draco/ and /basis/ instead, fetched only when a
+    // compressed model or texture actually loads, so never preload the bundled copies.
+    'build:manifest'(manifest) {
+      for (const [key, chunk] of Object.entries(manifest)) {
+        if (/draco|basis/i.test(key) || /draco|basis/i.test(chunk.file)) {
+          chunk.preload = false
+          chunk.prefetch = false
+        }
+      }
+    },
+  },
 })
