@@ -1,6 +1,7 @@
-import { MathUtils, Vector3 } from 'three'
-import type { PerspectiveCamera, Scene } from 'three'
-import type { Theme } from '~/stores/app'
+import { gsap } from 'gsap'
+import { Fog, MathUtils, Vector2, Vector3 } from 'three'
+import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import type { QualityTier } from '../config/quality'
 import {
   PAGE_CAMERA,
   PAGE_LAYOUT,
@@ -10,40 +11,62 @@ import {
   layoutFor,
 } from '../config/scenes'
 import type { Layout } from '../config/scenes'
+import type { Palette } from '../core/Palette'
 import type { Resources } from '../core/Resources'
 import type { FrameState } from '../Experience'
 import { FALLBACK_SHAPE, ShapeLibrary } from '../shapes/ShapeLibrary'
+import { Background } from './Background'
 import { Environment } from './Environment'
+import { Fragments } from './Fragments'
 import { Particles } from './Particles'
+
+/** How far the camera leans with the pointer, in world units */
+const PARALLAX = { x: 0.45, y: 0.3 }
 
 /**
  * Everything in the 3D scene, and how it follows the site: which shape the particles form,
- * where they sit, and where the camera looks, for each hero scene and each page.
+ * where they sit, where the camera looks, and the theme's colours.
  */
 export class World {
   particles: Particles
   shapes: ShapeLibrary
+  background: Background
+  fragments: Fragments
   ready = false
 
   private environment: Environment
+  private fog: Fog
   private revealed = false
   private layout: Layout = { x: 0, y: 0, scale: 1, opacity: 0 }
   private cameraTarget = new Vector3()
   private pointer = new Vector3(999, 999, 0)
+  private parallax = { x: 0, y: 0 }
+  private parallaxX: gsap.QuickToFunc
+  private parallaxY: gsap.QuickToFunc
+  private glowCenter = new Vector2(0.5, 0.5)
+  private projected = new Vector3()
 
   constructor(
-    scene: Scene,
+    private scene: Scene,
     resources: Resources,
+    renderer: WebGLRenderer,
     private camera: PerspectiveCamera
   ) {
     this.environment = new Environment(scene)
+    this.background = new Background(scene)
     this.shapes = new ShapeLibrary(resources)
     this.particles = new Particles(scene, this.shapes)
+    this.fragments = new Fragments(scene, renderer, this.particles.points)
+    this.fog = new Fog(0x000000, 7, 18)
+    scene.fog = this.fog
+    // Damped pointer parallax (blueprint: gsap.quickTo)
+    this.parallaxX = gsap.quickTo(this.parallax, 'x', { duration: 1.2, ease: 'power3.out' })
+    this.parallaxY = gsap.quickTo(this.parallax, 'y', { duration: 1.2, ease: 'power3.out' })
   }
 
   /** Builds the particles as a cloud, ready to form the first shape when the visitor enters */
-  async init(count: number, firstShape: string, theme: Theme) {
-    await this.particles.init(count, firstShape, theme)
+  async init(count: number, firstShape: string) {
+    await this.particles.init(count, firstShape)
     this.ready = true
   }
 
@@ -53,11 +76,23 @@ export class World {
     return state.heroScenes[state.scene]?.shape ?? state.heroScenes[0]?.shape ?? FALLBACK_SHAPE
   }
 
-  update(state: FrameState, delta: number) {
-    if (!this.ready) return
-    const { particles } = this
+  setQuality(tier: QualityTier) {
+    this.fragments.setQuality(tier)
+  }
+
+  update(state: FrameState, palette: Palette, delta: number) {
     const reduced = state.reducedMotion
     const ease = reduced ? 1 : 1 - Math.exp(-delta * 3)
+
+    // Theme colours (tweened by the palette)
+    this.fog.color.copy(palette.colors.background)
+    this.fragments.update(palette, state.elapsed, delta, reduced)
+    if (!this.ready) {
+      this.background.update(palette, this.glowCenter, state.aspect)
+      return
+    }
+    const { particles } = this
+    particles.applyPalette(palette)
 
     // Quality tier changed the particle count
     if (state.particleCount !== particles.count) void particles.setCount(state.particleCount)
@@ -87,7 +122,7 @@ export class World {
     l.x = MathUtils.lerp(l.x, target.x, ease)
     l.y = MathUtils.lerp(l.y, target.y + fade * 2.2, ease)
     l.scale = MathUtils.lerp(l.scale, target.scale, ease)
-    const visible = state.entered || particles.uniforms.uProgress!.value > 0 ? 1 : 0.6
+    const visible = state.entered ? 1 : 0.6
     l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.75) * visible, ease)
 
     const { points } = particles
@@ -98,11 +133,22 @@ export class World {
       points.rotation.x = Math.sin(state.elapsed * 0.17) * 0.06
     }
 
-    // Camera: one position per hero scene, a calm default elsewhere
+    // Camera: one position per hero scene, a calm default elsewhere, leaning with the pointer
     const cam = onHome ? SCENE_CAMERAS[state.scene % SCENE_CAMERAS.length]! : PAGE_CAMERA
-    this.cameraTarget.fromArray(cam)
-    this.camera.position.lerp(this.cameraTarget, ease * 0.8)
+    if (reduced) {
+      this.parallax.x = this.parallax.y = 0
+    } else {
+      this.parallaxX(state.pointerNdc.x * PARALLAX.x)
+      this.parallaxY(state.pointerNdc.y * PARALLAX.y)
+    }
+    this.cameraTarget.set(cam[0] + this.parallax.x, cam[1] + this.parallax.y, cam[2])
+    this.camera.position.lerp(this.cameraTarget, reduced ? 1 : 1 - Math.exp(-delta * 2.4))
     this.camera.lookAt(0, 0, 0)
+
+    // Background glow follows the particles on screen
+    this.projected.copy(points.position).project(this.camera)
+    this.glowCenter.set(this.projected.x * 0.5 + 0.5, this.projected.y * 0.5 + 0.5)
+    this.background.update(palette, this.glowCenter, state.aspect)
 
     // Shader inputs
     const u = particles.uniforms
@@ -113,10 +159,14 @@ export class World {
     ;(u.uPointer!.value as Vector3).copy(this.pointer)
     const pointerOn = state.pointerActive && !reduced && state.entered ? 0.45 : 0
     u.uPointerStrength!.value = MathUtils.lerp(u.uPointerStrength!.value as number, pointerOn, ease)
-    particles.applyTheme(state.theme, reduced ? 1 : 1 - Math.exp(-delta * 4))
   }
 
   dispose() {
+    this.parallaxX.tween.kill()
+    this.parallaxY.tween.kill()
+    this.scene.fog = null
+    this.fragments.dispose()
+    this.background.dispose()
     this.particles.dispose()
   }
 }

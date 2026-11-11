@@ -60,7 +60,7 @@ function closeMenu() {
   position: fixed;
   inset: 0 0 auto;
   z-index: 50;
-  background: linear-gradient(rgba(var(--background-rgb), 0.92), rgba(var(--background-rgb), 0));
+  background: linear-gradient(rgba(var(--background-rgb), 0.7), rgba(var(--background-rgb), 0));
 }
 
 .header__inner {

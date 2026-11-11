@@ -3,17 +3,14 @@ import {
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
-  Color,
   NormalBlending,
   Points,
-  SRGBColorSpace,
   ShaderMaterial,
   Vector3,
 } from 'three'
 import type { Scene } from 'three'
-import type { Theme } from '~/stores/app'
 import { INTRO_CLOUD_RADIUS } from '../config/scenes'
-import { SCENE_COLORS } from '../config/theme'
+import type { Palette } from '../core/Palette'
 import fragmentShader from '../shaders/particles/fragment.glsl'
 import vertexShader from '../shaders/particles/vertex.glsl'
 import { createRandom, onSphere } from '../shapes/random'
@@ -38,11 +35,7 @@ export class Particles {
   private material: ShaderMaterial
   private morph: gsap.core.Tween | null = null
   private request = 0
-  private colorA = new Color()
-  private colorB = new Color()
-  private spark = new Color()
-  private targetA = new Color()
-  private targetB = new Color()
+  private pendingCount = 0
 
   constructor(
     private scene: Scene,
@@ -83,8 +76,7 @@ export class Particles {
   }
 
   /** Builds the particles as a loose cloud that will form `shape` when revealed */
-  async init(count: number, shape: string, theme: Theme) {
-    this.applyTheme(theme, 1)
+  async init(count: number, shape: string) {
     const target = await this.library.get(shape, count)
     this.allocate(count)
     this.attr('aFrom').set(cloud(count))
@@ -128,10 +120,14 @@ export class Particles {
 
   /** Rebuilds with a new particle count (quality change), keeping the current shape */
   async setCount(count: number) {
-    if (count === this.count || !this.shape) return
+    // Called every frame until done: ignore repeats while a rebuild is on its way
+    if (count === this.count || count === this.pendingCount || !this.shape) return
+    this.pendingCount = count
     const shape = this.shape
     const request = ++this.request
     const target = await this.library.get(shape, count)
+    this.pendingCount = 0
+    // A morph replaced this rebuild: the next frame asks again with the new shape
     if (request !== this.request) return
     this.morph?.kill()
     this.allocate(count)
@@ -141,22 +137,18 @@ export class Particles {
     this.uniforms.uProgress!.value = 1
   }
 
-  applyTheme(theme: Theme, ease: number) {
-    const c = SCENE_COLORS[theme]
-    this.targetA.set(c.particleA)
-    this.targetB.set(c.particleB)
-    this.colorA.lerp(this.targetA, ease)
-    this.colorB.lerp(this.targetB, ease)
-    this.spark.set(c.spark)
-    // Colours go to the shader as display (sRGB) values
-    const { uColorA, uColorB, uSparkColor, uSparkRatio } = this.uniforms
-    ;(uColorA!.value as Vector3).fromArray(rgb(this.colorA))
-    ;(uColorB!.value as Vector3).fromArray(rgb(this.colorB))
-    ;(uSparkColor!.value as Vector3).fromArray(rgb(this.spark))
-    uSparkRatio!.value = theme === 'dark' ? 0.05 : 0.03
-    this.uniforms.uIntensity!.value = c.intensity
-    // Glow adds up on dark backgrounds; on light ones it would wash out to white
-    this.material.blending = theme === 'dark' ? AdditiveBlending : NormalBlending
+  /** Colours, glow strength and blending from the (tweened) theme palette */
+  applyPalette(palette: Palette) {
+    const { colors, values } = palette
+    const { uColorA, uColorB, uSparkColor, uSparkRatio, uIntensity } = this.uniforms
+    ;(uColorA!.value as Vector3).set(colors.particleA.r, colors.particleA.g, colors.particleA.b)
+    ;(uColorB!.value as Vector3).set(colors.particleB.r, colors.particleB.g, colors.particleB.b)
+    ;(uSparkColor!.value as Vector3).set(colors.spark.r, colors.spark.g, colors.spark.b)
+    uSparkRatio!.value = 0.03 + palette.darkness * 0.02
+    uIntensity!.value = values.intensity
+    // Glow adds up on dark backgrounds; on light ones it would wash out to white.
+    // Switches halfway through a theme fade.
+    this.material.blending = palette.darkness > 0.5 ? AdditiveBlending : NormalBlending
   }
 
   dispose() {
@@ -218,12 +210,6 @@ export class Particles {
 
 function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-}
-
-function rgb(color: Color): [number, number, number] {
-  const c = { r: 0, g: 0, b: 0 }
-  color.getRGB(c, SRGBColorSpace)
-  return [c.r, c.g, c.b]
 }
 
 /** A loose sphere of particles: the state before the first shape forms */
