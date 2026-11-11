@@ -7,6 +7,13 @@ export default <RouterConfig>{
     // Same page with only the query changing (e.g. filters): stay put
     if (to.path === from.path && to.hash === from.hash) return false
 
+    // Same page, new #hash: no new page renders, so scroll straight away
+    if (to.path === from.path) {
+      const target = to.hash ? document.querySelector(to.hash) : null
+      if (target) useLenis()?.scrollTo(target as HTMLElement)
+      return false
+    }
+
     const nuxtApp = useNuxtApp()
     return new Promise((resolve) => {
       nuxtApp.hooks.hookOnce('page:finish', () => {
