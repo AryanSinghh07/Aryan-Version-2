@@ -12,6 +12,10 @@ export interface SceneColors {
   particleA: string
   particleB: string
   spark: string
+  /** Card surface, soft lavender and muted text: for media placeholders drawn in WebGL */
+  surface: string
+  lavender: string
+  muted: string
   /** Particle glow strength (dark uses additive blending, which adds up quickly) */
   intensity: number
   bloom: { intensity: number; threshold: number }
@@ -36,6 +40,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     particleA: '#7b3ff2',
     particleB: '#c9b8ff',
     spark: '#d4ff3a',
+    surface: '#ede7ff',
+    lavender: '#c9b8ff',
+    muted: '#6b5b8c',
     intensity: 0.85,
     // High threshold: only the brightest sparks bloom, the white background never does
     bloom: { intensity: 0.4, threshold: 0.92 },
@@ -57,6 +64,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     particleA: '#9b6bff',
     particleB: '#ede7ff',
     spark: '#d4ff3a',
+    surface: '#1e1033',
+    lavender: '#c9b8ff',
+    muted: '#a99bc9',
     intensity: 0.36,
     bloom: { intensity: 0.9, threshold: 0.22 },
     grade: {

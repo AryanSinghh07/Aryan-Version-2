@@ -5,7 +5,16 @@ import { SCENE_COLORS } from '../config/theme'
 import type { SceneColors } from '../config/theme'
 
 type ColorKey =
-  'background' | 'backgroundEnd' | 'glow' | 'particleA' | 'particleB' | 'spark' | 'shadowTint'
+  | 'background'
+  | 'backgroundEnd'
+  | 'glow'
+  | 'particleA'
+  | 'particleB'
+  | 'spark'
+  | 'shadowTint'
+  | 'surface'
+  | 'lavender'
+  | 'muted'
 type NumberKey =
   | 'intensity'
   | 'bloomIntensity'
@@ -25,6 +34,9 @@ const COLOR_KEYS: ColorKey[] = [
   'particleB',
   'spark',
   'shadowTint',
+  'surface',
+  'lavender',
+  'muted',
 ]
 const NUMBER_KEYS: NumberKey[] = [
   'intensity',
@@ -47,6 +59,9 @@ function flatten(c: SceneColors): Record<ColorKey, string> & Record<NumberKey, n
     particleB: c.particleB,
     spark: c.spark,
     shadowTint: c.grade.shadowTint,
+    surface: c.surface,
+    lavender: c.lavender,
+    muted: c.muted,
     intensity: c.intensity,
     bloomIntensity: c.bloom.intensity,
     bloomThreshold: c.bloom.threshold,
