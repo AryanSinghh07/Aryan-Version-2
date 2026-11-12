@@ -36,6 +36,7 @@ function closeMenu() {
       </nav>
 
       <div class="header__actions">
+        <UiSoundToggle />
         <SettingsPanel class="header__settings" />
         <UiGlassButton to="/contact" class="header__cta">Let's talk</UiGlassButton>
         <button
