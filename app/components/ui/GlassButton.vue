@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Translucent button with a slowly moving gradient. Renders a NuxtLink (to), an <a> (href)
-// or a <button>. Magnetic hover and the canvas gradient are added in Phase 8.
+// Translucent button with a slowly moving gradient sheen. Renders a NuxtLink (to), an <a>
+// (href) or a <button>. On mouse/trackpad devices it is magnetic, with a highlight that follows
+// the pointer across the glass.
 const props = withDefaults(
   defineProps<{
     to?: string
@@ -25,10 +26,23 @@ const attrs = computed(() => {
     }
   return { type: props.type, disabled: props.disabled }
 })
+
+// The root may be a component (NuxtLink) or a plain element
+const root = ref<HTMLElement | { $el: HTMLElement } | null>(null)
+useMagnetic(() => {
+  const r = root.value
+  return r && '$el' in r ? r.$el : r
+})
 </script>
 
 <template>
-  <component :is="tag" v-bind="attrs" class="glass-button" :class="`glass-button--${variant}`">
+  <component
+    :is="tag"
+    ref="root"
+    v-bind="attrs"
+    class="glass-button"
+    :class="`glass-button--${variant}`"
+  >
     <span class="glass-button__label"><slot /></span>
   </component>
 </template>
@@ -103,13 +117,26 @@ const attrs = computed(() => {
 }
 
 .glass-button--glass {
-  background: var(--glass);
+  // Pointer highlight (--mx/--my set by useMagnetic), over the glass fill
+  background:
+    radial-gradient(
+      circle at var(--mx, 50%) var(--my, 50%),
+      rgba(var(--color-lavender-rgb), 0.35),
+      transparent 60%
+    ),
+    var(--glass);
   color: var(--foreground);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 
   &:hover {
-    background: rgba(var(--primary-rgb), 0.12);
+    background:
+      radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(var(--color-lavender-rgb), 0.45),
+        transparent 60%
+      ),
+      rgba(var(--primary-rgb), 0.12);
   }
 }
 
