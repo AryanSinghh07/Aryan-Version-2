@@ -6,6 +6,7 @@ import type { QualityTier } from './config/quality'
 import type { HeroSceneInfo } from './config/scenes'
 import { sources } from './config/sources'
 import { Camera } from './core/Camera'
+import { detectGpuTier } from './core/GpuTier'
 import { Palette } from './core/Palette'
 import { PerformanceMonitor } from './core/PerformanceMonitor'
 import { Pointer } from './core/Pointer'
@@ -15,6 +16,7 @@ import { Sizes } from './core/Sizes'
 import { Time } from './core/Time'
 import type { TickEvent } from './core/Time'
 import { Debug } from './debug/Debug'
+import { Fluid } from './effects/Fluid'
 import { MediaPlanes } from './effects/MediaPlanes'
 import { PostProcessing } from './effects/PostProcessing'
 import { World } from './world/World'
@@ -27,6 +29,8 @@ export interface AppStateSource {
   route: string
   entered: boolean
   heroScenes: HeroSceneInfo[]
+  /** Written back by the Experience, so the settings panel can say what "Auto" means */
+  autoTier: QualityTier
   trackLoad: <T>(task: Promise<T>) => Promise<T>
 }
 
@@ -71,6 +75,7 @@ export class Experience {
   pointer: Pointer
   palette: Palette
   media: MediaPlanes
+  fluid: Fluid
   post: PostProcessing
   world: World
   debug: Debug
@@ -78,10 +83,15 @@ export class Experience {
   private reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
   private currentQuality: Quality | null = null
   private tier: QualityTier = 'high'
-  /** What "Auto" quality means right now: starts at High, steps down if frames run slow */
+  /** What "Auto" quality means right now: the detected tier, stepped down if frames run slow */
   autoTier: QualityTier = 'high'
+  /** GPU name from detection (for the debug console and tests) */
+  gpu = ''
+  /** Quality is applied once GPU detection has picked the Auto tier */
+  private tierReady = false
   private monitor = new PerformanceMonitor()
   private mediaPointer = new Vector2()
+  private fluidPointer = new Vector2()
   private lazyStarted = false
   private frame: FrameState
 
@@ -103,11 +113,14 @@ export class Experience {
     this.palette = new Palette(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
     this.media = new MediaPlanes()
     this.media.resize(this.sizes.width, this.sizes.height)
+    this.fluid = new Fluid(this.renderer.instance)
+    this.fluid.resize(this.sizes.width, this.sizes.height)
     this.post = new PostProcessing(
       this.renderer.instance,
       this.scene,
       this.camera.instance,
-      this.media
+      this.media,
+      this.fluid
     )
     this.world = new World(this.scene, this.resources, this.renderer.instance, this.camera.instance)
     this.debug = new Debug()
@@ -138,6 +151,7 @@ export class Experience {
       this.renderer.resize()
       this.post.resize(this.sizes.width, this.sizes.height, this.sizes.pixelRatio)
       this.media.resize(this.sizes.width, this.sizes.height)
+      this.fluid.resize(this.sizes.width, this.sizes.height)
     })
     this.time.on('tick', this.update)
 
@@ -146,19 +160,34 @@ export class Experience {
       if (name.startsWith('shape:')) this.world.shapes.clear()
     })
 
-    // Eager assets, the particle shapes and a shader warm-up all count towards the preloader
+    // GPU detection picks the Auto tier before the particles are built, so they start at the
+    // right count. It reads small local benchmark files and has a time limit.
+    const tier = detectGpuTier(this.renderer.instance.getContext()).then(({ tier, gpu }) => {
+      this.gpu = gpu
+      this.setAutoTier(tier)
+      this.tierReady = true
+    })
+
+    // Eager assets, GPU detection, the particle shapes and a shader warm-up all count towards
+    // the preloader
     const firstShape = World.shapeFor({
       route: state.route,
       scene: 0,
       heroScenes: state.heroScenes,
     })
     state.trackLoad(
-      this.resources
-        .loadEager()
-        .then(() => this.world.init(this.frame.particleCount, firstShape))
+      Promise.all([this.resources.loadEager(), tier])
+        .then(() => this.world.init(this.particleCount(), firstShape))
         .then(() => this.renderer.instance.compileAsync(this.scene, this.camera.instance))
         .catch((error) => console.warn('[webgl] Warm-up failed', error))
     )
+  }
+
+  private setAutoTier(tier: QualityTier) {
+    this.autoTier = tier
+    this.state.autoTier = tier
+    this.frame.particleCount = this.particleCount()
+    this.currentQuality = null // re-applied on the next frame
   }
 
   private particleCount() {
@@ -194,6 +223,16 @@ export class Experience {
     look.add(v, 'grain', 0, 0.2, 0.001)
     look.add(v, 'intensity', 0, 1.5, 0.01).name('particle glow')
 
+    const fluid = gui.addFolder('Fluid smoke')
+    const f = this.fluid.settings
+    fluid.add(f, 'density', 0, 0.5, 0.005).name('smoke per frame')
+    fluid.add(f, 'radius', 0.0005, 0.01, 0.0001).name('splat size')
+    fluid.add(f, 'force', 0, 10000, 100)
+    fluid.add(f, 'curl', 0, 50, 1).name('swirl')
+    fluid.add(f, 'densityDissipation', 0, 4, 0.05).name('smoke fade')
+    fluid.add(f, 'velocityDissipation', 0, 4, 0.05).name('motion fade')
+    look.add(v, 'fluidOpacity', 0, 1, 0.01).name('smoke opacity')
+
     const u = this.world.particles.uniforms
     const particles = gui.addFolder('Particles')
     particles.add(u.uSize!, 'value', 0.005, 0.15, 0.001).name('size')
@@ -213,21 +252,19 @@ export class Experience {
     // Auto quality: step down a tier if this device can't keep frames smooth
     if (state.quality === 'auto' && state.entered && this.world.ready && !document.hidden) {
       const lower = this.monitor.update(rawDelta, this.autoTier)
-      if (lower) {
-        this.autoTier = lower
-        this.currentQuality = null // re-apply below
-      }
+      if (lower) this.setAutoTier(lower)
     } else {
       this.monitor.reset()
     }
 
-    // Quality tier: pixel ratio cap, particle count, post-processing and glass
-    if (state.quality !== this.currentQuality) {
+    // Quality tier: pixel ratio cap, particle count, post-processing, fluid and glass
+    if (this.tierReady && state.quality !== this.currentQuality) {
       this.currentQuality = state.quality
       this.tier = resolveQuality(state.quality, this.autoTier)
       this.monitor.reset()
       this.sizes.setMaxPixelRatio(QUALITY[this.tier].maxPixelRatio)
       frame.particleCount = this.particleCount()
+      this.fluid.setQuality(this.tier)
       this.post.setQuality(this.tier, this.sizes.pixelRatio)
       this.world.setQuality(this.tier)
     }
@@ -255,6 +292,14 @@ export class Experience {
     frame.pointerActive = this.pointer.active
 
     this.world.update(frame, this.palette, delta)
+    // Pointer smoke: only once the visitor is in, and never with reduced motion
+    this.fluidPointer.set((this.pointer.ndc.x + 1) / 2, (this.pointer.ndc.y + 1) / 2)
+    this.fluid.update(
+      delta,
+      this.pointer.active ? this.fluidPointer : null,
+      state.entered && !frame.reducedMotion && this.post.enabled
+    )
+
     this.post.update(this.palette, frame.reducedMotion)
     this.mediaPointer.set(
       ((this.pointer.ndc.x + 1) / 2) * this.sizes.width,
@@ -281,6 +326,7 @@ export class Experience {
     this.pointer.dispose()
     this.world.dispose()
     this.post.dispose()
+    this.fluid.dispose()
     this.media.dispose()
     this.palette.dispose()
     this.resources.dispose()

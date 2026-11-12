@@ -16,6 +16,9 @@ export interface SceneColors {
   surface: string
   lavender: string
   muted: string
+  /** Fluid smoke tint and how strongly it covers the scene */
+  fluid: string
+  fluidOpacity: number
   /** Particle glow strength (dark uses additive blending, which adds up quickly) */
   intensity: number
   bloom: { intensity: number; threshold: number }
@@ -43,6 +46,8 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     surface: '#ede7ff',
     lavender: '#c9b8ff',
     muted: '#6b5b8c',
+    fluid: '#c9b8ff',
+    fluidOpacity: 0.35,
     intensity: 0.85,
     // High threshold: only the brightest sparks bloom, the white background never does
     bloom: { intensity: 0.4, threshold: 0.92 },
@@ -67,6 +72,8 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     surface: '#1e1033',
     lavender: '#c9b8ff',
     muted: '#a99bc9',
+    fluid: '#9b6bff',
+    fluidOpacity: 0.45,
     intensity: 0.36,
     bloom: { intensity: 0.9, threshold: 0.22 },
     grade: {

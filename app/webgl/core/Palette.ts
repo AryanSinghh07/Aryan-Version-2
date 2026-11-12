@@ -15,8 +15,10 @@ type ColorKey =
   | 'surface'
   | 'lavender'
   | 'muted'
+  | 'fluid'
 type NumberKey =
   | 'intensity'
+  | 'fluidOpacity'
   | 'bloomIntensity'
   | 'bloomThreshold'
   | 'lift'
@@ -37,9 +39,11 @@ const COLOR_KEYS: ColorKey[] = [
   'surface',
   'lavender',
   'muted',
+  'fluid',
 ]
 const NUMBER_KEYS: NumberKey[] = [
   'intensity',
+  'fluidOpacity',
   'bloomIntensity',
   'bloomThreshold',
   'lift',
@@ -62,7 +66,9 @@ function flatten(c: SceneColors): Record<ColorKey, string> & Record<NumberKey, n
     surface: c.surface,
     lavender: c.lavender,
     muted: c.muted,
+    fluid: c.fluid,
     intensity: c.intensity,
+    fluidOpacity: c.fluidOpacity,
     bloomIntensity: c.bloom.intensity,
     bloomThreshold: c.bloom.threshold,
     lift: c.grade.lift,

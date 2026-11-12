@@ -13,10 +13,13 @@ import type { Camera, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
 import type { QualityTier } from '../config/quality'
 import { QUALITY, msaaSamples } from '../config/quality'
 import type { Palette } from '../core/Palette'
+import type { Fluid } from './Fluid'
+import { FluidEffect } from './FluidEffect'
 import { GradeEffect } from './GradeEffect'
 
 interface Effects {
   bloom: BloomEffect | null
+  fluid: FluidEffect | null
   grade: GradeEffect
   chromatic: ChromaticAberrationEffect
   vignette: VignetteEffect
@@ -24,9 +27,10 @@ interface Effects {
 }
 
 /**
- * Bloom, colour grade, subtle chromatic aberration, vignette and film grain, all following
- * the theme palette. Quality: High has everything; Medium drops bloom; Low skips
- * post-processing and renders straight to the screen. Anti-aliasing: see msaaSamples().
+ * Bloom, fluid smoke, colour grade, subtle chromatic aberration, vignette and film grain, all
+ * following the theme palette. Quality: High has everything; Medium drops bloom; Low skips
+ * post-processing (and the fluid) and renders straight to the screen.
+ * Anti-aliasing: see msaaSamples().
  */
 export class PostProcessing {
   enabled = false
@@ -40,7 +44,9 @@ export class PostProcessing {
     private scene: Scene,
     private camera: PerspectiveCamera,
     /** Drawn on top of the main scene before the effects (the WebGL media planes) */
-    private overlay?: { scene: Scene; camera: Camera }
+    private overlay?: { scene: Scene; camera: Camera },
+    /** Pointer smoke, tinted over the scene when the tier has fluid */
+    private fluid?: Fluid
   ) {}
 
   /** Rebuilds the effect chain for a quality tier (fresh effects each time) */
@@ -57,6 +63,7 @@ export class PostProcessing {
       bloom: QUALITY[tier].bloom
         ? new BloomEffect({ mipmapBlur: true, luminanceSmoothing: 0.15, radius: 0.7 })
         : null,
+      fluid: this.fluid && QUALITY[tier].fluid ? new FluidEffect() : null,
       grade: new GradeEffect(),
       chromatic: new ChromaticAberrationEffect({
         offset: new Vector2(0.0006, 0.0004),
@@ -77,9 +84,13 @@ export class PostProcessing {
       overlayPass.clearPass.enabled = false // draw over the main scene, don't wipe it
       composer.addPass(overlayPass)
     }
-    const main = [effects.bloom, effects.grade, effects.vignette, effects.grain].filter(
-      (e) => e !== null
-    )
+    const main = [
+      effects.bloom,
+      effects.fluid,
+      effects.grade,
+      effects.vignette,
+      effects.grain,
+    ].filter((e) => e !== null)
     composer.addPass(new EffectPass(this.camera, ...main))
     // Chromatic aberration samples neighbouring pixels, so it needs its own pass
     composer.addPass(new EffectPass(this.camera, effects.chromatic))
@@ -98,6 +109,7 @@ export class PostProcessing {
       e.bloom.intensity = v.bloomIntensity
       e.bloom.luminanceMaterial.threshold = v.bloomThreshold
     }
+    if (e.fluid && this.fluid) e.fluid.sync(this.fluid, palette)
     e.grade.sync(palette)
     e.vignette.darkness = v.vignette
     // Moving grain is motion: keep it off for visitors who prefer less
