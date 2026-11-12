@@ -15,8 +15,13 @@ const number = computed(() => projectNumber(props.project.order))
 
 <template>
   <article class="card" :class="`card--${shape}`">
-    <NuxtLink :to="`/work/${project.slug}`" class="card__link">
-      <div class="card__media">
+    <NuxtLink :to="`/work/${project.slug}`" class="card__link" data-cursor="View">
+      <div
+        class="card__media"
+        data-webgl-media
+        :data-webgl-number="number"
+        :data-webgl-label="project.particleShape"
+      >
         <NuxtImg
           v-if="project.cover"
           :src="project.cover"
@@ -33,7 +38,7 @@ const number = computed(() => projectNumber(props.project.order))
       <div class="card__body">
         <component :is="headingLevel" class="card__title t-h3">
           <span class="card__arrow" aria-hidden="true">↪</span>
-          {{ project.title }}
+          <span v-scramble>{{ project.title }}</span>
         </component>
         <p class="t-muted">{{ project.subtitle }}</p>
       </div>
@@ -130,5 +135,47 @@ const number = computed(() => projectNumber(props.project.order))
 .card__spec {
   padding-top: 1rem;
   border-top: 1px solid var(--border);
+}
+
+// Mouse/trackpad: the spec sheet lives on the image and slides up on hover or keyboard focus.
+// Touch screens keep it below the card, always visible.
+@media (hover: hover) and (pointer: fine) {
+  .card {
+    position: relative;
+  }
+
+  .card__spec {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    align-content: end;
+    padding: 1.25rem;
+    border-top: 0;
+    border-radius: 1rem;
+    background: linear-gradient(
+      to top,
+      rgba(var(--background-rgb), 0.94) 0%,
+      rgba(var(--background-rgb), 0.7) 40%,
+      transparent 75%
+    );
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+
+    .card--tall & {
+      aspect-ratio: 3 / 4;
+    }
+  }
+
+  .card:hover .card__spec,
+  .card:focus-within .card__spec {
+    opacity: 1;
+    transform: scale(0.985);
+  }
 }
 </style>
