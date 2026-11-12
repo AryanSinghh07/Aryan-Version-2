@@ -37,6 +37,8 @@ export default defineNuxtPlugin({
       }
     }
 
+    store.webgl = !!experience
+
     if (import.meta.hot) import.meta.hot.dispose(() => experience?.dispose())
 
     return { provide: { experience } }

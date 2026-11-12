@@ -1,7 +1,7 @@
-import type { Quality } from '~/stores/app'
+import type { QualityTier } from '~/stores/app'
 
-// What each quality tier turns on. "auto" is resolved to a real tier by GPU detection in
-// Phase 9; until then it means "high".
+// What each quality tier turns on. "Auto" starts from the tier GPU detection picks
+// (core/GpuTier.ts) and steps down if frames run slow (core/PerformanceMonitor.ts).
 //
 // maxPixelRatio caps the canvas resolution only. All text is HTML on top of the canvas and
 // stays sharp at the screen's full resolution; the canvas holds soft particles, a gradient and
@@ -20,7 +20,7 @@ export interface QualitySettings {
   shards: boolean
 }
 
-export type QualityTier = Exclude<Quality, 'auto'>
+export type { QualityTier }
 
 export const QUALITY: Record<QualityTier, QualitySettings> = {
   high: {
@@ -61,6 +61,9 @@ export function msaaSamples(tier: QualityTier, pixelRatio: number) {
   return tier === 'high' && pixelRatio <= 1 ? 2 : 0
 }
 
-export function resolveQuality(quality: Quality, autoTier: QualityTier = 'high'): QualityTier {
+export function resolveQuality(
+  quality: QualityTier | 'auto',
+  autoTier: QualityTier = 'high'
+): QualityTier {
   return quality === 'auto' ? autoTier : quality
 }

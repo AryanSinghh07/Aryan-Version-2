@@ -23,6 +23,7 @@ logs
 .env.*
 !.env.example
 
-# Decoders copied from three on install
+# Copied from node_modules on install (scripts/copy-decoders.mjs)
 public/draco
 public/basis
+public/benchmarks
