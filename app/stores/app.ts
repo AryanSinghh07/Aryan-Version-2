@@ -3,6 +3,7 @@ import type { HeroSceneInfo } from '~/webgl/config/scenes'
 
 export type Theme = 'light' | 'dark'
 export type Quality = 'auto' | 'high' | 'medium' | 'low'
+export type QualityTier = Exclude<Quality, 'auto'>
 
 // localStorage keys. THEME_KEY is also read by the inline head script in nuxt.config.ts.
 export const STORAGE_KEYS = {
@@ -60,6 +61,10 @@ export const useAppStore = defineStore('app', () => {
   const heroScenes = ref<HeroSceneInfo[]>([])
   /** A full-screen overlay (mobile menu) is open: page input and scrolling pause */
   const overlayOpen = ref(false)
+  /** What "Auto" quality currently means on this device (set by the WebGL Experience) */
+  const autoTier = ref<QualityTier>('high')
+  /** null until known; false when the browser has no WebGL2 (the 3D layer and quality are off) */
+  const webgl = ref<boolean | null>(null)
 
   /** Counts a loading task towards the preloader progress. Failures still count as done. */
   function trackLoad<T>(task: Promise<T>): Promise<T> {
@@ -128,6 +133,8 @@ export const useAppStore = defineStore('app', () => {
     entered,
     heroLocked,
     overlayOpen,
+    autoTier,
+    webgl,
     heroScenes,
     trackLoad,
     applyTheme,

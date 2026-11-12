@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
     </nav>
 
     <div v-if="profile" class="menu__bottom container">
-      <UiThemeToggle />
+      <SettingsControls id-prefix="menu" />
       <UiCopyEmail :email="profile.email" />
       <ul role="list" class="menu__socials">
         <li v-for="s in profile.socials" :key="s.url">

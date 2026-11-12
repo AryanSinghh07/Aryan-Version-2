@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Settings popover. Sound and quality toggles join in Phase 9.
+// Settings popover: sound, dark mode and quality. Closes on Escape or a click outside.
 const open = ref(false)
 const root = ref<HTMLElement | null>(null)
 const button = ref<HTMLButtonElement | null>(null)
@@ -31,7 +31,7 @@ onKeyStroke('Escape', () => {
       role="group"
       aria-label="Settings"
     >
-      <UiThemeToggle />
+      <SettingsControls id-prefix="header" />
     </div>
   </div>
 </template>
@@ -55,8 +55,8 @@ onKeyStroke('Escape', () => {
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
-  min-width: 14rem;
-  padding: 0.75rem 1.25rem;
+  min-width: 16rem;
+  padding: 0.75rem 1.25rem 1rem;
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: var(--surface);
