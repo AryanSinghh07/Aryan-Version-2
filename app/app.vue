@@ -14,7 +14,7 @@ const covered = computed(() => mounted.value && !store.entered)
 </script>
 
 <template>
-  <a href="#main" class="skip-link t-label">Skip to content</a>
+  <a href="#main" class="skip-link t-label" :inert="covered || undefined">Skip to content</a>
   <LayoutHeader :inert="covered || undefined" />
   <main id="main" tabindex="-1" :inert="covered || undefined">
     <NuxtPage />

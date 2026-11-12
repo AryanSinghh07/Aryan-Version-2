@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
-import { Howler } from 'howler'
 
 // Asks "with sound or without" when the visitor lands on the home page.
 // The click is the user gesture browsers need before any audio can play.
-// Visitors who land on another page skip the gate with sound off.
+// Visitors who land on another page skip the gate, with sound as they last left it (off at first).
 const store = useAppStore()
 const route = useRoute()
+const { $sound } = useNuxtApp()
 
 const root = ref<HTMLElement | null>(null)
 const show = ref(false)
@@ -22,6 +22,9 @@ watch(
     }
     show.value = true
     await nextTick()
+    // Focus first: the fade-in below hides the buttons for a frame, and hidden buttons
+    // can't take focus
+    root.value?.querySelector<HTMLButtonElement>('button')?.focus()
     if (!prefersReducedMotion() && root.value) {
       gsap.from(root.value.querySelectorAll('.gate__inner > *'), {
         y: 24,
@@ -30,28 +33,28 @@ watch(
         stagger: 0.08,
       })
     }
-    root.value?.querySelector<HTMLButtonElement>('button')?.focus()
   },
   { immediate: true }
 )
 
-function unlockAudio(withSound: boolean) {
-  try {
-    Howler.volume(1) // creates the shared audio context if needed
-    Howler.mute(!withSound)
-    if (withSound) void Howler.ctx?.resume()
-  } catch {
-    // Audio not available: carry on silently
-  }
-}
-
 function enter(withSound: boolean) {
-  unlockAudio(withSound)
+  // Inside the click, so the browser lets audio start. With sound, the ambient loop starts
+  // fading in and the entry chime plays while the gate fades out.
   store.setSound(withSound)
+  if (withSound) {
+    $sound.enable()
+    $sound.play('enter')
+  }
 
   const done = () => {
     show.value = false
     store.entered = true
+    // The focused button is about to disappear: start keyboard navigation from the top of
+    // the page again, so the next Tab reaches "Skip to content" and then the header
+    const body = document.body
+    body.tabIndex = -1
+    body.focus({ preventScroll: true })
+    body.removeAttribute('tabindex')
   }
   if (prefersReducedMotion() || !root.value) return done()
   gsap.to(root.value, { autoAlpha: 0, duration: 0.6, ease: 'power2.inOut', onComplete: done })
