@@ -22,6 +22,7 @@ const covered = computed(() => mounted.value && !store.entered)
   <LayoutFooter :inert="covered || undefined" />
   <LayoutEntryGate />
   <LayoutPreloader />
+  <Cursor />
 </template>
 
 <style lang="scss">

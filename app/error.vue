@@ -45,6 +45,7 @@ const work = () => clearError({ redirect: '/work' })
     </div>
   </main>
   <LayoutFooter />
+  <Cursor />
 </template>
 
 <style scoped lang="scss">
