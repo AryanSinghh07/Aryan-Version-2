@@ -29,7 +29,7 @@ function closeMenu() {
           <li v-for="(link, i) in links" :key="link.to">
             <NuxtLink :to="link.to" class="header__link t-label">
               <span class="header__index" aria-hidden="true">[0{{ i + 1 }}]</span>
-              {{ link.label }}
+              <span v-scramble>{{ link.label }}</span>
             </NuxtLink>
           </li>
         </ul>

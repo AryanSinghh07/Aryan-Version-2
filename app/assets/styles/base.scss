@@ -143,3 +143,36 @@ ol[role='list'] {
   height: 100%;
   pointer-events: none;
 }
+
+// v-scramble: split-colour ghost copies while the text scrambles on hover
+.scramble {
+  position: relative;
+  display: inline-block;
+}
+
+.scramble.is-glitching::before,
+.scramble.is-glitching::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.scramble.is-glitching::before {
+  color: var(--primary);
+  transform: translateX(-2px);
+  clip-path: inset(0 0 55% 0);
+  opacity: 0.8;
+}
+
+.scramble.is-glitching::after {
+  color: var(--color-lavender);
+  transform: translateX(2px);
+  clip-path: inset(50% 0 0 0);
+  opacity: 0.8;
+}
+
+// Dark theme: the lime accent can be a ghost colour (never lime text on a light background)
+[data-theme='dark'] .scramble.is-glitching::after {
+  color: var(--accent);
+}

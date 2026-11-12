@@ -27,7 +27,7 @@ const pages = [
           <ul role="list">
             <li v-for="s in profile.socials" :key="s.url">
               <a :href="s.url" target="_blank" rel="noopener noreferrer" class="footer__link">
-                {{ s.label }} ↗
+                <span v-scramble>{{ s.label }}</span> ↗
               </a>
             </li>
           </ul>
@@ -37,7 +37,9 @@ const pages = [
           <p class="t-label t-muted">Pages</p>
           <ul role="list">
             <li v-for="p in pages" :key="p.to">
-              <NuxtLink :to="p.to" class="footer__link">{{ p.label }}</NuxtLink>
+              <NuxtLink :to="p.to" class="footer__link">
+                <span v-scramble>{{ p.label }}</span>
+              </NuxtLink>
             </li>
           </ul>
         </nav>
