@@ -38,9 +38,10 @@ useSeoMeta({
         :src="project.cover"
         :alt="`${project.title} cover`"
         class="case__cover"
+        data-webgl-media
       />
-      <div v-else class="case__placeholder" aria-hidden="true">
-        <span>{{ projectNumber(project.order) }}</span>
+      <div v-else class="case__placeholder" aria-hidden="true" data-webgl-media>
+        <span data-webgl-text="primary">{{ projectNumber(project.order) }}</span>
       </div>
     </div>
 

@@ -30,8 +30,10 @@ const number = computed(() => projectNumber(props.project.order))
           loading="lazy"
         />
         <div v-else class="card__placeholder" aria-hidden="true">
-          <span class="card__placeholder-number">{{ number }}</span>
-          <span class="card__placeholder-shape t-label">{{ project.particleShape }}</span>
+          <span class="card__placeholder-number" data-webgl-text="primary">{{ number }}</span>
+          <span class="card__placeholder-shape t-label" data-webgl-text="muted">
+            {{ project.particleShape }}
+          </span>
         </div>
       </div>
 

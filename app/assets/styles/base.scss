@@ -176,3 +176,9 @@ ol[role='list'] {
 [data-theme='dark'] .scramble.is-glitching::after {
   color: var(--accent);
 }
+
+// While WebGL draws the project media (webgl/effects/MediaPlanes.ts), the HTML copies are
+// made transparent but keep their place, links and accessible text
+html.webgl-media [data-webgl-media] {
+  opacity: 0;
+}

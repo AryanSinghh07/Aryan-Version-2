@@ -9,7 +9,7 @@ import {
   VignetteEffect,
 } from 'postprocessing'
 import { HalfFloatType, Vector2 } from 'three'
-import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import type { Camera, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
 import type { QualityTier } from '../config/quality'
 import { QUALITY, msaaSamples } from '../config/quality'
 import type { Palette } from '../core/Palette'
@@ -38,7 +38,9 @@ export class PostProcessing {
   constructor(
     private renderer: WebGLRenderer,
     private scene: Scene,
-    private camera: PerspectiveCamera
+    private camera: PerspectiveCamera,
+    /** Drawn on top of the main scene before the effects (the WebGL media planes) */
+    private overlay?: { scene: Scene; camera: Camera }
   ) {}
 
   /** Rebuilds the effect chain for a quality tier (fresh effects each time) */
@@ -70,6 +72,11 @@ export class PostProcessing {
       multisampling: msaaSamples(tier, pixelRatio),
     })
     composer.addPass(new RenderPass(this.scene, this.camera))
+    if (this.overlay) {
+      const overlayPass = new RenderPass(this.overlay.scene, this.overlay.camera)
+      overlayPass.clearPass.enabled = false // draw over the main scene, don't wipe it
+      composer.addPass(overlayPass)
+    }
     const main = [effects.bloom, effects.grade, effects.vignette, effects.grain].filter(
       (e) => e !== null
     )

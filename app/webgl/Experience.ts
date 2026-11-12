@@ -1,5 +1,5 @@
-import { Scene } from 'three'
-import type { Vector2, Vector3 } from 'three'
+import { Scene, Vector2 } from 'three'
+import type { Vector3 } from 'three'
 import type { Quality, Theme } from '~/stores/app'
 import { QUALITY, resolveQuality } from './config/quality'
 import type { QualityTier } from './config/quality'
@@ -15,6 +15,7 @@ import { Sizes } from './core/Sizes'
 import { Time } from './core/Time'
 import type { TickEvent } from './core/Time'
 import { Debug } from './debug/Debug'
+import { MediaPlanes } from './effects/MediaPlanes'
 import { PostProcessing } from './effects/PostProcessing'
 import { World } from './world/World'
 
@@ -69,6 +70,7 @@ export class Experience {
   resources: Resources
   pointer: Pointer
   palette: Palette
+  media: MediaPlanes
   post: PostProcessing
   world: World
   debug: Debug
@@ -79,6 +81,7 @@ export class Experience {
   /** What "Auto" quality means right now: starts at High, steps down if frames run slow */
   autoTier: QualityTier = 'high'
   private monitor = new PerformanceMonitor()
+  private mediaPointer = new Vector2()
   private lazyStarted = false
   private frame: FrameState
 
@@ -98,7 +101,14 @@ export class Experience {
     this.pointer = new Pointer()
     // Start in the theme the head script already applied, so nothing fades in from the wrong one
     this.palette = new Palette(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light')
-    this.post = new PostProcessing(this.renderer.instance, this.scene, this.camera.instance)
+    this.media = new MediaPlanes()
+    this.media.resize(this.sizes.width, this.sizes.height)
+    this.post = new PostProcessing(
+      this.renderer.instance,
+      this.scene,
+      this.camera.instance,
+      this.media
+    )
     this.world = new World(this.scene, this.resources, this.renderer.instance, this.camera.instance)
     this.debug = new Debug()
     void this.debug.init().then(() => this.setupDebug())
@@ -127,6 +137,7 @@ export class Experience {
       this.camera.resize()
       this.renderer.resize()
       this.post.resize(this.sizes.width, this.sizes.height, this.sizes.pixelRatio)
+      this.media.resize(this.sizes.width, this.sizes.height)
     })
     this.time.on('tick', this.update)
 
@@ -245,10 +256,21 @@ export class Experience {
 
     this.world.update(frame, this.palette, delta)
     this.post.update(this.palette, frame.reducedMotion)
+    this.mediaPointer.set(
+      ((this.pointer.ndc.x + 1) / 2) * this.sizes.width,
+      ((1 - this.pointer.ndc.y) / 2) * this.sizes.height
+    )
+    this.media.update(
+      this.palette,
+      elapsed,
+      delta,
+      this.pointer.active ? this.mediaPointer : null,
+      frame.reducedMotion
+    )
 
     this.debug.begin()
     if (this.post.enabled) this.post.render(delta)
-    else this.renderer.render()
+    else this.renderer.render(this.media)
     this.debug.end()
   }
 
@@ -259,6 +281,7 @@ export class Experience {
     this.pointer.dispose()
     this.world.dispose()
     this.post.dispose()
+    this.media.dispose()
     this.palette.dispose()
     this.resources.dispose()
     this.renderer.dispose()
