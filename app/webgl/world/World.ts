@@ -3,12 +3,11 @@ import { Fog, MathUtils, Vector2, Vector3 } from 'three'
 import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three'
 import type { QualityTier } from '../config/quality'
 import {
-  PAGE_CAMERA,
-  PAGE_LAYOUT,
   PAGE_LAYOUT_PORTRAIT,
   PAGE_SHAPE,
   SCENE_CAMERAS,
   layoutFor,
+  pageView,
 } from '../config/scenes'
 import type { Layout } from '../config/scenes'
 import type { Palette } from '../core/Palette'
@@ -70,9 +69,22 @@ export class World {
     this.ready = true
   }
 
-  /** The shape a page should show */
-  static shapeFor(state: Pick<FrameState, 'route' | 'scene' | 'heroScenes'>) {
-    if (state.route !== '/') return PAGE_SHAPE
+  /** True on the page that owns the current full-screen scenes (home hero, about story) */
+  static inScenes(state: Pick<FrameState, 'route' | 'scenesRoute' | 'heroScenes'>) {
+    return state.heroScenes.length > 0 && state.route === state.scenesRoute
+  }
+
+  /**
+   * The shape a page should show: the current scene's, a page's own (a case study's project
+   * shape, when the library has it), or the default constellation
+   */
+  static shapeFor(
+    state: Pick<FrameState, 'route' | 'scene' | 'heroScenes' | 'scenesRoute' | 'pageShape'>,
+    has: (name: string) => boolean = () => true
+  ) {
+    if (!World.inScenes(state)) {
+      return state.pageShape && has(state.pageShape) ? state.pageShape : PAGE_SHAPE
+    }
     return state.heroScenes[state.scene]?.shape ?? state.heroScenes[0]?.shape ?? FALLBACK_SHAPE
   }
 
@@ -98,7 +110,7 @@ export class World {
     if (state.particleCount !== particles.count) void particles.setCount(state.particleCount)
 
     // Shape: form the first one when the visitor enters, then follow scenes and pages
-    const shape = World.shapeFor(state)
+    const shape = World.shapeFor(state, (name) => this.shapes.has(name))
     if (state.entered) {
       if (!this.revealed) {
         this.revealed = true
@@ -109,15 +121,17 @@ export class World {
       }
     }
 
-    // Placement: opposite the hero text, fading and rising as the visitor scrolls past it
-    const onHome = state.route === '/'
+    // Placement: opposite the scene text, fading and rising as the visitor scrolls past the
+    // scenes; on other pages, where that page's view puts it
+    const inScenes = World.inScenes(state)
     const side = state.heroScenes[state.scene]?.side ?? 'center'
-    const target = onHome
+    const view = pageView(state.route)
+    const target = inScenes
       ? layoutFor(side, state.portrait)
       : state.portrait
         ? PAGE_LAYOUT_PORTRAIT
-        : PAGE_LAYOUT
-    const fade = onHome ? state.scrollFade : 0
+        : view.layout
+    const fade = inScenes ? state.scrollFade : 0
     const l = this.layout
     l.x = MathUtils.lerp(l.x, target.x, ease)
     l.y = MathUtils.lerp(l.y, target.y + fade * 2.2, ease)
@@ -133,8 +147,9 @@ export class World {
       points.rotation.x = Math.sin(state.elapsed * 0.17) * 0.06
     }
 
-    // Camera: one position per hero scene, a calm default elsewhere, leaning with the pointer
-    const cam = onHome ? SCENE_CAMERAS[state.scene % SCENE_CAMERAS.length]! : PAGE_CAMERA
+    // Camera: one position per scene, one per page elsewhere (so a page change moves the
+    // camera through the world), leaning with the pointer
+    const cam = inScenes ? SCENE_CAMERAS[state.scene % SCENE_CAMERAS.length]! : view.camera
     if (reduced) {
       this.parallax.x = this.parallax.y = 0
     } else {

@@ -28,6 +28,11 @@ export class ShapeLibrary {
     return points
   }
 
+  /** True when a shape is generated in code or declared as a model in config/sources.ts */
+  has(name: string) {
+    return name in GENERATORS || this.resources.declares(`shape:${name}`)
+  }
+
   /** Forget cached shapes (after a model finishes loading, or when the count changes) */
   clear() {
     this.cache.clear()

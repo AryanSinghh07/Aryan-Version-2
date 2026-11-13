@@ -29,6 +29,8 @@ export interface AppStateSource {
   route: string
   entered: boolean
   heroScenes: HeroSceneInfo[]
+  scenesRoute: string | null
+  pageShape: string | null
   /** Written back by the Experience, so the settings panel can say what "Auto" means */
   autoTier: QualityTier
   trackLoad: <T>(task: Promise<T>) => Promise<T>
@@ -41,6 +43,10 @@ export interface FrameState {
   route: string
   entered: boolean
   heroScenes: HeroSceneInfo[]
+  /** The page the scenes belong to (scenes apply only there) */
+  scenesRoute: string | null
+  /** A page's own particle shape (case studies) */
+  pageShape: string | null
   reducedMotion: boolean
   particleCount: number
   /** Seconds since start */
@@ -134,6 +140,8 @@ export class Experience {
       route: state.route,
       entered: false,
       heroScenes: state.heroScenes,
+      scenesRoute: state.scenesRoute,
+      pageShape: state.pageShape,
       reducedMotion: this.reducedMotionQuery.matches,
       particleCount: this.particleCount(),
       elapsed: 0,
@@ -170,11 +178,16 @@ export class Experience {
 
     // Eager assets, GPU detection, the particle shapes and a shader warm-up all count towards
     // the preloader
-    const firstShape = World.shapeFor({
-      route: state.route,
-      scene: 0,
-      heroScenes: state.heroScenes,
-    })
+    const firstShape = World.shapeFor(
+      {
+        route: state.route,
+        scene: 0,
+        heroScenes: state.heroScenes,
+        scenesRoute: state.scenesRoute,
+        pageShape: state.pageShape,
+      },
+      (name) => this.world.shapes.has(name)
+    )
     state.trackLoad(
       Promise.all([this.resources.loadEager(), tier])
         .then(() => this.world.init(this.particleCount(), firstShape))
@@ -282,6 +295,8 @@ export class Experience {
     frame.route = state.route
     frame.entered = state.entered
     frame.heroScenes = state.heroScenes
+    frame.scenesRoute = state.scenesRoute
+    frame.pageShape = state.pageShape
     frame.reducedMotion = this.reducedMotionQuery.matches
     if (state.theme !== this.palette.theme) this.palette.setTheme(state.theme, frame.reducedMotion)
     frame.elapsed = elapsed

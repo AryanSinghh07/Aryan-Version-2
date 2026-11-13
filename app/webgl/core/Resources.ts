@@ -50,6 +50,11 @@ export class Resources extends EventEmitter<{ loaded: { name: string; asset: Loa
     return Promise.all(this.sources.filter((s) => s.priority === 'lazy').map((s) => this.load(s)))
   }
 
+  /** True when a file with this name is listed in config/sources.ts (loaded or not) */
+  declares(name: string) {
+    return this.sources.some((s) => s.name === name)
+  }
+
   get<T extends LoadedAsset>(name: string) {
     return this.items.get(name) as T | undefined
   }

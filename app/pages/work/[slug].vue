@@ -15,6 +15,22 @@ if (!project.value) {
   throw createError({ statusCode: 404, statusMessage: 'Project not found', fatal: true })
 }
 
+// The 3D world shows this project's particle shape (when one exists for it).
+// The next page is set up while this one is still leaving, so only clear our own shape.
+const store = useAppStore()
+let ownShape: string | null = null
+watch(
+  project,
+  (p) => {
+    ownShape = p?.particleShape ?? null
+    store.pageShape = ownShape
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => {
+  if (store.pageShape === ownShape) store.pageShape = null
+})
+
 useSeoMeta({
   title: () => project.value?.title ?? 'Project',
   description: () => project.value?.summary,
