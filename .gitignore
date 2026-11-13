@@ -27,3 +27,6 @@ logs
 public/draco
 public/basis
 public/benchmarks
+
+# Local polishing notes (reference material, not part of the site)
+polishing_part_1/
