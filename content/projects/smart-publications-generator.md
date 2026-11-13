@@ -17,6 +17,10 @@ order: 5
 
 An NLP tool that helps faculty turn their publications into standardised summaries and citation details.
 
+## Problem
+
+Faculty retype the same publication details by hand for every CV, portfolio and grant application, often in a different citation format each time.
+
 ## Solution
 
 Faculty get publication summaries and one-click citation details ready for CVs, portfolios and grant applications, instead of formatting each one by hand.

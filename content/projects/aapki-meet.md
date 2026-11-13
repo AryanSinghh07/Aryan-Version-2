@@ -17,6 +17,10 @@ order: 6
 
 An online meeting platform for business meetings, college classes and team collaboration.
 
+## Problem
+
+Classes and teams need meetings that work straight from the browser, and the important points are easily lost once the call ends.
+
 ## Solution
 
 Real-time video over WebRTC, with Firebase and Node.js behind it, plus AI-powered meeting summaries.

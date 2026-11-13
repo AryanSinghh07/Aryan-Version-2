@@ -21,6 +21,10 @@ order: 4
 
 An end-to-end MERN platform connecting adopters, shelters and pet care services, with real-time listings and automated adoption workflows.
 
+## Problem
+
+Shelters juggle listings, adoption applications and health records across separate tools, and adopters have no single place to find a pet and everything it needs.
+
 ## Solution
 
 Shelters manage listings, adoption applications and pet health records in one place, while adopters browse pets and shop for pet care through the integrated store. The interface is animated with GSAP.

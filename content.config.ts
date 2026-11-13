@@ -107,7 +107,15 @@ export default defineContentConfig({
       type: 'data',
       source: 'about.json',
       schema: z.object({
-        scenes: z.array(z.object({ label: z.string(), headline: z.string(), text: z.string() })),
+        scenes: z.array(
+          z.object({
+            label: z.string(),
+            headline: z.string(),
+            text: z.string(),
+            side: z.enum(['left', 'right', 'center']).default('left'),
+            particleShape: z.string().default('constellation'),
+          })
+        ),
         approach: z.object({
           headline: z.string(),
           steps: z.array(z.object({ title: z.string(), text: z.string() })),

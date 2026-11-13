@@ -3,27 +3,37 @@
     {
       "label": "Who",
       "headline": "Hello — I'm *Aryan*",
-      "text": "Full-Stack Developer and AI/ML Engineer based in the Greater Delhi Area, studying BCA with an AI and ML specialization at Galgotias University."
+      "text": "Full-Stack Developer and AI/ML Engineer based in the Greater Delhi Area, studying BCA with an AI and ML specialization at Galgotias University.",
+      "side": "left",
+      "particleShape": "letter-a"
     },
     {
       "label": "Why",
       "headline": "Problems *first*",
-      "text": "From cattle classification for the Rashtriya Gokul Mission to mental-health platforms for students, I start from a real problem, not a tech demo."
+      "text": "From cattle classification for the Rashtriya Gokul Mission to mental-health platforms for students, I start from a real problem, not a tech demo.",
+      "side": "right",
+      "particleShape": "leaf"
     },
     {
       "label": "How",
       "headline": "Built to *ship*",
-      "text": "My work has been presented at government missions and industry events, which shaped how I approach every project: build to ship, not just to demo."
+      "text": "My work has been presented at government missions and industry events, which shaped how I approach every project: build to ship, not just to demo.",
+      "side": "left",
+      "particleShape": "neural-net"
     },
     {
       "label": "Proof",
       "headline": "On *stage*",
-      "text": "IEEE Code Astraa 2025 finalist, Smart India Hackathon 2024 and 2025, and a live presentation to 2,000+ stakeholders at UP International Trade Show 2024."
+      "text": "IEEE Code Astraa 2025 finalist, Smart India Hackathon 2024 and 2025, and a live presentation to 2,000+ stakeholders at UP International Trade Show 2024.",
+      "side": "right",
+      "particleShape": "constellation"
     },
     {
       "label": "Next",
       "headline": "What's *next*",
-      "text": "Currently seeking internship opportunities to build impactful products at scale, and open to freelance work."
+      "text": "Currently seeking internship opportunities to build impactful products at scale, and open to freelance work.",
+      "side": "center",
+      "particleShape": "chat-bubble"
     }
   ],
   "approach": {
