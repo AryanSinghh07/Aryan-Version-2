@@ -19,6 +19,7 @@ export default defineContentConfig({
         intro: z.string(),
         experience: z.string(),
         location: z.string(),
+        country: z.string(),
         timezone: z.string(),
         status: z.string(),
         email: z.string(),
@@ -26,6 +27,13 @@ export default defineContentConfig({
         resume: z.string(),
         socials: z.array(link),
         marquee: z.array(z.string()),
+        footer: z.object({
+          status: z.string(),
+          /** Three pieces; an arrow slides in before the second (use *word* for italic) */
+          headline: z.array(z.string()).length(3),
+          intro: z.string(),
+          credit: z.string(),
+        }),
         heroScenes: z.array(
           z.object({
             label: z.string(),

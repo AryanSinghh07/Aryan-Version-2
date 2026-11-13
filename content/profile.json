@@ -13,13 +13,21 @@
   "phone": "+91 84334 19387",
   "resume": "/Aryan_Singh_Resume.pdf",
   "socials": [
-    { "label": "GitHub", "handle": "@AryanSinghh07", "url": "https://github.com/AryanSinghh07" },
+    {
+      "label": "GitHub",
+      "handle": "@AryanSinghh07",
+      "url": "https://github.com/AryanSinghh07"
+    },
     {
       "label": "LinkedIn",
       "handle": "@thearyansingh07",
       "url": "https://www.linkedin.com/in/thearyansingh07"
     },
-    { "label": "X / Twitter", "handle": "@the_aryansingh_", "url": "https://x.com/the_aryansingh_" }
+    {
+      "label": "X / Twitter",
+      "handle": "@the_aryansingh_",
+      "url": "https://x.com/the_aryansingh_"
+    }
   ],
   "marquee": [
     "Full Stack",
@@ -77,10 +85,24 @@
     "funLine": "I train AI models that help real farmers, build chatbots that calm 2 AM anxiety, and craft web apps that feel alive. Slap my code on any problem and act surprised when it actually ships."
   },
   "stats": [
-    { "value": 7, "suffix": "+", "label": "Projects built" },
-    { "value": 3, "label": "Hackathons" },
-    { "value": 2000, "suffix": "+", "label": "Trade show audience" },
-    { "value": 5, "label": "Certifications" }
+    {
+      "value": 7,
+      "suffix": "+",
+      "label": "Projects built"
+    },
+    {
+      "value": 3,
+      "label": "Hackathons"
+    },
+    {
+      "value": 2000,
+      "suffix": "+",
+      "label": "Trade show audience"
+    },
+    {
+      "value": 5,
+      "label": "Certifications"
+    }
   ],
   "contact": {
     "headline": "Got an idea? *Let's build it*",
@@ -95,5 +117,12 @@
       "something else"
     ],
     "budgets": ["not set yet", "under $1k", "$1k – $5k", "$5k+"]
+  },
+  "country": "India",
+  "footer": {
+    "status": "Open to work",
+    "headline": ["Got an idea?", "*Let's*", "build it"],
+    "intro": "Open to internships, freelance and collaborations. Usually replies within 24 hours.",
+    "credit": "Built with Nuxt + Three.js"
   }
 }

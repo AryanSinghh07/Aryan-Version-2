@@ -31,6 +31,7 @@ export interface AppStateSource {
   heroScenes: HeroSceneInfo[]
   scenesRoute: string | null
   pageShape: string | null
+  nextPreview: { route: string; progress: number } | null
   /** Written back by the Experience, so the settings panel can say what "Auto" means */
   autoTier: QualityTier
   trackLoad: <T>(task: Promise<T>) => Promise<T>
@@ -47,6 +48,10 @@ export interface FrameState {
   scenesRoute: string | null
   /** A page's own particle shape (case studies) */
   pageShape: string | null
+  /** The footer reveal into the next page, 0..1 (the camera glides towards that page) */
+  nextPreview: { route: string; progress: number } | null
+  /** How much of the screen the footer's text currently covers, 0..1 (particles dim) */
+  footerCover: number
   reducedMotion: boolean
   particleCount: number
   /** Seconds since start */
@@ -142,6 +147,8 @@ export class Experience {
       heroScenes: state.heroScenes,
       scenesRoute: state.scenesRoute,
       pageShape: state.pageShape,
+      nextPreview: null,
+      footerCover: 0,
       reducedMotion: this.reducedMotionQuery.matches,
       particleCount: this.particleCount(),
       elapsed: 0,
@@ -201,6 +208,16 @@ export class Experience {
     this.state.autoTier = tier
     this.frame.particleCount = this.particleCount()
     this.currentQuality = null // re-applied on the next frame
+  }
+
+  /** Share of the screen covered by the footer's text block (not the reveal below it) */
+  private footerCover() {
+    const el = document.querySelector('.footer__inner')
+    if (!el) return 0
+    const r = el.getBoundingClientRect()
+    const h = this.sizes.height
+    const visible = Math.min(r.bottom, h) - Math.max(r.top, 0)
+    return Math.min(Math.max(visible / Math.max(h, 1), 0), 1)
   }
 
   private particleCount() {
@@ -297,6 +314,8 @@ export class Experience {
     frame.heroScenes = state.heroScenes
     frame.scenesRoute = state.scenesRoute
     frame.pageShape = state.pageShape
+    frame.nextPreview = state.nextPreview
+    frame.footerCover = this.footerCover()
     frame.reducedMotion = this.reducedMotionQuery.matches
     if (state.theme !== this.palette.theme) this.palette.setTheme(state.theme, frame.reducedMotion)
     frame.elapsed = elapsed

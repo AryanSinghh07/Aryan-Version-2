@@ -13,11 +13,14 @@ import type { Layout } from '../config/scenes'
 import type { Palette } from '../core/Palette'
 import type { Resources } from '../core/Resources'
 import type { FrameState } from '../Experience'
+
 import { FALLBACK_SHAPE, ShapeLibrary } from '../shapes/ShapeLibrary'
 import { Background } from './Background'
 import { Environment } from './Environment'
 import { Fragments } from './Fragments'
 import { Particles } from './Particles'
+
+const blend = (a: number, b: number, t: number) => a + (b - a) * t
 
 /** How far the camera leans with the pointer, in world units */
 const PARALLAX = { x: 0.45, y: 0.3 }
@@ -136,7 +139,8 @@ export class World {
     l.x = MathUtils.lerp(l.x, target.x, ease)
     l.y = MathUtils.lerp(l.y, target.y + fade * 2.2, ease)
     l.scale = MathUtils.lerp(l.scale, target.scale, ease)
-    const visible = state.entered ? 1 : 0.6
+    // Footer text on screen: dim the particles so links and the email stay easy to read
+    const visible = (state.entered ? 1 : 0.6) * (1 - Math.min(state.footerCover * 1.4, 1) * 0.65)
     l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.75) * visible, ease)
 
     const { points } = particles
@@ -149,7 +153,15 @@ export class World {
 
     // Camera: one position per scene, one per page elsewhere (so a page change moves the
     // camera through the world), leaning with the pointer
-    const cam = inScenes ? SCENE_CAMERAS[state.scene % SCENE_CAMERAS.length]! : view.camera
+    let cam = inScenes ? SCENE_CAMERAS[state.scene % SCENE_CAMERAS.length]! : view.camera
+    // The footer reveal is filling: glide towards the next page's view, so when it opens
+    // the camera is already there
+    const preview = state.nextPreview
+    if (preview && preview.progress > 0 && !reduced) {
+      const to = pageView(preview.route).camera
+      const t = preview.progress
+      cam = [blend(cam[0], to[0], t), blend(cam[1], to[1], t), blend(cam[2], to[2], t)]
+    }
     if (reduced) {
       this.parallax.x = this.parallax.y = 0
     } else {

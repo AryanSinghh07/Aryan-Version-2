@@ -67,6 +67,8 @@ export const useAppStore = defineStore('app', () => {
   const pageShape = ref<string | null>(null)
   /** A page transition is running (the old page is leaving or the new one entering) */
   const navigating = ref(false)
+  /** The footer reveal is filling: the 3D world leans towards that page's view */
+  const nextPreview = ref<{ route: string; progress: number } | null>(null)
   /** A full-screen overlay (mobile menu) is open: page input and scrolling pause */
   const overlayOpen = ref(false)
   /** What "Auto" quality currently means on this device (set by the WebGL Experience) */
@@ -147,6 +149,7 @@ export const useAppStore = defineStore('app', () => {
     scenesRoute,
     pageShape,
     navigating,
+    nextPreview,
     trackLoad,
     applyTheme,
     setTheme,
