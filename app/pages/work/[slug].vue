@@ -31,7 +31,7 @@ onBeforeUnmount(() => {
   if (store.pageShape === ownShape) store.pageShape = null
 })
 
-useSeoMeta({
+usePageSeo({
   title: () => project.value?.title ?? 'Project',
   description: () => project.value?.summary,
 })

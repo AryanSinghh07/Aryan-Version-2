@@ -34,6 +34,7 @@
   "devDependencies": {
     "@nuxt/eslint": "1.17.0",
     "@types/howler": "2.2.13",
+    "@types/node": "26.6.6",
     "@types/three": "0.187.0",
     "eslint": "10.14.0",
     "lil-gui": "0.21.0",

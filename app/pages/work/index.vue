@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useSeoMeta({
+usePageSeo({
   title: 'Work',
   description:
     'All projects by Aryan Singh: computer vision for farmers, a CBT chatbot for students, cattle classification for the Rashtriya Gokul Mission and more.',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useSeoMeta({
+usePageSeo({
   title: 'Contact',
   description:
     'Hire Aryan Singh for internships, freelance web apps and AI/ML projects. Open to work, based in the Greater Delhi Area (IST).',

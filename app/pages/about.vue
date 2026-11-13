@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useSeoMeta({
+usePageSeo({
   title: 'About',
   description:
     'About Aryan Singh: BCA (AI and ML) at Galgotias University, Smart India Hackathon and IEEE Code Astraa finalist, building AI that ships.',

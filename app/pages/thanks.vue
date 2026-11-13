@@ -1,6 +1,10 @@
 <script setup lang="ts">
 // Shown after the contact form is sent without JavaScript (Netlify redirects here)
-useSeoMeta({ title: 'Message sent', robots: 'noindex' })
+usePageSeo({
+  title: 'Message sent',
+  description: 'Your message to Aryan Singh is on its way.',
+  noindex: true,
+})
 </script>
 
 <template>

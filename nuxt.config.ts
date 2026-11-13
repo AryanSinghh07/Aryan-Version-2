@@ -1,4 +1,17 @@
+import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import glsl from 'vite-plugin-glsl'
+
+// The site's public address, for canonical links, social cards and the sitemap. Netlify sets
+// URL during its builds; NUXT_PUBLIC_SITE_URL overrides it (for example a custom domain).
+const siteUrl = (
+  process.env.NUXT_PUBLIC_SITE_URL ||
+  process.env.URL ||
+  'https://aryansingh7.netlify.app'
+).replace(/\/$/, '')
+
+// Pages kept out of search results (they also set robots: noindex)
+const NOT_INDEXED = ['/thanks', '/styleguide']
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -80,14 +93,46 @@ export default defineNuxtConfig({
     strict: true,
   },
 
+  runtimeConfig: {
+    public: { siteUrl },
+  },
+
   hooks: {
+    // sitemap.xml and robots.txt, written after prerendering from the pages that were built
+    'nitro:init'(nitro) {
+      const pages = new Set<string>()
+      nitro.hooks.hook('prerender:route', (route) => {
+        const html = route.contentType?.includes('text/html')
+        const path = route.route.replace(/(.)\/$/, '$1')
+        if (html && !route.error && !path.includes('.') && !NOT_INDEXED.includes(path)) {
+          pages.add(path)
+        }
+      })
+      nitro.hooks.hook('prerender:done', async () => {
+        const dir = nitro.options.output.publicDir
+        const urls = [...pages]
+          .sort()
+          .map((path) => `  <url><loc>${siteUrl}${path === '/' ? '/' : path}</loc></url>`)
+        const sitemap = [
+          '<?xml version="1.0" encoding="UTF-8"?>',
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+          ...urls,
+          '</urlset>',
+          '',
+        ]
+        await writeFile(join(dir, 'sitemap.xml'), sitemap.join('\n'))
+        const robots = ['User-agent: *', 'Allow: /', '', `Sitemap: ${siteUrl}/sitemap.xml`, '']
+        await writeFile(join(dir, 'robots.txt'), robots.join('\n'))
+      })
+    },
     // three.js references its own copies of the Draco and Basis decoders, so the bundler
     // emits them and Nuxt would preload them on every page (~190 KB gzip of unused JS plus
     // the .wasm files). The loaders use /draco/ and /basis/ instead, fetched only when a
     // compressed model or texture actually loads, so never preload the bundled copies.
+    // Howler is likewise only needed once a visitor turns sound on (webgl/audio/Sound.ts).
     'build:manifest'(manifest) {
       for (const [key, chunk] of Object.entries(manifest)) {
-        if (/draco|basis/i.test(key) || /draco|basis/i.test(chunk.file)) {
+        if (/draco|basis|howler/i.test(key) || /draco|basis|howler/i.test(chunk.file)) {
           chunk.preload = false
           chunk.prefetch = false
         }
