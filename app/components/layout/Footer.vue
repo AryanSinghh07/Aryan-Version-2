@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Site footer. The "Keep scrolling" next-page transition is added in Phase 10.
+// Site footer, ending with the "Keep scrolling" link to the next page.
 const { data: profile } = await useProfile()
 
 const pages = [
@@ -56,18 +56,26 @@ const pages = [
         <span>{{ profile.role }}</span>
       </div>
     </div>
+    <LayoutNextPage />
   </footer>
 </template>
 
 <style scoped lang="scss">
 .footer {
   border-top: 1px solid var(--border);
-  padding-block: 5rem 2rem;
+  padding-top: 5rem;
+  transition: opacity 0.3s ease;
+
+  // Hidden while pages swap, so it never jumps up into the empty space between them
+  &.is-navigating {
+    opacity: 0;
+  }
 }
 
 .footer__inner {
   display: grid;
   gap: 4rem;
+  padding-bottom: 2rem;
 }
 
 .footer__grid {
