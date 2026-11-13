@@ -10,7 +10,7 @@ usePageSeo({
 <template>
   <div class="thanks page-top container">
     <p class="t-label thanks__label">Message sent</p>
-    <h1 class="t-hero"><UiAccentText text="Thank *you*" /></h1>
+    <h1 v-reveal class="t-hero"><UiAccentText text="Thank *you*" /></h1>
     <p class="thanks__body">Your message is on its way. I usually reply within a day or two.</p>
     <UiGlassButton to="/" variant="primary">Back to the home page</UiGlassButton>
   </div>

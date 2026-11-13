@@ -83,7 +83,7 @@ onMounted(() => {
   <div class="contact-form">
     <div v-if="status === 'sent'" class="form__done" role="status">
       <p class="t-label form__done-label">Message sent</p>
-      <h2 ref="successHeading" tabindex="-1" class="t-h2">
+      <h2 ref="successHeading" v-reveal tabindex="-1" class="t-h2">
         <UiAccentText text="Thank *you*" />
       </h2>
       <p>I’ll reply to {{ values.email }} soon, usually within a day or two.</p>

@@ -65,16 +65,34 @@ function transition(from: number, to: number, direction: 1 | -1) {
   const outLines = lines(outgoing)
   const outMeta = metas(outgoing)
 
-  // About 1.3s in total: the incoming scene starts before the outgoing one has fully left
+  // About 1.3s in total: the incoming scene starts before the outgoing one has fully left.
+  // Lines leave blurring and leaning in the direction of travel, and arrive the same way,
+  // sharpening as they settle (a lighter take on text smearing in a 3D canvas).
+  const lean = 7 * direction
   return gsap
     .timeline()
-    .to(outLines, { yPercent: -110 * direction, duration: 0.5, stagger: 0.03, ease: 'power3.in' })
+    .to(outLines, {
+      yPercent: -110 * direction,
+      skewY: -lean,
+      filter: 'blur(6px)',
+      duration: 0.5,
+      stagger: 0.03,
+      ease: 'power3.in',
+    })
     .to(outMeta, { autoAlpha: 0, y: -16 * direction, duration: 0.35, ease: 'power2.in' }, 0)
     .set(incoming, { autoAlpha: 1 }, 0.45)
     .fromTo(
       lines(incoming),
-      { yPercent: 110 * direction },
-      { yPercent: 0, duration: 0.8, stagger: 0.05, ease: 'power4.out' },
+      { yPercent: 110 * direction, skewY: lean, filter: 'blur(6px)' },
+      {
+        yPercent: 0,
+        skewY: 0,
+        filter: 'blur(0px)',
+        duration: 0.8,
+        stagger: 0.05,
+        ease: 'power4.out',
+        clearProps: 'filter,transform',
+      },
       0.45
     )
     .fromTo(
@@ -84,7 +102,7 @@ function transition(from: number, to: number, direction: 1 | -1) {
       0.55
     )
     .set(outgoing, { autoAlpha: 0 }, 0.6)
-    .set([...outLines, ...outMeta], { clearProps: 'transform,opacity,visibility' }, 0.6)
+    .set([...outLines, ...outMeta], { clearProps: 'transform,opacity,visibility,filter' }, 0.6)
 }
 
 const { current, locked, goTo, start, enter, release } = useScenes({
