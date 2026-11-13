@@ -61,7 +61,8 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: ['/'],
+      // /thanks is only reached by posting the contact form without JavaScript
+      routes: ['/', '/thanks'],
     },
   },
 
