@@ -141,7 +141,7 @@ export class World {
     l.scale = MathUtils.lerp(l.scale, target.scale, ease)
     // Footer text on screen: dim the particles so links and the email stay easy to read
     const visible = (state.entered ? 1 : 0.6) * (1 - Math.min(state.footerCover * 1.4, 1) * 0.65)
-    l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.75) * visible, ease)
+    l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.9) * visible, ease)
 
     const { points } = particles
     points.position.set(l.x, l.y, 0)

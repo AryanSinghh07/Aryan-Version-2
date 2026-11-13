@@ -124,5 +124,9 @@
     "headline": ["Got an idea?", "*Let's*", "build it"],
     "intro": "Open to internships, freelance and collaborations. Usually replies within 24 hours.",
     "credit": "Built with Nuxt + Three.js"
+  },
+  "work": {
+    "heading": ["Things", "*I've*", "built"],
+    "subtitle": "Seven projects across computer vision, NLP and full-stack products, each one built around a real problem and shipped."
   }
 }

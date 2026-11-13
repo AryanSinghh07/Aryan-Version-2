@@ -26,7 +26,13 @@ interface MediaItem {
   labelSize: string
   image: Texture | null
   hover: number
+  /** When the pointer last entered the plane (seconds), so each hover starts a new ripple */
+  rippleStart: number
+  wasHovered: boolean
 }
+
+/** Height of the top and bottom screen bands where cards glitch while scrolling */
+const EDGE_ZONE = 0.16
 
 /**
  * Project images and placeholders, redrawn in WebGL so they can bend and glitch with the
@@ -49,6 +55,8 @@ export class MediaPlanes {
   private dummyMap: Texture
   private scrollY = 0
   private velocity = 0
+  private lastPointer = new Vector2(-1, -1)
+  private pointerSpeed = 0
 
   constructor() {
     const pixel = document.createElement('canvas')
@@ -92,7 +100,18 @@ export class MediaPlanes {
     this.velocity += (raw - this.velocity) * Math.min(delta * 8, 1)
 
     const bendPx = reducedMotion ? 0 : Math.max(-60, Math.min(60, -this.velocity * 0.012))
-    const glitch = reducedMotion ? 0 : smoothstep(900, 3200, Math.abs(this.velocity))
+    // Only shows inside the edge bands, so it can start at gentler speeds
+    const glitch = reducedMotion ? 0 : smoothstep(300, 2600, Math.abs(this.velocity))
+
+    // Pointer speed (screen widths per second, eased) makes ripples stronger
+    if (pointer && this.lastPointer.x >= 0 && delta > 0) {
+      const speed = pointer.distanceTo(this.lastPointer) / delta / Math.max(window.innerWidth, 1)
+      this.pointerSpeed += (Math.min(speed, 1) - this.pointerSpeed) * Math.min(delta * 6, 1)
+    } else {
+      this.pointerSpeed *= 0.9
+    }
+    if (pointer) this.lastPointer.copy(pointer)
+    else this.lastPointer.set(-1, -1)
     const vw = window.innerWidth
     const vh = window.innerHeight
     const { colors } = palette
@@ -123,11 +142,23 @@ export class MediaPlanes {
         pointer.y <= r.bottom
       item.hover += ((hovered ? 1 : 0) - item.hover) * Math.min(delta * 6, 1)
       u.uHover!.value = item.hover
+      if (hovered && !item.wasHovered) item.rippleStart = elapsed
+      item.wasHovered = hovered
+      u.uRippleTime!.value = elapsed - item.rippleStart
+      if (pointer && hovered) {
+        ;(u.uPointer!.value as Vector2).set(
+          (pointer.x - r.left) / Math.max(r.width, 1),
+          1 - (pointer.y - r.top) / Math.max(r.height, 1)
+        )
+      }
+      u.uPointerSpeed!.value = this.pointerSpeed
+      u.uViewportHeight!.value = vh
 
       setVec3(u.uSurface!.value as Vector3, colors.surface)
       setVec3(u.uLavender!.value as Vector3, colors.lavender)
       setVec3(u.uPrimary!.value as Vector3, colors.particleA)
       setVec3(u.uMuted!.value as Vector3, colors.muted)
+      setVec3(u.uAccent!.value as Vector3, colors.spark)
 
       // Redraw the placeholder text when the box size changes (or fonts arrive)
       if (!item.image) {
@@ -193,13 +224,28 @@ export class MediaPlanes {
         uLavender: { value: new Vector3() },
         uPrimary: { value: new Vector3() },
         uMuted: { value: new Vector3() },
+        uAccent: { value: new Vector3() },
+        uPointer: { value: new Vector2(0.5, 0.5) },
+        uRippleTime: { value: 0 },
+        uPointerSpeed: { value: 0 },
+        uViewportHeight: { value: window.innerHeight },
+        uEdgeZone: { value: EDGE_ZONE },
       },
     })
     const mesh = new Mesh(this.geometry, material)
     mesh.frustumCulled = false
     mesh.visible = false
     this.scene.add(mesh)
-    const item: MediaItem = { el, mesh, label: null, labelSize: '', image: null, hover: 0 }
+    const item: MediaItem = {
+      el,
+      mesh,
+      label: null,
+      labelSize: '',
+      image: null,
+      hover: 0,
+      rippleStart: 0,
+      wasHovered: false,
+    }
 
     const img = el instanceof HTMLImageElement ? el : el.querySelector('img')
     if (img) {

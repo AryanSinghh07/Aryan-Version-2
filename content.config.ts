@@ -27,6 +27,11 @@ export default defineContentConfig({
         resume: z.string(),
         socials: z.array(link),
         marquee: z.array(z.string()),
+        work: z.object({
+          /** Three heading pieces; an arrow marquee sits before the last (use *word* for italic) */
+          heading: z.array(z.string()).length(3),
+          subtitle: z.string(),
+        }),
         footer: z.object({
           status: z.string(),
           /** Three pieces; an arrow slides in before the second (use *word* for italic) */
