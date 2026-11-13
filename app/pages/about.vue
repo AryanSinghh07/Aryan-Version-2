@@ -11,29 +11,8 @@ const { data: profile } = await useProfile()
 
 <template>
   <div v-if="about && profile" class="about-page">
-    <!-- Five story scenes; Phase 10 turns them into full-screen scenes like the home hero -->
-    <section
-      v-for="(scene, i) in about.scenes"
-      :key="scene.label"
-      class="story container"
-      :class="{ 'page-top': i === 0 }"
-      :aria-labelledby="`story-${i}`"
-    >
-      <div class="story__meta">
-        <UiTag variant="outline">{{ scene.label }}</UiTag>
-        <span class="t-label t-muted">
-          [{{ projectNumber(i + 1) }}/{{ projectNumber(about.scenes.length) }}]
-        </span>
-      </div>
-      <component
-        :is="i === 0 ? 'h1' : 'h2'"
-        :id="`story-${i}`"
-        :class="i === 0 ? 't-hero' : 't-h2'"
-      >
-        <UiAccentText :text="scene.headline" />
-      </component>
-      <p class="story__text">{{ scene.text }}</p>
-    </section>
+    <!-- Five full-screen story scenes, like the home hero (stacked without JS or motion) -->
+    <ScenesSceneStack :scenes="about.scenes" label="About" />
 
     <SectionsBackground :index="1" :teaser="false" />
 
@@ -75,25 +54,6 @@ const { data: profile } = await useProfile()
 </template>
 
 <style scoped lang="scss">
-.story {
-  display: grid;
-  gap: 1.5rem;
-  align-content: center;
-  min-height: 80svh;
-  padding-block: 5rem;
-}
-
-.story__meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.story__text {
-  max-width: 36rem;
-  font-size: 1.125rem;
-}
-
 .approach {
   display: grid;
   gap: 3rem 4rem;

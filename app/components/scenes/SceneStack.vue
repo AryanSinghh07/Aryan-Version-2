@@ -3,19 +3,44 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SplitText } from 'gsap/SplitText'
 
-// Five full-screen hero scenes, switched by wheel, swipe or arrow keys while page scroll is
-// locked. Past the last scene the page scrolls normally.
+import type { TextSide } from '~/webgl/config/scenes'
+
+export interface SceneContent {
+  label: string
+  headline: string
+  text: string
+  /** Defaults: left, constellation */
+  side?: TextSide
+  particleShape?: string
+}
+
+// Full-screen scenes (home hero, about story), switched by wheel, swipe or arrow keys while
+// page scroll is locked. Past the last scene the page scrolls normally.
 // Without JavaScript, or with reduced motion, the scenes stay stacked and scroll like a page.
-const { data: profile } = await useProfile()
+const props = defineProps<{
+  scenes: SceneContent[]
+  /** Small line under the first scene */
+  intro?: string
+  /** Names the scene set for screen readers ("Hero", "About") */
+  label: string
+}>()
 const store = useAppStore()
 const lenis = useLenis()
+const route = useRoute()
 
-const scenes = computed(() => profile.value?.heroScenes ?? [])
+const scenes = computed(() =>
+  props.scenes.map((s) => ({
+    ...s,
+    side: s.side ?? 'left',
+    particleShape: s.particleShape ?? 'constellation',
+  }))
+)
 const total = computed(() => scenes.value.length)
 
-// Tell the WebGL world which particle shape each scene shows (set during server render too,
-// so the shapes are ready before the page finishes loading)
+// Tell the WebGL world which particle shape each scene shows on this page (set during server
+// render too, so the shapes are ready before the page finishes loading)
 store.heroScenes = scenes.value.map((s) => ({ shape: s.particleShape, side: s.side }))
+store.scenesRoute = normalizePath(route.path)
 const plain = (text: string) => text.replace(/\*/g, '')
 
 const root = ref<HTMLElement | null>(null)
@@ -23,10 +48,11 @@ const root = ref<HTMLElement | null>(null)
 const sceneEls = shallowRef<HTMLElement[]>([])
 const interactive = ref(false)
 let splits: SplitText[] = []
-let intro: gsap.core.Timeline | null = null
+let introTimeline: gsap.core.Timeline | null = null
 let disposed = false
 let stopEnteredWatch: (() => void) | undefined
 
+const nav = () => root.value?.querySelector<HTMLElement>('.hero__nav') ?? []
 const lines = (el?: HTMLElement) => (el ? [...el.querySelectorAll<HTMLElement>('.hero-line')] : [])
 const metas = (el?: HTMLElement) =>
   el ? [...el.querySelectorAll<HTMLElement>('.scene__meta, .scene__intro')] : []
@@ -73,7 +99,7 @@ const { current, locked, goTo, start, enter, release } = useScenes({
 function playIntro() {
   const first = sceneEls.value[0]
   if (!first) return
-  intro = gsap
+  introTimeline = gsap
     .timeline()
     .fromTo(
       lines(first),
@@ -81,7 +107,7 @@ function playIntro() {
       { yPercent: 0, duration: 1.2, stagger: 0.08, ease: 'power4.out' }
     )
     .fromTo(metas(first), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.8 }, '<0.3')
-    .fromTo('.hero__nav', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, '<0.2')
+    .fromTo(nav(), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, '<0.2')
 }
 
 // True on the first page load; false when arriving through an in-site link or Back/Forward
@@ -102,7 +128,7 @@ function begin() {
     gsap.set(sceneEls.value, { autoAlpha: 0 })
     gsap.set(sceneEls.value[last] ?? [], { autoAlpha: 1 })
     gsap.set(lines(sceneEls.value[0]), { clearProps: 'transform' })
-    gsap.set([...metas(sceneEls.value[0]), '.hero__nav'], { autoAlpha: 1 })
+    gsap.set([...metas(sceneEls.value[0]), nav()].flat(), { autoAlpha: 1 })
     goToWithoutAnimation(last)
     start(false)
     return
@@ -148,7 +174,7 @@ onMounted(async () => {
   gsap.set(sceneEls.value, { autoAlpha: 0 })
   gsap.set(sceneEls.value[0] ?? [], { autoAlpha: 1 })
   gsap.set(lines(sceneEls.value[0]), { yPercent: 110 })
-  gsap.set([...metas(sceneEls.value[0]), '.hero__nav'], { autoAlpha: 0 })
+  gsap.set([...metas(sceneEls.value[0]), nav()].flat(), { autoAlpha: 0 })
 
   if (store.entered) begin()
   else {
@@ -166,13 +192,13 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   disposed = true
   stopEnteredWatch?.()
-  intro?.kill()
+  introTimeline?.kill()
   splits.forEach((s) => s.revert())
 })
 </script>
 
 <template>
-  <div v-if="profile" ref="root" class="hero" :class="{ 'is-interactive': interactive }">
+  <div v-if="total" ref="root" class="hero" :class="{ 'is-interactive': interactive }">
     <section
       v-for="(scene, i) in scenes"
       :key="scene.label"
@@ -196,13 +222,11 @@ onBeforeUnmount(() => {
 
         <p class="scene__text scene__split">{{ scene.text }}</p>
 
-        <p v-if="i === 0" class="scene__intro t-label t-muted">
-          {{ profile.intro }} {{ profile.role }}
-        </p>
+        <p v-if="i === 0 && intro" class="scene__intro t-label t-muted">{{ intro }}</p>
       </div>
     </section>
 
-    <nav v-if="interactive" class="hero__nav container" aria-label="Hero scenes">
+    <nav v-if="interactive" class="hero__nav container" :aria-label="`${label} scenes`">
       <ol role="list" class="hero__dots">
         <li v-for="(scene, i) in scenes" :key="scene.label">
           <button
@@ -221,7 +245,8 @@ onBeforeUnmount(() => {
     </nav>
 
     <p v-if="interactive" class="sr-only" aria-live="polite">
-      Scene {{ current + 1 }} of {{ total }}: {{ plain(scenes[current]?.headline ?? '') }}
+      Scene {{ current + 1 }} of {{ total }}:
+      {{ plain(scenes[current]?.headline ?? '') }}
     </p>
   </div>
 </template>

@@ -57,8 +57,16 @@ export const useAppStore = defineStore('app', () => {
   const entered = ref(false)
   /** Home hero has page scroll locked while scenes play */
   const heroLocked = ref(false)
-  /** Particle shape and text side for each hero scene (from content, read by the WebGL world) */
+  /**
+   * Particle shape and text side for each full-screen scene (home hero, about story), from
+   * content, read by the WebGL world. Only applies on scenesRoute, the page that set them.
+   */
   const heroScenes = ref<HeroSceneInfo[]>([])
+  const scenesRoute = ref<string | null>(null)
+  /** A page's own particle shape (a case study's project shape), or null for the default */
+  const pageShape = ref<string | null>(null)
+  /** A page transition is running (the old page is leaving or the new one entering) */
+  const navigating = ref(false)
   /** A full-screen overlay (mobile menu) is open: page input and scrolling pause */
   const overlayOpen = ref(false)
   /** What "Auto" quality currently means on this device (set by the WebGL Experience) */
@@ -136,6 +144,9 @@ export const useAppStore = defineStore('app', () => {
     autoTier,
     webgl,
     heroScenes,
+    scenesRoute,
+    pageShape,
+    navigating,
     trackLoad,
     applyTheme,
     setTheme,
