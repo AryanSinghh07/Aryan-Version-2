@@ -165,7 +165,9 @@ onMounted(async () => {
       type: 'lines',
       mask: 'lines',
       linesClass: 'hero-line',
-      aria: 'auto',
+      // Lines only: the words stay whole text inside each line, so screen readers read it as
+      // normal. ('auto' would add aria-label, which isn't allowed on paragraphs.)
+      aria: 'none',
       autoSplit: true,
     })
   )

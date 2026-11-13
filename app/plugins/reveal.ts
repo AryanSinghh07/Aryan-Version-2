@@ -23,7 +23,9 @@ export default defineNuxtPlugin({
         const split = SplitText.create(el, {
           type: 'lines',
           mask: 'lines',
-          aria: 'auto',
+          // Lines only: the words stay whole text inside each line, so screen readers read it as
+          // normal. ('auto' would add aria-label, which isn't allowed on paragraphs.)
+          aria: 'none',
           autoSplit: true,
           // Re-split on resize and font load; the returned animation is cleaned up each time
           onSplit: (self) =>

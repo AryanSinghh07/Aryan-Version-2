@@ -19,9 +19,10 @@ function closeMenu() {
 <template>
   <header class="header">
     <div class="header__inner container">
-      <NuxtLink to="/" class="header__logo t-label" aria-label="Aryan Singh, home">
+      <NuxtLink to="/" class="header__logo t-label">
         <span class="header__mark" aria-hidden="true">AS</span>
         <span class="header__name">{{ profile?.name }}</span>
+        <span class="sr-only">, home</span>
       </NuxtLink>
 
       <nav class="header__nav" aria-label="Main">
@@ -148,9 +149,15 @@ function closeMenu() {
   }
 }
 
+// Very small screens: the name is hidden visually but still read out as the link's name
 @media (max-width: 380px) {
   .header__name {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 }
 </style>
