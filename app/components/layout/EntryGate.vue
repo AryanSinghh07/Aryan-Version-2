@@ -95,7 +95,7 @@ function trapFocus(e: KeyboardEvent) {
       <p class="t-label t-muted">Portfolio © 2026 · Best with sound</p>
       <div class="gate__actions">
         <UiGlassButton variant="primary" @click="enter(true)"> Enter with sound </UiGlassButton>
-        <UiGlassButton @click="enter(false)">Enter without sound</UiGlassButton>
+        <UiGlassButton variant="outline" @click="enter(false)">Enter without sound</UiGlassButton>
       </div>
     </div>
   </div>

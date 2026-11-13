@@ -71,7 +71,9 @@ usePageSeo({
           :stack="project.stack"
         />
         <div class="case__links">
-          <UiGlassButton v-if="project.github" :href="project.github">GitHub ↗</UiGlassButton>
+          <UiGlassButton v-if="project.github" :href="project.github" variant="outline">
+            GitHub ↗
+          </UiGlassButton>
           <UiGlassButton v-if="project.live" :href="project.live" variant="primary">
             Live site ↗
           </UiGlassButton>
@@ -113,7 +115,7 @@ usePageSeo({
 
     <NuxtLink v-if="next" :to="`/work/${next.slug}`" class="case__next container">
       <span class="t-label t-muted">Next project</span>
-      <span class="t-h2">
+      <span v-reveal class="t-h2">
         <span class="case__arrow" aria-hidden="true">↪</span>
         {{ next.title }}
       </span>

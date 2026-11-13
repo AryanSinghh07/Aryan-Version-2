@@ -28,7 +28,7 @@ const work = () => clearError({ redirect: '/work' })
   <LayoutHeader />
   <main id="main" tabindex="-1" class="error page-top container">
     <p class="t-label t-muted">[{{ error.statusCode }}]</p>
-    <h1 class="t-hero">
+    <h1 v-reveal class="t-hero">
       <template v-if="notFound">Lost in <em>space</em></template>
       <template v-else>Something <em>broke</em></template>
     </h1>
@@ -41,7 +41,7 @@ const work = () => clearError({ redirect: '/work' })
     </p>
     <div class="error__actions">
       <UiGlassButton variant="primary" @click="home">Go home</UiGlassButton>
-      <UiGlassButton @click="work">See my work</UiGlassButton>
+      <UiGlassButton variant="outline" @click="work">See my work</UiGlassButton>
     </div>
   </main>
   <LayoutFooter />

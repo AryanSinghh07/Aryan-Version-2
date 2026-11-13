@@ -63,8 +63,12 @@ const toggles = reactive({ light: true, dark: false })
 
         <div class="row">
           <UiGlassButton>Let's talk</UiGlassButton>
-          <UiGlassButton variant="primary">Start project</UiGlassButton>
-          <UiGlassButton :href="githubUrl">GitHub ↗</UiGlassButton>
+          <UiGlassButton variant="secondary">View all work</UiGlassButton>
+          <UiGlassButton variant="outline" :href="githubUrl">GitHub ↗</UiGlassButton>
+          <UiGlassButton variant="ghost">Ghost</UiGlassButton>
+          <UiGlassButton variant="ghost-primary">Ghost primary</UiGlassButton>
+          <UiGlassButton variant="danger">Delete</UiGlassButton>
+          <UiGlassButton variant="ghost-danger">Remove</UiGlassButton>
           <UiGlassButton disabled>Disabled</UiGlassButton>
         </div>
 

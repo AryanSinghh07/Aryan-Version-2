@@ -15,7 +15,7 @@ const total = computed(() => projectNumber(projects.value?.length ?? 0))
     <WorkProjectGrid :projects="featured" />
 
     <div class="work__more">
-      <UiGlassButton to="/work">View all work ({{ total }})</UiGlassButton>
+      <UiGlassButton to="/work" variant="secondary">View all work ({{ total }})</UiGlassButton>
     </div>
   </section>
 </template>
