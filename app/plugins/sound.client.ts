@@ -65,11 +65,17 @@ export default defineNuxtPlugin({
       true
     )
 
-    // Whoosh as the hero moves between scenes
+    // Whoosh as full-screen scenes change (home hero, about story) and as pages change
     watch(
       () => store.scene,
       () => {
-        if (store.entered && store.route === '/') sound.play('transition')
+        if (store.entered && store.route === store.scenesRoute) sound.play('transition')
+      }
+    )
+    watch(
+      () => store.route,
+      () => {
+        if (store.entered) sound.play('transition')
       }
     )
 

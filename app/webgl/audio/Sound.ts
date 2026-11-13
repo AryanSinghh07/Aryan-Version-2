@@ -24,6 +24,8 @@ const FADE_OUT = 700
 const FOCUS_FADE = 0.08
 /** Hover sounds closer together than this are skipped, ms */
 const HOVER_GAP = 70
+/** One whoosh per change (a page change can also reset the scene), ms */
+const TRANSITION_GAP = 500
 
 /**
  * Howler wrapper: an ambient loop that fades in when sound is on, sprite sounds for hover,
@@ -43,6 +45,7 @@ export class Sound {
   private chime: Howl | null = null
   private focused = true
   private lastHover = 0
+  private lastTransition = -Infinity
   private tap: AnalyserNode | null = null
 
   constructor() {
@@ -108,8 +111,12 @@ export class Sound {
       if (now - this.lastHover < HOVER_GAP) return
       this.lastHover = now
     }
-    if (name === 'transition') this.transition?.play()
-    else if (name === 'enter') this.chime?.play()
+    if (name === 'transition') {
+      const now = performance.now()
+      if (now - this.lastTransition < TRANSITION_GAP) return
+      this.lastTransition = now
+      this.transition?.play()
+    } else if (name === 'enter') this.chime?.play()
     else {
       const id = this.ui?.play(name)
       if (id !== undefined) this.ui?.volume(VOLUME[name], id)
