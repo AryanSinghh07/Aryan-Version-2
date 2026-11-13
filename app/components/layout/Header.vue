@@ -62,7 +62,19 @@ function closeMenu() {
   position: fixed;
   inset: 0 0 auto;
   z-index: 50;
-  background: linear-gradient(rgba(var(--background-rgb), 0.7), rgba(var(--background-rgb), 0));
+}
+
+// Soft backdrop fading out downwards: a plain colour shaped by a mask, so it can fade
+// between themes along with the page (a gradient background can't)
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: rgba(var(--background-rgb), 0.7);
+  mask-image: linear-gradient(#000, transparent);
+  transition: background-color 0.3s var(--ease-out);
+  pointer-events: none;
 }
 
 .header__inner {

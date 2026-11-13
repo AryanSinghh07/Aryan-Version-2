@@ -28,6 +28,7 @@ $themes: (
     'glass': rgba(255, 255, 255, 0.55),
     'backdrop': rgba(30, 16, 51, 0.6),
     'danger': #bc3b3f,
+    'danger-strong': #962d31,
     'success': #227742,
   ),
   'dark': (
@@ -44,6 +45,7 @@ $themes: (
     'glass': rgba(30, 16, 51, 0.55),
     'backdrop': rgba(0, 0, 0, 0.75),
     'danger': #ff6369,
+    'danger-strong': #ff9a9e,
     'success': #4cc38a,
   ),
 );

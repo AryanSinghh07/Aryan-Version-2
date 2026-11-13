@@ -35,7 +35,18 @@
   color-scheme: dark;
 }
 
+// Hovers tint with the text colour at 10% (ghost and outline buttons, rows, links)
+:root,
+[data-theme] {
+  --contrast-rgb: var(--foreground-rgb);
+}
+
+// The page fades between themes; text colours inherit the fade. The 3D world fades its own
+// colours at the same moment (webgl/core/Palette.ts).
 [data-theme] {
   background-color: var(--background);
   color: var(--foreground);
+  transition:
+    background-color 0.3s var(--ease-out),
+    color 0.3s var(--ease-out);
 }

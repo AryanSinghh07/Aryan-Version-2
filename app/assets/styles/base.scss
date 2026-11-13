@@ -10,6 +10,11 @@
   margin: 0;
 }
 
+:root {
+  // Signature easing: a fast start and a very soft landing, used for most transitions
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
