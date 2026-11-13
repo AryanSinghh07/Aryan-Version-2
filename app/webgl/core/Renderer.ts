@@ -25,6 +25,10 @@ export class Renderer {
     // (post-processing) shapes the final look the same way on every quality tier
     this.instance.toneMapping = NoToneMapping
     this.instance.setClearColor(0x000000, 0)
+    // Reading every shader's compile log forces the main thread to wait for the GPU driver
+    // (seconds on a phone). Keep the checks while developing; in production shaders compile in
+    // the background (the warm-up uses parallel compilation).
+    this.instance.debug.checkShaderErrors = import.meta.dev
     this.resize()
   }
 

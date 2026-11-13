@@ -21,6 +21,8 @@ watch(
       return
     }
     show.value = true
+    // The visitor is about to choose: have the audio library ready for "Enter with sound"
+    $sound.preload()
     await nextTick()
     // Focus first: the fade-in below hides the buttons for a frame, and hidden buttons
     // can't take focus

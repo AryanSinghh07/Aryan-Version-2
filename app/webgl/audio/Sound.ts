@@ -1,5 +1,18 @@
-import { Howl, Howler } from 'howler'
+import type { Howl } from 'howler'
 import sprites from './sprites.json'
+
+type HowlerModule = typeof import('howler')
+let howler: HowlerModule | null = null
+let loading: Promise<HowlerModule> | null = null
+
+/**
+ * Howler is loaded on demand: starting it probes every audio codec, which costs a noticeable
+ * moment on phones, and most visits never turn sound on.
+ */
+function loadHowler() {
+  loading ??= import('howler').then((m) => (howler = m))
+  return loading
+}
 
 export type UiSound = keyof typeof sprites
 /** [start, length] in ms within sprites.webm (shared with scripts/generate-audio.mjs) */
@@ -47,6 +60,8 @@ export class Sound {
   private lastHover = 0
   private lastTransition = -Infinity
   private tap: AnalyserNode | null = null
+  /** The entry chime was asked for while Howler was still loading */
+  private pendingChime = false
 
   constructor() {
     this.focused = document.hasFocus() && !document.hidden
@@ -59,6 +74,11 @@ export class Sound {
   get analyser() {
     this.connectAnalyser()
     return this.tap
+  }
+
+  /** Fetches Howler ahead of time (when the entry gate shows), so sound starts instantly */
+  preload() {
+    void loadHowler().catch(() => {})
   }
 
   /**
@@ -79,11 +99,23 @@ export class Sound {
   }
 
   private start() {
+    if (!howler) {
+      void loadHowler()
+        .then(() => {
+          if (this.enabled) this.start()
+        })
+        .catch(() => {}) // audio not available: the site carries on silently
+      return
+    }
     try {
-      this.load()
-      void Howler.ctx?.resume()
+      this.load(howler.Howl)
+      void howler.Howler.ctx?.resume()
     } catch {
       return // audio not available: the site carries on silently
+    }
+    if (this.pendingChime) {
+      this.pendingChime = false
+      this.chime?.play()
     }
     this.connectAnalyser()
     this.applyMute()
@@ -116,15 +148,17 @@ export class Sound {
       if (now - this.lastTransition < TRANSITION_GAP) return
       this.lastTransition = now
       this.transition?.play()
-    } else if (name === 'enter') this.chime?.play()
-    else {
+    } else if (name === 'enter') {
+      if (this.chime) this.chime.play()
+      else this.pendingChime = true
+    } else {
       const id = this.ui?.play(name)
       if (id !== undefined) this.ui?.volume(VOLUME[name], id)
     }
   }
 
   /** Downloads the sounds the first time sound is turned on */
-  private load() {
+  private load(Howl: HowlerModule['Howl']) {
     if (this.ambient) return
     this.ambient = new Howl({ src: src('ambient-loop'), loop: true, volume: 0 })
     this.ui = new Howl({ src: src('sprites'), sprite: spriteMap })
@@ -137,6 +171,8 @@ export class Sound {
    * does once on the first sound, to fix a sample-rate bug on mobile), so the tap follows it.
    */
   private connectAnalyser() {
+    if (!howler) return
+    const { Howler } = howler
     const ctx = Howler.ctx
     if (!ctx || !Howler.masterGain || this.tap?.context === ctx) return
     const analyser = ctx.createAnalyser()
@@ -153,6 +189,8 @@ export class Sound {
 
   /** Fades the master output down while the window is out of focus, and back up after */
   private applyMute() {
+    if (!howler) return
+    const { Howler } = howler
     const ctx = Howler.ctx
     const gain = Howler.masterGain
     if (!ctx || !gain) return

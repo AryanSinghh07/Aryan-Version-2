@@ -1,4 +1,4 @@
-import { Howl } from 'howler'
+import type { Howl } from 'howler'
 import type { DataTexture, Texture, WebGLRenderer } from 'three'
 import { TextureLoader } from 'three'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
@@ -80,14 +80,18 @@ export class Resources extends EventEmitter<{ loaded: { name: string; asset: Loa
       case 'hdr':
         return this.hdr.loadAsync(source.path)
       case 'audio':
-        return new Promise((resolve, reject) => {
-          const sound: Howl = new Howl({
-            src: [source.path, source.path.replace(/\.webm$/, '.mp3')],
-            preload: true,
-            onload: () => resolve(sound),
-            onloaderror: (_id, error) => reject(error),
-          })
-        })
+        // Howler is only downloaded and started when a sound is actually listed
+        return import('howler').then(
+          ({ Howl }) =>
+            new Promise((resolve, reject) => {
+              const sound: Howl = new Howl({
+                src: [source.path, source.path.replace(/\.webm$/, '.mp3')],
+                preload: true,
+                onload: () => resolve(sound),
+                onloaderror: (_id, error) => reject(error),
+              })
+            })
+        )
     }
   }
 
