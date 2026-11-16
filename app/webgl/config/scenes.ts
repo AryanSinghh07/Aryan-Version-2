@@ -59,9 +59,9 @@ const PAGE_VIEWS: { match: (route: string) => boolean; view: PageView }[] = [
     view: { camera: [0, 0.9, 9.6], layout: { x: 2.4, y: 0.7, scale: 0.62, opacity: 0.4 } },
   },
   {
-    // Work: from up and to the left, looking across the grid
+    // Work: straight on at the carousel ring; the constellation floats above as a soft void
     match: (r) => r === '/work',
-    view: { camera: [-1.8, 1, 9], layout: { x: 2.6, y: 0.2, scale: 0.95, opacity: 0.32 } },
+    view: { camera: [0, 0.3, 9], layout: { x: 0, y: 2.4, scale: 1.3, opacity: 0.3 } },
   },
   {
     // Contact: closer and from below, the constellation leaning in

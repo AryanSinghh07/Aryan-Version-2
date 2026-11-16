@@ -12,6 +12,7 @@ results:
   - 'Full MERN stack'
   - 'Automated adoption workflows'
   - 'GSAP animated UI'
+domain: 'Full Stack'
 particleShape: paw
 featured: false
 order: 4

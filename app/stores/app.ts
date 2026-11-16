@@ -5,6 +5,27 @@ export type Theme = 'light' | 'dark'
 export type Quality = 'auto' | 'high' | 'medium' | 'low'
 export type QualityTier = Exclude<Quality, 'auto'>
 
+/** One project panel in the Work page carousel */
+export interface CarouselItem {
+  slug: string
+  number: string
+  title: string
+  subtitle: string
+  domain: string
+  /** Domain glow colour, hex */
+  color: string
+  year: number
+}
+
+/** The Work page carousel, set by the page and drawn by the WebGL world */
+export interface CarouselState {
+  items: CarouselItem[]
+  /** Which panel faces the camera; fractional while the ring turns */
+  index: number
+  /** A project is opening: the other panels clear away */
+  exiting: boolean
+}
+
 // localStorage keys. THEME_KEY is also read by the inline head script in nuxt.config.ts.
 export const STORAGE_KEYS = {
   theme: 'aryan-theme',
@@ -69,6 +90,9 @@ export const useAppStore = defineStore('app', () => {
   const navigating = ref(false)
   /** The footer reveal is filling: the 3D world leans towards that page's view */
   const nextPreview = ref<{ route: string; progress: number } | null>(null)
+  /** Work page carousel (null on other pages), and the panel under the pointer (-1: none) */
+  const carousel = ref<CarouselState | null>(null)
+  const carouselHover = ref(-1)
   /** A full-screen overlay (mobile menu) is open: page input and scrolling pause */
   const overlayOpen = ref(false)
   /** What "Auto" quality currently means on this device (set by the WebGL Experience) */
@@ -150,6 +174,8 @@ export const useAppStore = defineStore('app', () => {
     pageShape,
     navigating,
     nextPreview,
+    carousel,
+    carouselHover,
     trackLoad,
     applyTheme,
     setTheme,

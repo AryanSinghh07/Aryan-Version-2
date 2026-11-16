@@ -8,6 +8,7 @@ scope: NLP tool, web app
 stack: [Python, NLP, React, Node.js]
 summary: NLP tool for faculty to automatically generate standardised academic publication summaries and one-click citation details for CVs, portfolios, and grant applications.
 github: https://github.com/AryanSinghh07/CiteCraft
+domain: 'NLP'
 particleShape: document
 featured: false
 order: 5

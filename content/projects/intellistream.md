@@ -8,6 +8,7 @@ scope: ML platform, gamified web app
 stack: [React, TypeScript, Python, XGBoost, Supabase, Flask]
 summary: Stealth-gamified cognitive profiling platform that predicts academic stream fit for Indian Class 10–11 students through behavioural gameplay analytics.
 github: https://github.com/AryanSinghh07
+domain: 'Data & ML'
 particleShape: branching-paths
 featured: true
 order: 7

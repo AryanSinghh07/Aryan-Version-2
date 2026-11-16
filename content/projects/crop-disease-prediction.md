@@ -16,6 +16,7 @@ results:
   - 'Presented live to 2,000+ agriculture and industry stakeholders'
   - '11th of 200+ teams at GU Hackathon 2024'
   - 'TensorFlow CNN pipeline'
+domain: 'Computer Vision'
 particleShape: leaf
 featured: true
 order: 1

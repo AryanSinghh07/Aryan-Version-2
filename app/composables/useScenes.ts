@@ -1,10 +1,12 @@
 import type { gsap } from 'gsap'
 import { Observer } from 'gsap/Observer'
+import type { MaybeRefOrGetter } from 'vue'
 
 type Transition = (from: number, to: number, direction: 1 | -1) => gsap.core.Timeline | null
 
 interface ScenesOptions {
-  count: number
+  /** Number of scenes (may change, e.g. when the Work page filters its projects) */
+  count: MaybeRefOrGetter<number>
   /** Builds the animation between two scenes. Input is ignored until it completes. */
   transition: Transition
   /** Called when the visitor scrolls past the last scene (page scroll is released) */
@@ -48,7 +50,7 @@ export function useScenes(options: ScenesOptions) {
   }
 
   function goTo(index: number) {
-    if (animating || index === current.value || index < 0 || index >= options.count) return
+    if (animating || index === current.value || index < 0 || index >= toValue(options.count)) return
     const from = current.value
     const direction = index > from ? 1 : -1
     current.value = index
@@ -64,7 +66,7 @@ export function useScenes(options: ScenesOptions) {
   }
 
   function next() {
-    if (current.value < options.count - 1) goTo(current.value + 1)
+    if (current.value < toValue(options.count) - 1) goTo(current.value + 1)
     else release()
   }
 
@@ -120,7 +122,7 @@ export function useScenes(options: ScenesOptions) {
     e.preventDefault()
     if (animating) return
     if (e.key === 'Home') goTo(0)
-    else if (e.key === 'End') goTo(options.count - 1)
+    else if (e.key === 'End') goTo(toValue(options.count) - 1)
     else if (forward) next()
     else prev()
   }

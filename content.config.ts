@@ -155,6 +155,8 @@ export default defineContentConfig({
         gallery: z.array(z.string()).default([]),
         awards: z.array(z.string()).default([]),
         results: z.array(z.string()).default([]),
+        /** Work page carousel: colours the panel glow and drives the Domain filter */
+        domain: z.enum(['Computer Vision', 'NLP', 'Full Stack', 'Data & ML', 'Hackathon']),
         particleShape: z.string(),
         featured: z.boolean().default(false),
         order: z.number(),

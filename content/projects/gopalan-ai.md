@@ -13,6 +13,7 @@ awards:
 results:
   - '94%+ CNN classification accuracy'
   - 'Evaluated for government mission deployment'
+domain: 'Hackathon'
 particleShape: cow-head
 featured: true
 order: 3

@@ -14,6 +14,7 @@ results:
   - '30–40% stress reduction (self-reported)'
   - 'Real-time streaming inference'
   - 'IEEE finalist 2025'
+domain: 'NLP'
 particleShape: chat-bubble
 featured: true
 order: 2

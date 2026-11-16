@@ -16,6 +16,7 @@ import type { FrameState } from '../Experience'
 
 import { FALLBACK_SHAPE, ShapeLibrary } from '../shapes/ShapeLibrary'
 import { Background } from './Background'
+import { Carousel } from './Carousel'
 import { Environment } from './Environment'
 import { Fragments } from './Fragments'
 import { Particles } from './Particles'
@@ -34,6 +35,7 @@ export class World {
   shapes: ShapeLibrary
   background: Background
   fragments: Fragments
+  carousel: Carousel
   ready = false
 
   private environment: Environment
@@ -59,6 +61,7 @@ export class World {
     this.shapes = new ShapeLibrary(resources)
     this.particles = new Particles(scene, this.shapes)
     this.fragments = new Fragments(scene, renderer, this.particles.points)
+    this.carousel = new Carousel(scene)
     this.fog = new Fog(0x000000, 7, 18)
     scene.fog = this.fog
     // Damped pointer parallax (blueprint: gsap.quickTo)
@@ -93,6 +96,7 @@ export class World {
 
   setQuality(tier: QualityTier) {
     this.fragments.setQuality(tier)
+    this.carousel.setQuality(tier)
   }
 
   update(state: FrameState, palette: Palette, delta: number) {
@@ -139,8 +143,13 @@ export class World {
     l.x = MathUtils.lerp(l.x, target.x, ease)
     l.y = MathUtils.lerp(l.y, target.y + fade * 2.2, ease)
     l.scale = MathUtils.lerp(l.scale, target.scale, ease)
-    // Footer text on screen: dim the particles so links and the email stay easy to read
-    const visible = (state.entered ? 1 : 0.6) * (1 - Math.min(state.footerCover * 1.4, 1) * 0.65)
+    // Footer text on screen: dim the particles so links and the email stay easy to read.
+    // On the Work page carousel they become a soft void behind the panels.
+    const onCarousel = state.route === '/work' && !!state.carousel
+    const visible =
+      (state.entered ? 1 : 0.6) *
+      (1 - Math.min(state.footerCover * 1.4, 1) * 0.65) *
+      (onCarousel ? 0.35 : 1)
     l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.9) * visible, ease)
 
     const { points } = particles
@@ -172,6 +181,16 @@ export class World {
     this.camera.position.lerp(this.cameraTarget, reduced ? 1 : 1 - Math.exp(-delta * 2.4))
     this.camera.lookAt(0, 0, 0)
 
+    this.carousel.update(
+      state.carousel,
+      onCarousel && state.entered,
+      this.camera,
+      state.pointerActive ? state.pointerNdc : null,
+      state.elapsed,
+      delta,
+      reduced
+    )
+
     // Background glow follows the particles on screen
     this.projected.copy(points.position).project(this.camera)
     this.glowCenter.set(this.projected.x * 0.5 + 0.5, this.projected.y * 0.5 + 0.5)
@@ -189,6 +208,7 @@ export class World {
   }
 
   dispose() {
+    this.carousel.dispose()
     this.parallaxX.tween.kill()
     this.parallaxY.tween.kill()
     this.scene.fog = null
