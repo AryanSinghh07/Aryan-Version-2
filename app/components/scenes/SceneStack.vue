@@ -283,23 +283,20 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-// Per theme: the scrim behind the text, the shadow that lifts the words off the 3D world, the
-// gradient for the accent word (the particle logo's three colours) and the keyword highlight.
-// Set on the theme attribute itself (a scoped `.hero` default would always win over it).
+// Per theme: the scrim behind the text, the shadow that lifts the words off the 3D world and
+// one solid accent colour for the italic word and the keywords: a rich violet that glows on the
+// night sky, a deep violet that sits firmly on the pastel day. Set on the theme attribute
+// itself (a scoped `.hero` default would always win over it).
 :global([data-theme='dark']) {
   --scene-scrim: rgb(13 10 36 / 0.5);
   --scene-shadow: rgb(8 6 24 / 0.75);
-  --scene-grad: linear-gradient(100deg, #c9adff 0%, #ff8fd0 55%, #7fd6ff 100%);
-  --scene-keyword: #a8ecff;
-  --scene-keyword-bg: rgb(127 214 255 / 0.2);
+  --scene-accent: #b08cff;
 }
 
 :global([data-theme='light']) {
   --scene-scrim: rgb(255 246 252 / 0.78);
   --scene-shadow: rgb(255 250 253 / 0.9);
-  --scene-grad: linear-gradient(100deg, #6a35e8 0%, #e0479e 55%, #2f86ff 100%);
-  --scene-keyword: #5a28d6;
-  --scene-keyword-bg: rgb(224 71 158 / 0.16);
+  --scene-accent: #4b1fb8;
 }
 
 .hero__scrim {
@@ -361,19 +358,13 @@ onBeforeUnmount(() => {
   gap: 1rem;
 }
 
-// Headlines: a soft shadow lifts them off the landscape; the accent word shines in the logo's
-// colours (a drop-shadow, not a text-shadow, so the gradient fill stays clean)
+// Headlines: a soft shadow lifts them off the landscape; the italic accent word in the
+// theme's accent colour
 .scene :is(h1, h2) {
   text-shadow: 0 2px 28px var(--scene-shadow);
 
   :deep(em) {
-    padding-right: 0.08em;
-    background: var(--scene-grad);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: none;
-    filter: drop-shadow(0 2px 14px var(--scene-shadow));
+    color: var(--scene-accent);
   }
 }
 
@@ -385,16 +376,15 @@ onBeforeUnmount(() => {
   letter-spacing: -0.005em;
   text-shadow: 0 1px 14px var(--scene-shadow);
 
-  // Keywords: brighter, bolder, with a highlighter stroke under the lower half
+  // Keywords: the accent colour, bolder, with a fine underline in the same colour
   :deep(.keyword) {
-    padding: 0 0.12em;
-    margin: 0 -0.04em;
-    border-radius: 0.2em;
-    color: var(--scene-keyword);
+    color: var(--scene-accent);
     font-weight: 650;
-    background: linear-gradient(transparent 58%, var(--scene-keyword-bg) 58%);
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
+    background: none;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--scene-accent) 45%, transparent);
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
   }
 }
 
