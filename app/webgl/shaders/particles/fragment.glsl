@@ -1,29 +1,51 @@
-// Round, softly lit particle: a bright core with a soft glow falling off to the edge.
-// Colours arrive in linear values; three.js converts the output for the screen or render target.
-uniform vec3 uColorA;
-uniform vec3 uColorB;
-uniform vec3 uSparkColor;
+// Each particle is drawn as a tiny lit sphere: a fake normal from the point coordinate,
+// diffuse light, a specular glint, a cool/warm rim, and a glow near the centre of the shape
+// that slowly pulses. Colours are linear; three.js converts the output.
+uniform vec3 uColorA;      // main violet
+uniform vec3 uColorB;      // lavender
+uniform vec3 uColorC;      // a touch of pink for depth
+uniform vec3 uSparkColor;  // accent sparks
+uniform vec3 uRimCool;
+uniform vec3 uRimWarm;
+uniform vec3 uLightDir;    // in view space
+uniform float uSpecular;
+uniform float uGlow;       // centre glow strength
+uniform float uTime;
 uniform float uOpacity;
-// Overall glow strength per theme: lower on dark, where additive blending piles up to white
 uniform float uIntensity;
 
 varying float vColorMix;
 varying float vSpark;
+varying float vCenter;
 varying float vDepthFade;
 
 void main() {
-  vec2 uv = gl_PointCoord - 0.5;
-  float d = length(uv);
-  if (d > 0.5) discard;
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  p.y = -p.y;
+  float r2 = dot(p, p);
+  if (r2 > 1.0) discard;
 
-  float glow = smoothstep(0.5, 0.0, d);
-  float core = smoothstep(0.22, 0.0, d);
-  float alpha = (glow * 0.55 + core * 0.45) * uOpacity * uIntensity * vDepthFade;
+  vec3 n = vec3(p, sqrt(1.0 - r2));
+  vec3 l = normalize(uLightDir);
+  float diffuse = max(dot(n, l), 0.0);
+  vec3 h = normalize(l + vec3(0.0, 0.0, 1.0));
+  float glint = pow(max(dot(n, h), 0.0), 48.0);
+  float rim = pow(1.0 - n.z, 2.2);
 
-  vec3 color = mix(uColorA, uColorB, vColorMix);
-  color = mix(color, uSparkColor, vSpark);
-  color += core * 0.15;
+  vec3 base = mix(uColorA, uColorB, vColorMix);
+  base = mix(base, uColorC, smoothstep(0.75, 1.0, vColorMix) * 0.6);
+  base = mix(base, uSparkColor, vSpark);
 
-  gl_FragColor = vec4(color, alpha);
+  vec3 rimColor = mix(uRimCool, uRimWarm, clamp(n.x * 0.5 + 0.5, 0.0, 1.0));
+  vec3 color = base * (0.32 + 0.78 * diffuse) + glint * uSpecular + rimColor * rim * 0.55;
+
+  // Glowing core near the middle of the shape, breathing slowly
+  float pulse = 0.75 + 0.25 * sin(uTime * 1.6);
+  color += base * vCenter * uGlow * pulse;
+
+  // A soft edge one pixel wide keeps the balls round without hard aliasing
+  float edge = 1.0 - smoothstep(0.82, 1.0, r2);
+  float alpha = edge * uOpacity * vDepthFade;
+  gl_FragColor = vec4(color * uIntensity, alpha);
   #include <colorspace_fragment>
 }

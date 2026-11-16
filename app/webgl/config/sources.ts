@@ -14,7 +14,9 @@ export interface Source {
 }
 
 export const sources: Source[] = [
-  // Phase 6 adds the particle shapes, for example:
-  // { name: 'letterA', type: 'gltf', path: '/models/shapes/letter-a.glb', priority: 'eager' },
-  // { name: 'neuralNet', type: 'gltf', path: '/models/shapes/neural-net.glb', priority: 'lazy' },
+  // The landscape around the logo (Digital Atmosphere, exported from Blender, Draco-compressed).
+  // Lazy: it loads after the visitor enters and fades in, keeping the first load small.
+  { name: 'environment', type: 'gltf', path: '/models/env/environment.glb', priority: 'lazy' },
+  // A model named shape:<name> replaces that generated particle shape, for example:
+  // { name: 'shape:letter-a', type: 'gltf', path: '/models/shapes/letter-a.glb', priority: 'eager' },
 ]

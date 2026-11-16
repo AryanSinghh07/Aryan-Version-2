@@ -173,6 +173,7 @@ export class Experience {
       this.post.resize(this.sizes.width, this.sizes.height, this.sizes.pixelRatio)
       this.media.resize(this.sizes.width, this.sizes.height)
       this.fluid.resize(this.sizes.width, this.sizes.height)
+      this.world.resize(this.sizes.width, this.sizes.height, this.sizes.pixelRatio)
     })
     this.time.on('tick', this.update)
 
@@ -302,7 +303,7 @@ export class Experience {
       frame.particleCount = this.particleCount()
       this.fluid.setQuality(this.tier)
       this.post.setQuality(this.tier, this.sizes.pixelRatio)
-      this.world.setQuality(this.tier)
+      this.world.setQuality(this.tier, this.sizes.width, this.sizes.height, this.sizes.pixelRatio)
     }
 
     // Load the rest once the visitor is in

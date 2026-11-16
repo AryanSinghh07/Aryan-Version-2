@@ -30,3 +30,6 @@ public/benchmarks
 
 # Local polishing notes (reference material, not part of the site)
 polishing_part_1/
+
+# Reference code for the 3D environment (React; the site uses its own three.js world)
+3dd/

@@ -9,7 +9,15 @@ import type { QualityTier } from '~/stores/app'
 // screen and all effects on: 2.0 → 37 fps, 1.5 → 53 fps, 1.25 → 78 fps.
 export interface QualitySettings {
   maxPixelRatio: number
+  /** Particle simulation texture size: size × size particles, simulated on the GPU */
+  simSize: number
+  /** simSize², kept for the parts of the code that think in particle counts */
   particles: number
+  /** Drifting sparkles and glowing fireflies in the world */
+  sparkles: number
+  fireflies: number
+  /** Floor: a real reflection, a glossy floor without one, or none */
+  floor: 'reflect' | 'gloss' | 'none'
   fluid: boolean
   bloom: boolean
   /** Post-processing (grade, vignette, grain, chromatic aberration) */
@@ -25,7 +33,11 @@ export type { QualityTier }
 export const QUALITY: Record<QualityTier, QualitySettings> = {
   high: {
     maxPixelRatio: 1.25,
-    particles: 20_000,
+    simSize: 180,
+    particles: 180 * 180,
+    sparkles: 2000,
+    fireflies: 90,
+    floor: 'reflect',
     fluid: true,
     bloom: true,
     post: true,
@@ -34,7 +46,11 @@ export const QUALITY: Record<QualityTier, QualitySettings> = {
   },
   medium: {
     maxPixelRatio: 1,
-    particles: 12_000,
+    simSize: 128,
+    particles: 128 * 128,
+    sparkles: 1000,
+    fireflies: 50,
+    floor: 'gloss',
     fluid: true,
     bloom: false,
     post: true,
@@ -43,7 +59,11 @@ export const QUALITY: Record<QualityTier, QualitySettings> = {
   },
   low: {
     maxPixelRatio: 1,
-    particles: 6_000,
+    simSize: 96,
+    particles: 96 * 96,
+    sparkles: 500,
+    fireflies: 0,
+    floor: 'gloss',
     fluid: false,
     bloom: false,
     post: false,

@@ -3,7 +3,7 @@ import type { Camera } from './Camera'
 import type { Sizes } from './Sizes'
 import type { Camera as ThreeCamera, Scene } from 'three'
 
-// WebGL2 renderer with sRGB output. The 3D background (world/Background.ts) fills the canvas;
+// WebGL2 renderer with sRGB output. The sky dome (world/Sky.ts) fills the canvas;
 // the page's own theme colour only shows if WebGL is unavailable.
 export class Renderer {
   instance: WebGLRenderer
@@ -24,6 +24,8 @@ export class Renderer {
     // No tone mapping: colours come straight from the brand palette, and the colour grade
     // (post-processing) shapes the final look the same way on every quality tier
     this.instance.toneMapping = NoToneMapping
+    // The glass refracts a blurred copy of the scene anyway: half resolution is plenty and saves a lot
+    this.instance.transmissionResolutionScale = 0.5
     this.instance.setClearColor(0x000000, 0)
     // Reading every shader's compile log forces the main thread to wait for the GPU driver
     // (seconds on a phone). Keep the checks while developing; in production shaders compile in

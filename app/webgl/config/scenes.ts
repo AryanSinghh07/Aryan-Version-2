@@ -28,14 +28,31 @@ export function layoutFor(side: TextSide, portrait: boolean): Layout {
   return { x: side === 'right' ? -2.15 : 2.15, y: 0, scale: 0.78, opacity: 1 }
 }
 
-/** Camera position per hero scene (looks at the origin). Cycles if there are more scenes. */
-export const SCENE_CAMERAS: [number, number, number][] = [
-  [0, 0, 8.4],
-  [0.5, 0.3, 8.2],
-  [-0.4, -0.2, 8.5],
-  [0.45, -0.25, 8.3],
-  [0, 0.15, 8.8],
+export interface Orbit {
+  /** Around the vertical axis, degrees (0 = straight in front) */
+  angle: number
+  height: number
+  distance: number
+}
+
+/**
+ * Camera orbit per full-screen scene: each scene change swings the camera around the logo,
+ * so the landscape appears to turn while the logo stays in place. The five hero scenes make
+ * one full circle. Cycles if there are more scenes.
+ */
+export const SCENE_ORBITS: Orbit[] = [
+  { angle: 0, height: 0.35, distance: 8.4 },
+  { angle: 72, height: 0.75, distance: 8.3 },
+  { angle: 144, height: 0.3, distance: 8.6 },
+  { angle: 216, height: 0.9, distance: 8.3 },
+  { angle: 288, height: 0.5, distance: 8.7 },
 ]
+
+/** The logo turns to face the camera by this share of the orbit angle, so it always reads */
+export const LOGO_FOLLOW = 0.85
+
+/** Floor height (just below the logo) */
+export const FLOOR_Y = -2.4
 
 /** Inner pages: a soft constellation off to the side, out of the way of the text */
 export const PAGE_SHAPE = 'constellation'

@@ -1,0 +1,55 @@
+// Particle physics, velocity pass (GPGPU). texturePosition, textureVelocity and resolution are
+// provided by GPUComputationRenderer. Forces, in order: spring to the shape, damping, curl
+// flow, breathing pulse, morph burst, then the pointer pushing and dragging particles.
+#import ../includes/curl.glsl;
+
+uniform sampler2D uTarget;   // home position on the current shape
+uniform float uDelta;        // seconds since the last step
+uniform float uTime;
+uniform float uSpring;
+uniform float uDamping;
+uniform float uFlowStrength;
+uniform float uFlowScale;
+uniform float uFlowSpeed;
+uniform float uPulse;
+uniform float uBurst;        // outward push right after a morph starts
+uniform float uMorphTime;    // seconds since the current morph started
+uniform vec3 uPointer;       // pointer in particle space (far away when inactive)
+uniform vec3 uPointerVelocity;
+uniform float uPointerRadius;
+uniform float uPointerStrength;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / resolution.xy;
+  vec4 pos = texture2D(texturePosition, uv);
+  vec3 vel = texture2D(textureVelocity, uv).xyz;
+  vec3 target = texture2D(uTarget, uv).xyz;
+  float hash = pos.w;
+  // Steps are tuned per frame at 60 fps; scale them so any frame rate behaves the same
+  float k = clamp(uDelta * 60.0, 0.0, 3.0);
+
+  // Spring: softened right after a morph and ramped back up at a per-particle moment,
+  // so particles leave and arrive one after another instead of all at once
+  float start = hash * 0.35;
+  float ramp = smoothstep(start, start + 0.6, uMorphTime);
+  vec3 acc = (target - pos.xyz) * uSpring * mix(0.12, 1.0, ramp);
+
+  // Curl flow: swirling drift that never clumps
+  acc += curlNoise(pos.xyz * uFlowScale + vec3(0.0, uTime * uFlowSpeed, hash)) * uFlowStrength;
+
+  // Breathing and burst, both outward from the centre
+  float r = length(pos.xyz) + 0.0001;
+  vec3 outward = pos.xyz / r;
+  acc += outward * sin(uTime * 1.3 + hash * 6.2832) * uPulse;
+  acc += outward * uBurst * (0.5 + hash);
+
+  // Pointer: push away, stronger when the pointer moves fast, and drag along a little
+  vec3 away = pos.xyz - uPointer;
+  float d = length(away);
+  float fall = 1.0 - smoothstep(0.0, uPointerRadius, d);
+  acc += (away / (d + 0.0001)) * fall * uPointerStrength;
+  acc += uPointerVelocity * fall * 0.3;
+
+  vel = vel * pow(uDamping, k) + acc * k;
+  gl_FragColor = vec4(vel, 1.0);
+}

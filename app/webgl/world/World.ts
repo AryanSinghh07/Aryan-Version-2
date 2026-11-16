@@ -1,11 +1,13 @@
 import { gsap } from 'gsap'
-import { Fog, MathUtils, Vector2, Vector3 } from 'three'
+import { Fog, MathUtils, Plane, Raycaster, Vector2, Vector3 } from 'three'
 import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import { QUALITY } from '../config/quality'
 import type { QualityTier } from '../config/quality'
 import {
+  LOGO_FOLLOW,
   PAGE_LAYOUT_PORTRAIT,
   PAGE_SHAPE,
-  SCENE_CAMERAS,
+  SCENE_ORBITS,
   layoutFor,
   pageView,
 } from '../config/scenes'
@@ -15,25 +17,39 @@ import type { Resources } from '../core/Resources'
 import type { FrameState } from '../Experience'
 
 import { FALLBACK_SHAPE, ShapeLibrary } from '../shapes/ShapeLibrary'
-import { Background } from './Background'
 import { Carousel } from './Carousel'
 import { Environment } from './Environment'
+import { Floor } from './Floor'
 import { Fragments } from './Fragments'
+import { Landscape } from './Landscape'
 import { Particles } from './Particles'
+import { Sky } from './Sky'
+import { Sparkles } from './Sparkles'
 
 const blend = (a: number, b: number, t: number) => a + (b - a) * t
+const DEG = Math.PI / 180
 
 /** How far the camera leans with the pointer, in world units */
 const PARALLAX = { x: 0.45, y: 0.3 }
+/** Idle drift: the orbit sways this far (degrees) over about two minutes */
+const IDLE_SWAY = 2.5
 
 /**
  * Everything in the 3D scene, and how it follows the site: which shape the particles form,
  * where they sit, where the camera looks, and the theme's colours.
+ *
+ * On the full-screen scene pages (home hero, about story) the camera orbits the logo: each
+ * scene swings it to a new angle, height and distance, so the sky, floor, sparkles and glass
+ * appear to turn while the logo (which mostly turns to face the camera) stays readable. The
+ * look-at point is offset so the logo sits beside the text. Other pages use fixed views.
  */
 export class World {
   particles: Particles
   shapes: ShapeLibrary
-  background: Background
+  sky: Sky
+  floor: Floor
+  sparkles: Sparkles
+  landscape: Landscape
   fragments: Fragments
   carousel: Carousel
   ready = false
@@ -42,13 +58,25 @@ export class World {
   private fog: Fog
   private revealed = false
   private layout: Layout = { x: 0, y: 0, scale: 1, opacity: 0 }
+  /** Logo position, and how far the view is shifted so the logo sits beside the text */
+  private logoX = 0
+  private shift = 0
+  private orbit = { angle: 0, height: SCENE_ORBITS[0]!.height, distance: SCENE_ORBITS[0]!.distance }
+  /** 1 while orbiting (scene pages), 0 on fixed page views; eased between */
+  private orbitMix = 0
   private cameraTarget = new Vector3()
-  private pointer = new Vector3(999, 999, 0)
+  private look = new Vector3()
+  private lookTarget = new Vector3()
+  private logo = new Vector3()
+  private right = new Vector3()
   private parallax = { x: 0, y: 0 }
   private parallaxX: gsap.QuickToFunc
   private parallaxY: gsap.QuickToFunc
-  private glowCenter = new Vector2(0.5, 0.5)
-  private projected = new Vector3()
+  private raycaster = new Raycaster()
+  private plane = new Plane()
+  private pointerWorld = new Vector3()
+  private ndc = new Vector2()
+  private viewDir = new Vector3()
 
   constructor(
     private scene: Scene,
@@ -57,12 +85,20 @@ export class World {
     private camera: PerspectiveCamera
   ) {
     this.environment = new Environment(scene)
-    this.background = new Background(scene)
+    this.sky = new Sky(scene)
+    this.landscape = new Landscape(scene, resources)
     this.shapes = new ShapeLibrary(resources)
-    this.particles = new Particles(scene, this.shapes)
+    this.particles = new Particles(scene, this.shapes, renderer)
     this.fragments = new Fragments(scene, renderer, this.particles.points)
+    this.sparkles = new Sparkles(scene)
     this.carousel = new Carousel(scene)
-    this.fog = new Fog(0x000000, 7, 18)
+    this.floor = new Floor(scene, () => [
+      this.fragments.group,
+      this.carousel.group,
+      ...this.landscape.hiddenInReflection,
+    ])
+    // Reaches out to the far mountains (about 48 units away)
+    this.fog = new Fog(0x000000, 10, 60)
     scene.fog = this.fog
     // Damped pointer parallax (blueprint: gsap.quickTo)
     this.parallaxX = gsap.quickTo(this.parallax, 'x', { duration: 1.2, ease: 'power3.out' })
@@ -94,9 +130,16 @@ export class World {
     return state.heroScenes[state.scene]?.shape ?? state.heroScenes[0]?.shape ?? FALLBACK_SHAPE
   }
 
-  setQuality(tier: QualityTier) {
+  setQuality(tier: QualityTier, width: number, height: number, pixelRatio: number) {
+    const q = QUALITY[tier]
     this.fragments.setQuality(tier)
     this.carousel.setQuality(tier)
+    this.sparkles.setQuality(q.sparkles, q.fireflies)
+    this.floor.setQuality(q.floor, width, height, pixelRatio)
+  }
+
+  resize(width: number, height: number, pixelRatio: number) {
+    this.floor.resize(width, height, pixelRatio)
   }
 
   update(state: FrameState, palette: Palette, delta: number) {
@@ -104,10 +147,18 @@ export class World {
     const ease = reduced ? 1 : 1 - Math.exp(-delta * 3)
 
     // Theme colours (tweened by the palette)
-    this.fog.color.copy(palette.colors.background)
+    this.fog.color.copy(palette.colors.fog)
+    this.landscape.update(palette, delta, reduced)
     this.fragments.update(palette, state.elapsed, delta, reduced)
+    this.sparkles.update(
+      palette,
+      state.elapsed,
+      state.resolutionY,
+      state.entered ? 1 : 0.5,
+      reduced
+    )
     if (!this.ready) {
-      this.background.update(palette, this.glowCenter, state.aspect)
+      this.sky.update(palette, this.camera.position, this.logo, state.elapsed, reduced)
       return
     }
     const { particles } = this
@@ -128,7 +179,7 @@ export class World {
       }
     }
 
-    // Placement: opposite the scene text, fading and rising as the visitor scrolls past the
+    // Placement: beside the scene text, fading and rising as the visitor scrolls past the
     // scenes; on other pages, where that page's view puts it
     const inScenes = World.inScenes(state)
     const side = state.heroScenes[state.scene]?.side ?? 'center'
@@ -152,17 +203,50 @@ export class World {
       (onCarousel ? 0.35 : 1)
     l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.9) * visible, ease)
 
+    // Orbiting (scene pages): the logo stays at the centre of the stage and the view is shifted
+    // so it sits beside the text. Fixed views: the logo itself moves aside.
+    this.orbitMix = MathUtils.lerp(
+      this.orbitMix,
+      inScenes ? 1 : 0,
+      reduced ? 1 : 1 - Math.exp(-delta * 2)
+    )
+    this.logoX = MathUtils.lerp(this.logoX, inScenes ? 0 : l.x, ease)
+    this.shift = MathUtils.lerp(this.shift, inScenes ? l.x : 0, ease)
+
     const { points } = particles
-    points.position.set(l.x, l.y, 0)
+    points.position.set(this.logoX, l.y, 0)
     points.scale.setScalar(l.scale)
+    this.logo.copy(points.position)
+
+    // Orbit for the current scene (no orbit and no drift with reduced motion)
+    const goal = SCENE_ORBITS[state.scene % SCENE_ORBITS.length]!
+    const orbitEase = reduced ? 1 : 1 - Math.exp(-delta * 1.8)
+    const angle = reduced ? 0 : goal.angle + Math.sin(state.elapsed * 0.05) * IDLE_SWAY
+    this.orbit.angle = MathUtils.lerp(this.orbit.angle, angle, orbitEase)
+    this.orbit.height = MathUtils.lerp(this.orbit.height, goal.height, orbitEase)
+    this.orbit.distance = MathUtils.lerp(this.orbit.distance, goal.distance, orbitEase)
+    const a = this.orbit.angle * DEG * this.orbitMix
+
+    // The logo mostly turns to face the camera, so it reads at every angle
     if (!reduced) {
-      points.rotation.y = Math.sin(state.elapsed * 0.25) * 0.2
+      points.rotation.y = a * LOGO_FOLLOW + Math.sin(state.elapsed * 0.25) * 0.2
       points.rotation.x = Math.sin(state.elapsed * 0.17) * 0.06
+    } else {
+      points.rotation.set(0, 0, 0)
     }
 
-    // Camera: one position per scene, one per page elsewhere (so a page change moves the
-    // camera through the world), leaning with the pointer
-    let cam = inScenes ? SCENE_CAMERAS[state.scene % SCENE_CAMERAS.length]! : view.camera
+    // Camera position: on the orbit around the logo, or the page's fixed view
+    this.right.set(Math.cos(a), 0, -Math.sin(a))
+    const orbitPos = [
+      Math.sin(a) * this.orbit.distance,
+      this.orbit.height,
+      Math.cos(a) * this.orbit.distance,
+    ] as const
+    let cam: [number, number, number] = [
+      blend(view.camera[0], orbitPos[0], this.orbitMix),
+      blend(view.camera[1], orbitPos[1], this.orbitMix),
+      blend(view.camera[2], orbitPos[2], this.orbitMix),
+    ]
     // The footer reveal is filling: glide towards the next page's view, so when it opens
     // the camera is already there
     const preview = state.nextPreview
@@ -177,9 +261,14 @@ export class World {
       this.parallaxX(state.pointerNdc.x * PARALLAX.x)
       this.parallaxY(state.pointerNdc.y * PARALLAX.y)
     }
-    this.cameraTarget.set(cam[0] + this.parallax.x, cam[1] + this.parallax.y, cam[2])
+    this.cameraTarget
+      .set(cam[0], cam[1] + this.parallax.y, cam[2])
+      .addScaledVector(this.right, this.parallax.x)
     this.camera.position.lerp(this.cameraTarget, reduced ? 1 : 1 - Math.exp(-delta * 2.4))
-    this.camera.lookAt(0, 0, 0)
+    // Look past the logo, so it sits beside the text (the shift is along the camera's right)
+    this.lookTarget.set(0, 0, 0).addScaledVector(this.right, -this.shift)
+    this.look.lerp(this.lookTarget, reduced ? 1 : 1 - Math.exp(-delta * 2.4))
+    this.camera.lookAt(this.look)
 
     this.carousel.update(
       state.carousel,
@@ -190,21 +279,28 @@ export class World {
       delta,
       reduced
     )
+    this.sky.update(palette, this.camera.position, this.logo, state.elapsed, reduced)
+    this.floor.update(palette, this.logo, state.elapsed, !onCarousel, delta)
 
-    // Background glow follows the particles on screen
-    this.projected.copy(points.position).project(this.camera)
-    this.glowCenter.set(this.projected.x * 0.5 + 0.5, this.projected.y * 0.5 + 0.5)
-    this.background.update(palette, this.glowCenter, state.aspect)
-
-    // Shader inputs
+    // Pointer on a plane through the logo, facing the camera, for the particle physics
+    const pointerOn = state.pointerActive && !reduced && state.entered ? 0.45 : 0
     const u = particles.uniforms
-    u.uTime!.value = reduced ? 0 : state.elapsed
+    u.uPointerStrength!.value = MathUtils.lerp(u.uPointerStrength!.value as number, pointerOn, ease)
+    let pointer: Vector3 | null = null
+    if (state.pointerActive) {
+      this.ndc.copy(state.pointerNdc)
+      this.raycaster.setFromCamera(this.ndc, this.camera)
+      this.camera.getWorldDirection(this.viewDir)
+      this.plane.setFromNormalAndCoplanarPoint(this.viewDir, this.logo)
+      if (this.raycaster.ray.intersectPlane(this.plane, this.pointerWorld)) {
+        pointer = this.pointerWorld
+        ;(u.uPointer!.value as Vector3).copy(this.pointerWorld)
+      }
+    }
+
     u.uResolutionY!.value = state.resolutionY
     u.uOpacity!.value = l.opacity
-    this.pointer.lerp(state.pointer, 1 - Math.exp(-delta * 8))
-    ;(u.uPointer!.value as Vector3).copy(this.pointer)
-    const pointerOn = state.pointerActive && !reduced && state.entered ? 0.45 : 0
-    u.uPointerStrength!.value = MathUtils.lerp(u.uPointerStrength!.value as number, pointerOn, ease)
+    particles.step(delta, state.elapsed, pointer, reduced)
   }
 
   dispose() {
@@ -213,7 +309,10 @@ export class World {
     this.parallaxY.tween.kill()
     this.scene.fog = null
     this.fragments.dispose()
-    this.background.dispose()
+    this.sky.dispose()
+    this.landscape.dispose()
+    this.floor.dispose()
+    this.sparkles.dispose()
     this.particles.dispose()
   }
 }

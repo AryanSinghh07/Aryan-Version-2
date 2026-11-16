@@ -16,6 +16,12 @@ type ColorKey =
   | 'lavender'
   | 'muted'
   | 'fluid'
+  | 'skyHorizon'
+  | 'skyMid'
+  | 'skyHigh'
+  | 'skyTop'
+  | 'fog'
+  | 'lake'
 type NumberKey =
   | 'intensity'
   | 'fluidOpacity'
@@ -40,6 +46,12 @@ const COLOR_KEYS: ColorKey[] = [
   'lavender',
   'muted',
   'fluid',
+  'skyHorizon',
+  'skyMid',
+  'skyHigh',
+  'skyTop',
+  'fog',
+  'lake',
 ]
 const NUMBER_KEYS: NumberKey[] = [
   'intensity',
@@ -67,6 +79,12 @@ function flatten(c: SceneColors): Record<ColorKey, string> & Record<NumberKey, n
     lavender: c.lavender,
     muted: c.muted,
     fluid: c.fluid,
+    skyHorizon: c.sky.horizon,
+    skyMid: c.sky.mid,
+    skyHigh: c.sky.high,
+    skyTop: c.sky.top,
+    fog: c.fog,
+    lake: c.lake,
     intensity: c.intensity,
     fluidOpacity: c.fluidOpacity,
     bloomIntensity: c.bloom.intensity,

@@ -4,7 +4,7 @@ import type { Theme } from '~/stores/app'
 // Kept here (not in SCSS) because the WebGL code needs them as numbers. Every value here is
 // tweened when the theme switches, so the 3D world fades between themes.
 export interface SceneColors {
-  /** Background gradient: top, bottom */
+  /** Sky: top colour and horizon colour (also the fog) */
   background: string
   backgroundEnd: string
   /** Soft glow behind the particles */
@@ -12,6 +12,12 @@ export interface SceneColors {
   particleA: string
   particleB: string
   spark: string
+  /** Sky dome gradient, from the horizon up (dark: from the Digital Atmosphere scene) */
+  sky: { horizon: string; mid: string; high: string; top: string }
+  /** Distance fog over the landscape */
+  fog: string
+  /** Lake surface under the logo */
+  lake: string
   /** Card surface, soft lavender and muted text: for media placeholders drawn in WebGL */
   surface: string
   lavender: string
@@ -40,6 +46,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     background: '#f3eeff',
     backgroundEnd: '#fbfaff',
     glow: '#e2d6ff',
+    sky: { horizon: '#fbe7f4', mid: '#ecdfff', high: '#e1d4ff', top: '#f3eeff' },
+    fog: '#ebe2ff',
+    lake: '#e6dcfb',
     particleA: '#7b3ff2',
     particleB: '#c9b8ff',
     spark: '#d4ff3a',
@@ -48,7 +57,7 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     muted: '#6b5b8c',
     fluid: '#c9b8ff',
     fluidOpacity: 0.35,
-    intensity: 0.85,
+    intensity: 1,
     // High threshold: only the brightest sparks bloom, the white background never does
     bloom: { intensity: 0.4, threshold: 0.92 },
     grade: {
@@ -66,6 +75,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     background: '#120a1f',
     backgroundEnd: '#1e1033',
     glow: '#2a1550',
+    sky: { horizon: '#c08bb8', mid: '#72518e', high: '#241b3d', top: '#120e24' },
+    fog: '#5a4378',
+    lake: '#30244e',
     particleA: '#9b6bff',
     particleB: '#ede7ff',
     spark: '#d4ff3a',
@@ -74,7 +86,7 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     muted: '#a99bc9',
     fluid: '#9b6bff',
     fluidOpacity: 0.45,
-    intensity: 0.36,
+    intensity: 0.95,
     bloom: { intensity: 0.9, threshold: 0.22 },
     grade: {
       lift: 0,
