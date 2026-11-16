@@ -219,6 +219,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="total" ref="root" class="hero" :class="{ 'is-interactive': interactive }">
+    <!-- A soft scrim on the text's side keeps the words readable over the 3D world -->
+    <div
+      v-if="interactive"
+      class="hero__scrim"
+      :data-side="scenes[current]?.side ?? 'left'"
+      aria-hidden="true"
+    >
+      <span class="hero__scrim-layer hero__scrim-layer--left" />
+      <span class="hero__scrim-layer hero__scrim-layer--right" />
+      <span class="hero__scrim-layer hero__scrim-layer--center" />
+    </div>
     <section
       v-for="(scene, i) in scenes"
       :key="scene.label"
@@ -272,6 +283,56 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+// Scrim colour per theme: night violet in dark mode, a pale pink haze in light mode. Set on
+// the theme attribute itself (a scoped `.hero` default would always win over it).
+:global([data-theme='dark']) {
+  --scene-scrim: rgb(13 10 36 / 0.5);
+}
+
+:global([data-theme='light']) {
+  --scene-scrim: rgb(255 246 252 / 0.78);
+}
+
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero__scrim-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-out);
+}
+
+.hero__scrim-layer--left {
+  background: linear-gradient(90deg, var(--scene-scrim) 10%, transparent 62%);
+}
+
+.hero__scrim-layer--right {
+  background: linear-gradient(270deg, var(--scene-scrim) 10%, transparent 62%);
+}
+
+.hero__scrim-layer--center {
+  background: radial-gradient(ellipse 60% 48% at 50% 52%, var(--scene-scrim), transparent);
+}
+
+.hero__scrim[data-side='left'] .hero__scrim-layer--left,
+.hero__scrim[data-side='right'] .hero__scrim-layer--right,
+.hero__scrim[data-side='center'] .hero__scrim-layer--center {
+  opacity: 1;
+}
+
+// Phones: the text sits low and left-aligned, so the scrim rises from the bottom instead
+@media (max-width: 767px) {
+  .hero__scrim-layer--left,
+  .hero__scrim-layer--right,
+  .hero__scrim-layer--center {
+    background: linear-gradient(0deg, var(--scene-scrim), transparent 65%);
+  }
+}
+
 .scene {
   display: flex;
   align-items: center;

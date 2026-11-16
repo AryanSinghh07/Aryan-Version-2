@@ -37,15 +37,18 @@ export interface Orbit {
 
 /**
  * Camera orbit per full-screen scene: each scene change swings the camera around the logo,
- * so the landscape appears to turn while the logo stays in place. The five hero scenes make
- * one full circle. Cycles if there are more scenes.
+ * so the landscape appears to turn while the logo stays in place. Angles are picked so the
+ * lighthouse and the blossom tree never stand behind the text: text on the right (scenes 1
+ * and 3) looks past the tree with the lighthouse out of frame; text on the left (2 and 4)
+ * puts the lighthouse or the tree beside the logo; the closing scene looks over the lake to
+ * the tree and the fox. Cycles if there are more scenes.
  */
 export const SCENE_ORBITS: Orbit[] = [
   { angle: 0, height: 0.35, distance: 8.4 },
-  { angle: 72, height: 0.75, distance: 8.3 },
-  { angle: 144, height: 0.3, distance: 8.6 },
-  { angle: 216, height: 0.9, distance: 8.3 },
-  { angle: 288, height: 0.5, distance: 8.7 },
+  { angle: 120, height: 0.75, distance: 8.3 },
+  { angle: 40, height: 0.3, distance: 8.6 },
+  { angle: 190, height: 0.9, distance: 8.3 },
+  { angle: -15, height: 0.5, distance: 8.7 },
 ]
 
 /** The logo turns to face the camera by this share of the orbit angle, so it always reads */

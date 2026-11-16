@@ -31,5 +31,8 @@ public/benchmarks
 # Local polishing notes (reference material, not part of the site)
 polishing_part_1/
 
-# Reference code for the 3D environment (React; the site uses its own three.js world)
+# Reference code for the 3D environment (standalone/React versions; the site builds the same
+# scene into its own three.js world in app/webgl)
 3dd/
+3d2/
+3d3/

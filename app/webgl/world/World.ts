@@ -19,9 +19,10 @@ import type { FrameState } from '../Experience'
 import { FALLBACK_SHAPE, ShapeLibrary } from '../shapes/ShapeLibrary'
 import { Carousel } from './Carousel'
 import { Environment } from './Environment'
+import { lookNumber } from '../config/landscape'
 import { Floor } from './Floor'
 import { Fragments } from './Fragments'
-import { Landscape } from './Landscape'
+import { Landscape, LANDSCAPE_SCALE } from './Landscape'
 import { Particles } from './Particles'
 import { Sky } from './Sky'
 import { Sparkles } from './Sparkles'
@@ -148,6 +149,10 @@ export class World {
 
     // Theme colours (tweened by the palette)
     this.fog.color.copy(palette.colors.fog)
+    // Night fog closes in sooner than the clear day's (Blender distances, scaled)
+    this.fog.near = lookNumber('fogNear', palette.darkness) * LANDSCAPE_SCALE
+    this.fog.far = lookNumber('fogFar', palette.darkness) * LANDSCAPE_SCALE
+    this.environment.update(palette)
     this.landscape.update(palette, delta, reduced)
     this.fragments.update(palette, state.elapsed, delta, reduced)
     this.sparkles.update(

@@ -12,7 +12,7 @@ export interface SceneColors {
   particleA: string
   particleB: string
   spark: string
-  /** Sky dome gradient, from the horizon up (dark: from the Digital Atmosphere scene) */
+  /** Sky dome gradient, from the horizon up (from the Digital Atmosphere scene: night / pastel day) */
   sky: { horizon: string; mid: string; high: string; top: string }
   /** Distance fog over the landscape */
   fog: string
@@ -46,9 +46,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     background: '#f3eeff',
     backgroundEnd: '#fbfaff',
     glow: '#e2d6ff',
-    sky: { horizon: '#fbe7f4', mid: '#ecdfff', high: '#e1d4ff', top: '#f3eeff' },
-    fog: '#ebe2ff',
-    lake: '#e6dcfb',
+    sky: { horizon: '#ffd9e6', mid: '#e6c4f0', high: '#b79ae8', top: '#8a6fd8' },
+    fog: '#c9b3ec',
+    lake: '#a693dc',
     particleA: '#7b3ff2',
     particleB: '#c9b8ff',
     spark: '#d4ff3a',
@@ -75,9 +75,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     background: '#120a1f',
     backgroundEnd: '#1e1033',
     glow: '#2a1550',
-    sky: { horizon: '#c08bb8', mid: '#72518e', high: '#241b3d', top: '#120e24' },
-    fog: '#5a4378',
-    lake: '#30244e',
+    sky: { horizon: '#7a4f9a', mid: '#4a3480', high: '#261c52', top: '#0d0a24' },
+    fog: '#33275c',
+    lake: '#6c5ca8',
     particleA: '#9b6bff',
     particleB: '#ede7ff',
     spark: '#d4ff3a',
