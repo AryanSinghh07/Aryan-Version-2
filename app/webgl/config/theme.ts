@@ -4,9 +4,6 @@ import type { Theme } from '~/stores/app'
 // Kept here (not in SCSS) because the WebGL code needs them as numbers. Every value here is
 // tweened when the theme switches, so the 3D world fades between themes.
 export interface SceneColors {
-  /** Sky: top colour and horizon colour (also the fog) */
-  background: string
-  backgroundEnd: string
   /** Soft glow behind the particles */
   glow: string
   particleA: string
@@ -43,8 +40,6 @@ export interface SceneColors {
 export const SCENE_COLORS: Record<Theme, SceneColors> = {
   // Soft, airy, lifted shadows
   light: {
-    background: '#f3eeff',
-    backgroundEnd: '#fbfaff',
     glow: '#e2d6ff',
     sky: { horizon: '#ffd9e6', mid: '#e6c4f0', high: '#b79ae8', top: '#8a6fd8' },
     fog: '#c9b3ec',
@@ -72,8 +67,6 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
   },
   // Deep, contrasty, violet shadows
   dark: {
-    background: '#120a1f',
-    backgroundEnd: '#1e1033',
     glow: '#2a1550',
     sky: { horizon: '#7a4f9a', mid: '#4a3480', high: '#261c52', top: '#0d0a24' },
     fog: '#33275c',

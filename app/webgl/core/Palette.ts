@@ -5,8 +5,6 @@ import { SCENE_COLORS } from '../config/theme'
 import type { SceneColors } from '../config/theme'
 
 type ColorKey =
-  | 'background'
-  | 'backgroundEnd'
   | 'glow'
   | 'particleA'
   | 'particleB'
@@ -35,8 +33,6 @@ type NumberKey =
   | 'grain'
 
 const COLOR_KEYS: ColorKey[] = [
-  'background',
-  'backgroundEnd',
   'glow',
   'particleA',
   'particleB',
@@ -68,8 +64,6 @@ const NUMBER_KEYS: NumberKey[] = [
 
 function flatten(c: SceneColors): Record<ColorKey, string> & Record<NumberKey, number> {
   return {
-    background: c.background,
-    backgroundEnd: c.backgroundEnd,
     glow: c.glow,
     particleA: c.particleA,
     particleB: c.particleB,
@@ -100,7 +94,7 @@ function flatten(c: SceneColors): Record<ColorKey, string> & Record<NumberKey, n
 
 /**
  * The live 3D colours and look settings. On a theme switch every value tweens from where it
- * is to the new theme with GSAP, so background, particles, fog, bloom and grade fade together.
+ * is to the new theme with GSAP, so sky, particles, fog, bloom and grade fade together.
  * Colours are linear (three.js working colour space).
  */
 export class Palette {
