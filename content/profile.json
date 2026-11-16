@@ -43,35 +43,35 @@
     {
       "label": "Portfolio © 2026",
       "headline": "Aryan *Singh*",
-      "text": "Building things that actually matter.",
+      "text": "Building things that ==actually matter==.",
       "side": "right",
       "particleShape": "letter-a"
     },
     {
       "label": "Who",
       "headline": "*Full stack* meets AI / ML",
-      "text": "Full-Stack Developer and AI/ML Engineer building systems that solve real problems.",
+      "text": "==Full-Stack Developer== and ==AI/ML Engineer== building systems that solve ==real problems==.",
       "side": "left",
       "particleShape": "neural-net"
     },
     {
       "label": "Approach",
       "headline": "Built to *ship*, not to demo",
-      "text": "Presented at government missions and industry events, which shaped how I approach every project.",
+      "text": "Presented at ==government missions== and ==industry events==, which shaped how I approach every project.",
       "side": "right",
       "particleShape": "leaf"
     },
     {
       "label": "Impact",
       "headline": "AI that *cares*",
-      "text": "I train AI models that help real farmers and build chatbots that calm 2 AM anxiety.",
+      "text": "I train ==AI models== that help ==real farmers== and build chatbots that calm ==2 AM anxiety==.",
       "side": "left",
       "particleShape": "chat-bubble"
     },
     {
       "label": "Open to work",
       "headline": "Got an idea? *Let's build it*",
-      "text": "Open to freelance, collaborations, and full-time opportunities.",
+      "text": "Open to ==freelance==, ==collaborations==, and ==full-time== opportunities.",
       "side": "center",
       "particleShape": "constellation"
     }

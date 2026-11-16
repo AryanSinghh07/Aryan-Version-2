@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
         </h1>
         <h2 v-else class="t-h2 scene__split"><UiAccentText :text="scene.headline" /></h2>
 
-        <p class="scene__text scene__split">{{ scene.text }}</p>
+        <p class="scene__text scene__split"><UiAccentText :text="scene.text" /></p>
 
         <p v-if="i === 0 && intro" class="scene__intro t-label t-muted">{{ intro }}</p>
       </div>
@@ -283,14 +283,23 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-// Scrim colour per theme: night violet in dark mode, a pale pink haze in light mode. Set on
-// the theme attribute itself (a scoped `.hero` default would always win over it).
+// Per theme: the scrim behind the text, the shadow that lifts the words off the 3D world, the
+// gradient for the accent word (the particle logo's three colours) and the keyword highlight.
+// Set on the theme attribute itself (a scoped `.hero` default would always win over it).
 :global([data-theme='dark']) {
   --scene-scrim: rgb(13 10 36 / 0.5);
+  --scene-shadow: rgb(8 6 24 / 0.75);
+  --scene-grad: linear-gradient(100deg, #c9adff 0%, #ff8fd0 55%, #7fd6ff 100%);
+  --scene-keyword: #a8ecff;
+  --scene-keyword-bg: rgb(127 214 255 / 0.2);
 }
 
 :global([data-theme='light']) {
   --scene-scrim: rgb(255 246 252 / 0.78);
+  --scene-shadow: rgb(255 250 253 / 0.9);
+  --scene-grad: linear-gradient(100deg, #6a35e8 0%, #e0479e 55%, #2f86ff 100%);
+  --scene-keyword: #5a28d6;
+  --scene-keyword-bg: rgb(224 71 158 / 0.16);
 }
 
 .hero__scrim {
@@ -352,9 +361,51 @@ onBeforeUnmount(() => {
   gap: 1rem;
 }
 
+// Headlines: a soft shadow lifts them off the landscape; the accent word shines in the logo's
+// colours (a drop-shadow, not a text-shadow, so the gradient fill stays clean)
+.scene :is(h1, h2) {
+  text-shadow: 0 2px 28px var(--scene-shadow);
+
+  :deep(em) {
+    padding-right: 0.08em;
+    background: var(--scene-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 14px var(--scene-shadow));
+  }
+}
+
 .scene__text {
-  max-width: 32rem;
-  font-size: 1.125rem;
+  max-width: 34rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  text-shadow: 0 1px 14px var(--scene-shadow);
+
+  // Keywords: brighter, bolder, with a highlighter stroke under the lower half
+  :deep(.keyword) {
+    padding: 0 0.12em;
+    margin: 0 -0.04em;
+    border-radius: 0.2em;
+    color: var(--scene-keyword);
+    font-weight: 650;
+    background: linear-gradient(transparent 58%, var(--scene-keyword-bg) 58%);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+}
+
+// The small label and counter above the headline: a little stronger over the 3D world
+.scene__meta :deep(.t-muted) {
+  color: var(--foreground);
+  opacity: 0.75;
+}
+
+.scene__intro {
+  text-shadow: 0 1px 10px var(--scene-shadow);
 }
 
 @media (min-width: 768px) {
