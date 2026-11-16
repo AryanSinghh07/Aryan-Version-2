@@ -16,6 +16,10 @@
 }
 
 html {
+  // Scroll positions are set by the router and Lenis. The browser's scroll anchoring would
+  // fight them: restoring a page part-way down while it is still filling in, it pins
+  // whatever is on screen (often the footer) and drags the page to the bottom.
+  overflow-anchor: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
