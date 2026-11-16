@@ -30,8 +30,8 @@ void main() {
 
   // Spring: softened right after a morph and ramped back up at a per-particle moment,
   // so particles leave and arrive one after another instead of all at once
-  float start = hash * 0.35;
-  float ramp = smoothstep(start, start + 0.6, uMorphTime);
+  float start = hash * 0.5;
+  float ramp = smoothstep(start, start + 1.0, uMorphTime);
   vec3 acc = (target - pos.xyz) * uSpring * mix(0.12, 1.0, ramp);
 
   // Curl flow: swirling drift that never clumps

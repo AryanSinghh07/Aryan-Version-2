@@ -23,18 +23,23 @@ import { createRandom, onSphere } from '../shapes/random'
 import type { ShapeLibrary } from '../shapes/ShapeLibrary'
 
 /** Morph timing, seconds: the burst, and how long until everyone has arrived */
-const BURST_DURATION = 0.8
-const MORPH_DURATION = 1.6
+const BURST_DURATION = 1
+const MORPH_DURATION = 2.2
 
-/** Physics starting values (tunable from #debug) */
+/**
+ * Physics starting values (tunable from #debug). Spring and damping are close to critical:
+ * particles glide to their place and stop there instead of overshooting and wobbling. The
+ * flow and pulse only add a slow shimmer (they push a particle about 0.02 units off its spot),
+ * so the shape stays crisp.
+ */
 export const PHYSICS = {
-  spring: 0.05,
-  damping: 0.9,
-  flowStrength: 0.0035,
+  spring: 0.06,
+  damping: 0.8,
+  flowStrength: 0.0012,
   flowScale: 1.6,
-  flowSpeed: 0.18,
-  pulse: 0.0012,
-  burstPeak: 0.06,
+  flowSpeed: 0.08,
+  pulse: 0.0004,
+  burstPeak: 0.04,
   pointerRadius: 0.75,
   pointerStrength: 0.045,
 }
