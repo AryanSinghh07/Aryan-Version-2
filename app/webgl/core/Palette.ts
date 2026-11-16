@@ -8,6 +8,9 @@ type ColorKey =
   | 'glow'
   | 'particleA'
   | 'particleB'
+  | 'logoA'
+  | 'logoB'
+  | 'logoC'
   | 'spark'
   | 'shadowTint'
   | 'surface'
@@ -36,6 +39,9 @@ const COLOR_KEYS: ColorKey[] = [
   'glow',
   'particleA',
   'particleB',
+  'logoA',
+  'logoB',
+  'logoC',
   'spark',
   'shadowTint',
   'surface',
@@ -67,6 +73,9 @@ function flatten(c: SceneColors): Record<ColorKey, string> & Record<NumberKey, n
     glow: c.glow,
     particleA: c.particleA,
     particleB: c.particleB,
+    logoA: c.logo.a,
+    logoB: c.logo.b,
+    logoC: c.logo.c,
     spark: c.spark,
     shadowTint: c.grade.shadowTint,
     surface: c.surface,

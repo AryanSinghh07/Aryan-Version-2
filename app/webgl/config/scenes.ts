@@ -36,23 +36,22 @@ export interface Orbit {
 }
 
 /**
- * Camera orbit per full-screen scene: each scene change swings the camera around the logo,
- * so the landscape appears to turn while the logo stays in place. Angles are picked so the
- * lighthouse and the blossom tree never stand behind the text: text on the right (scenes 1
- * and 3) looks past the tree with the lighthouse out of frame; text on the left (2 and 4)
- * puts the lighthouse or the tree beside the logo; the closing scene looks over the lake to
- * the tree and the fox. Cycles if there are more scenes.
+ * Camera orbit per full-screen scene. The camera starts in front of the logo and travels one
+ * way round the lake as the visitor scrolls (it never turns back), passing the blossom tree
+ * with the fox and the lighthouse on its way, and ends almost back where it began. Each stop
+ * keeps the lighthouse and the tree beside the logo rather than behind the text. Cycles if
+ * there are more scenes.
  */
 export const SCENE_ORBITS: Orbit[] = [
   { angle: 0, height: 0.35, distance: 8.4 },
-  { angle: 120, height: 0.75, distance: 8.3 },
-  { angle: 40, height: 0.3, distance: 8.6 },
-  { angle: 190, height: 0.9, distance: 8.3 },
-  { angle: -15, height: 0.5, distance: 8.7 },
+  { angle: 100, height: 0.75, distance: 8.3 },
+  { angle: 140, height: 0.3, distance: 8.6 },
+  { angle: 205, height: 0.9, distance: 8.3 },
+  { angle: 340, height: 0.5, distance: 8.7 },
 ]
 
 /** The logo turns to face the camera by this share of the orbit angle, so it always reads */
-export const LOGO_FOLLOW = 0.85
+export const LOGO_FOLLOW = 0.95
 
 /** Floor height (just below the logo) */
 export const FLOOR_Y = -2.4

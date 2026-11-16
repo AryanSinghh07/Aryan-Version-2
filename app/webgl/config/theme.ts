@@ -8,6 +8,12 @@ export interface SceneColors {
   glow: string
   particleA: string
   particleB: string
+  /**
+   * The particle logo's three colours: most balls in the first, fewer in the second and
+   * fewest in the third. Picked to work on each theme's sky (jewel tones by day, glowing
+   * pastels at night).
+   */
+  logo: { a: string; b: string; c: string }
   spark: string
   /** Sky dome gradient, from the horizon up (from the Digital Atmosphere scene: night / pastel day) */
   sky: { horizon: string; mid: string; high: string; top: string }
@@ -46,6 +52,7 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     lake: '#a693dc',
     particleA: '#7b3ff2',
     particleB: '#c9b8ff',
+    logo: { a: '#6a35e8', b: '#e0479e', c: '#2f86ff' },
     spark: '#d4ff3a',
     surface: '#ede7ff',
     lavender: '#c9b8ff',
@@ -73,6 +80,7 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
     lake: '#6c5ca8',
     particleA: '#9b6bff',
     particleB: '#ede7ff',
+    logo: { a: '#a77bff', b: '#ff8fd0', c: '#7fd6ff' },
     spark: '#d4ff3a',
     surface: '#1e1033',
     lavender: '#c9b8ff',

@@ -1,9 +1,9 @@
 // Each particle is drawn as a tiny lit sphere: a fake normal from the point coordinate,
 // diffuse light, a specular glint, a cool/warm rim, and a glow near the centre of the shape
 // that slowly pulses. Colours are linear; three.js converts the output.
-uniform vec3 uColorA;      // main violet
-uniform vec3 uColorB;      // lavender
-uniform vec3 uColorC;      // a touch of pink for depth
+uniform vec3 uColorA;      // the logo's three colours: about 55% of the balls,
+uniform vec3 uColorB;      // 28%,
+uniform vec3 uColorC;      // and 17%
 uniform vec3 uSparkColor;  // accent sparks
 uniform vec3 uRimCool;
 uniform vec3 uRimWarm;
@@ -32,8 +32,7 @@ void main() {
   float glint = pow(max(dot(n, h), 0.0), 48.0);
   float rim = pow(1.0 - n.z, 2.2);
 
-  vec3 base = mix(uColorA, uColorB, vColorMix);
-  base = mix(base, uColorC, smoothstep(0.75, 1.0, vColorMix) * 0.6);
+  vec3 base = vColorMix < 0.55 ? uColorA : (vColorMix < 0.83 ? uColorB : uColorC);
   base = mix(base, uSparkColor, vSpark);
 
   vec3 rimColor = mix(uRimCool, uRimWarm, clamp(n.x * 0.5 + 0.5, 0.0, 1.0));

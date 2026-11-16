@@ -70,12 +70,12 @@ function lerpPoint(
   ]
 }
 
-// ---------------------------------------------------------------- Scene 1: the letter A
-/** The letter A in the display font, sampled from a canvas and given a little depth */
+// ---------------------------------------------------------------- Scene 1: the letter a
+/** A lowercase "a" in the display font, sampled from a canvas and given a little depth */
 export const letterA: ShapeGenerator = async (count) => {
   const family = '"Instrument Serif", "Times New Roman", serif'
   try {
-    await document.fonts.load(`400 400px ${family}`, 'A')
+    await document.fonts.load(`400 400px ${family}`, 'a')
   } catch {
     // Fall back to whatever serif is available
   }
@@ -88,9 +88,9 @@ export const letterA: ShapeGenerator = async (count) => {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.font = `400 470px ${family}`
-  const metrics = ctx.measureText('A')
+  const metrics = ctx.measureText('a')
   const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-  ctx.fillText('A', size / 2, size / 2 + height / 2 - metrics.actualBoundingBoxDescent)
+  ctx.fillText('a', size / 2, size / 2 + height / 2 - metrics.actualBoundingBoxDescent)
 
   const data = ctx.getImageData(0, 0, size, size).data
   const filled: number[] = []

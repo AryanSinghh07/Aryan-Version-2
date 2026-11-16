@@ -47,7 +47,6 @@ export const PHYSICS = {
 /** Rim light colours: cool on one side of each ball, warm on the other (sRGB) */
 const RIM_COOL = '#a9b8ff'
 const RIM_WARM = '#ff9ad8'
-const PINK = '#ff8fd0'
 
 /**
  * The particle logo: tens of thousands of small lit spheres driven by physics on the GPU.
@@ -111,7 +110,7 @@ export class Particles {
         uProgress: { value: 1 },
         uDrift: { value: 1 },
         uScatter: { value: 1 },
-        uSize: { value: 0.017 },
+        uSize: { value: 0.026 },
         uResolutionY: { value: 1 },
         uPointer: { value: new Vector3(999, 999, 0) },
         uPointerRadius: { value: PHYSICS.pointerRadius },
@@ -119,7 +118,7 @@ export class Particles {
         uSparkRatio: { value: 0.04 },
         uColorA: { value: new Vector3() },
         uColorB: { value: new Vector3() },
-        uColorC: { value: color(PINK) },
+        uColorC: { value: new Vector3() },
         uSparkColor: { value: new Vector3() },
         uRimCool: { value: color(RIM_COOL) },
         uRimWarm: { value: color(RIM_WARM) },
@@ -270,10 +269,12 @@ export class Particles {
   /** Colours from the (tweened) theme palette */
   applyPalette(palette: Palette) {
     const { colors, values } = palette
-    const { uColorA, uColorB, uSparkColor, uSparkRatio, uIntensity, uGlow, uSpecular } =
+    const { uColorA, uColorB, uColorC, uSparkColor, uSparkRatio, uIntensity, uGlow, uSpecular } =
       this.uniforms
-    ;(uColorA!.value as Vector3).set(colors.particleA.r, colors.particleA.g, colors.particleA.b)
-    ;(uColorB!.value as Vector3).set(colors.particleB.r, colors.particleB.g, colors.particleB.b)
+    // The logo's three colours
+    ;(uColorA!.value as Vector3).set(colors.logoA.r, colors.logoA.g, colors.logoA.b)
+    ;(uColorB!.value as Vector3).set(colors.logoB.r, colors.logoB.g, colors.logoB.b)
+    ;(uColorC!.value as Vector3).set(colors.logoC.r, colors.logoC.g, colors.logoC.b)
     ;(uSparkColor!.value as Vector3).set(colors.spark.r, colors.spark.g, colors.spark.b)
     uSparkRatio!.value = 0.035 + palette.darkness * 0.015
     uIntensity!.value = values.intensity
@@ -398,7 +399,7 @@ export class Particles {
       const big = prand() < 0.04
       params[i * 3] = prand()
       params[i * 3 + 1] = big ? 1.6 + prand() * 0.6 : 0.7 + prand() * 0.6
-      params[i * 3 + 2] = Math.pow(prand(), 1.6) // colour mix, mostly the main violet
+      params[i * 3 + 2] = prand() // which of the three logo colours (see the fragment shader)
     }
     this.geometry.dispose()
     this.geometry = new BufferGeometry()
