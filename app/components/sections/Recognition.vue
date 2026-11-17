@@ -1,71 +1,87 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
-// Ruled list of awards. On mouse/trackpad devices a proof card follows the cursor while a row
-// is hovered: the first proof photo when one exists (content/recognition.json "images"),
-// otherwise a badge with the award's number, type and year. Decorative only: every detail is
-// already in the row itself.
+// Recognition as a bento grid of glass cards. The first award is the large feature card;
+// each card leads with its stat ("34th", "2,000+"), counting up as the grid scrolls in, with
+// the award's type, year (also as a large outlined watermark), title, detail and a link to the
+// related project. On mouse/trackpad devices cards tilt towards the pointer under a soft
+// spotlight. Without JavaScript or with reduced motion everything is simply shown.
 const { data: recognition } = await useRecognition()
 
-const enabled = ref(false)
-const active = ref(-1)
-const card = ref<HTMLElement | null>(null)
-const activeItem = computed(() => recognition.value?.items[active.value])
+const grid = ref<HTMLElement | null>(null)
+let ctx: gsap.Context | null = null
 
-let moveX: gsap.QuickToFunc | null = null
-let moveY: gsap.QuickToFunc | null = null
-let tilt: gsap.QuickToFunc | null = null
-let lastX = 0
+/** "2,000+" → { prefix: '', value: 2000, suffix: '+', grouped: true }; words don't count */
+function parseStat(stat: string) {
+  const m = stat.match(/^(\D*)([\d,]+)(\D*)$/)
+  if (!m) return null
+  return {
+    prefix: m[1] ?? '',
+    value: Number(m[2]!.replace(/,/g, '')),
+    suffix: m[3] ?? '',
+    grouped: m[2]!.includes(','),
+  }
+}
 
-onMounted(async () => {
-  if (!hasFinePointer() || prefersReducedMotion()) return
-  enabled.value = true
-  await nextTick()
-  if (!card.value) return
-  gsap.set(card.value, { xPercent: -50, yPercent: -50, autoAlpha: 0, scale: 0.8 })
-  moveX = gsap.quickTo(card.value, 'x', { duration: 0.6, ease: 'power3.out' })
-  moveY = gsap.quickTo(card.value, 'y', { duration: 0.6, ease: 'power3.out' })
-  tilt = gsap.quickTo(card.value, 'rotation', { duration: 0.5, ease: 'power3.out' })
+onMounted(() => {
+  if (!grid.value || prefersReducedMotion()) return
+  const cards = [...grid.value.querySelectorAll<HTMLElement>('.award')]
+
+  ctx = gsap.context(() => {
+    // Cards rise into place one after another, sharpening from a blur
+    gsap.from(cards, {
+      y: 60,
+      autoAlpha: 0,
+      scale: 0.96,
+      filter: 'blur(10px)',
+      duration: 1.1,
+      stagger: 0.09,
+      ease: 'expo.out',
+      clearProps: 'filter',
+      scrollTrigger: { trigger: grid.value, start: 'top 82%', once: true },
+    })
+
+    // Numeric stats count up as they arrive
+    for (const el of grid.value!.querySelectorAll<HTMLElement>('[data-stat]')) {
+      const stat = parseStat(el.dataset.stat ?? '')
+      if (!stat) continue
+      const counter = { n: 0 }
+      const format = (n: number) =>
+        `${stat.prefix}${stat.grouped ? Math.round(n).toLocaleString('en-US') : Math.round(n)}${stat.suffix}`
+      el.textContent = format(0)
+      gsap.to(counter, {
+        n: stat.value,
+        duration: 1.6,
+        ease: 'power3.out',
+        onUpdate: () => (el.textContent = format(counter.n)),
+        scrollTrigger: { trigger: el, start: 'top 90%', once: true },
+      })
+    }
+  }, grid.value)
+
+  if (!hasFinePointer()) return
+  // Tilt towards the pointer, with a spotlight that follows it
+  for (const card of cards) {
+    const rx = gsap.quickTo(card, 'rotationX', { duration: 0.6, ease: 'power3.out' })
+    const ry = gsap.quickTo(card, 'rotationY', { duration: 0.6, ease: 'power3.out' })
+    gsap.set(card, { transformPerspective: 900 })
+    card.addEventListener('pointermove', (e) => {
+      const r = card.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width
+      const y = (e.clientY - r.top) / r.height
+      card.style.setProperty('--mx', `${x * 100}%`)
+      card.style.setProperty('--my', `${y * 100}%`)
+      ry((x - 0.5) * 8)
+      rx((0.5 - y) * 8)
+    })
+    card.addEventListener('pointerleave', () => {
+      rx(0)
+      ry(0)
+    })
+  }
 })
 
-function onMove(e: PointerEvent) {
-  if (!moveX || !moveY || !tilt) return
-  moveX(e.clientX)
-  moveY(e.clientY - 40)
-  // Lean in the direction of travel
-  tilt(Math.max(-12, Math.min(12, (e.clientX - lastX) * 0.6)))
-  lastX = e.clientX
-}
-
-function show(i: number, e: PointerEvent) {
-  if (!enabled.value || !card.value) return
-  if (active.value === -1) {
-    // Appear at the pointer, not fly in from the last spot
-    gsap.set(card.value, { x: e.clientX, y: e.clientY - 40 })
-    lastX = e.clientX
-  }
-  active.value = i
-  gsap.to(card.value, {
-    autoAlpha: 1,
-    scale: 1,
-    duration: 0.35,
-    ease: 'power3.out',
-    overwrite: 'auto',
-  })
-}
-
-function hide() {
-  if (!enabled.value || !card.value) return
-  active.value = -1
-  tilt?.(0)
-  gsap.to(card.value, {
-    autoAlpha: 0,
-    scale: 0.8,
-    duration: 0.3,
-    ease: 'power2.in',
-    overwrite: 'auto',
-  })
-}
+onBeforeUnmount(() => ctx?.revert())
 </script>
 
 <template>
@@ -81,140 +97,251 @@ function hide() {
       </h2>
     </div>
 
-    <ol role="list" class="recognition__list" @pointerleave="hide">
+    <ol ref="grid" role="list" class="awards">
       <li
         v-for="(item, i) in recognition.items"
         :key="item.id"
-        class="recognition__row"
-        :class="{ 'is-active': active === i }"
-        @pointerenter="show(i, $event)"
-        @pointermove="onMove"
+        class="award"
+        :class="{ 'award--feature': i === 0 }"
       >
-        <span class="recognition__index t-label">[{{ projectNumber(i + 1) }}]</span>
-        <h3 class="recognition__title t-h3">{{ item.title }}</h3>
-        <span class="recognition__type t-label t-muted">{{ item.type }}</span>
-        <p class="recognition__detail">{{ item.detail }}</p>
+        <img v-if="item.images?.[0]" :src="item.images?.[0]" alt="" class="award__image" />
+        <span v-if="item.year" class="award__watermark" aria-hidden="true">{{ item.year }}</span>
+
+        <div class="award__top">
+          <span class="award__index t-label">{{ projectNumber(i + 1) }}</span>
+          <UiTag :variant="i === 0 ? 'accent' : 'outline'">{{ item.type }}</UiTag>
+          <span v-if="item.year" class="award__year t-label">{{ item.year }}</span>
+        </div>
+
+        <div class="award__stat">
+          <!-- The counter is decorative while it counts; screen readers get the final value -->
+          <span class="sr-only">{{ item.stat }}</span>
+          <span class="award__value" :data-stat="item.stat" aria-hidden="true">{{ item.stat }}</span>
+          <span class="award__stat-label t-label">{{ item.statLabel }}</span>
+        </div>
+
+        <div class="award__body">
+          <h3 class="award__title">{{ item.title }}</h3>
+          <p class="award__detail">{{ item.detail }}</p>
+          <NuxtLink v-if="item.project" :to="`/work/${item.project}`" class="award__link t-label">
+            View project <span aria-hidden="true">→</span>
+          </NuxtLink>
+        </div>
       </li>
     </ol>
-
-    <Teleport to="body">
-      <div v-if="enabled" ref="card" class="proof" aria-hidden="true">
-        <template v-if="activeItem">
-          <img
-            v-if="activeItem.images?.[0]"
-            :src="activeItem.images?.[0]"
-            alt=""
-            class="proof__image"
-          />
-          <div v-else class="proof__badge">
-            <span class="proof__number">{{ projectNumber(active + 1) }}</span>
-            <span class="proof__type t-label">{{ activeItem.type }}</span>
-            <span class="proof__title">{{ activeItem.title }}</span>
-            <span v-if="activeItem.year" class="proof__year t-label">{{ activeItem.year }}</span>
-          </div>
-        </template>
-      </div>
-    </Teleport>
   </section>
 </template>
 
 <style scoped lang="scss">
-.recognition__list {
-  border-top: 1px solid var(--border);
-}
-
-.recognition__row {
+// Bento grid: the wide feature card and one more on the first row, three below
+.awards {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.5rem 1.25rem;
-  padding-block: 1.75rem;
-  border-bottom: 1px solid var(--border);
-  transition:
-    background-color 0.25s ease,
-    padding 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  gap: 1rem;
+  grid-template-columns: 1fr;
 
-  &:hover,
-  &.is-active {
-    background: rgba(var(--primary-rgb), 0.05);
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @media (min-width: 1024px) {
-    grid-template-columns: 4rem minmax(0, 1.4fr) 10rem minmax(0, 1.6fr);
-    align-items: baseline;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
 
-    &.is-active {
-      padding-inline: 1rem;
+.award {
+  --mx: 50%;
+  --my: 0%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-height: 17rem;
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(var(--foreground-rgb), 0.12);
+  border-radius: 1.5rem;
+  // Frosted enough that small labels stay readable over the 3D world in both themes
+  background-color: rgba(var(--background-rgb), 0.62);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  transform-style: preserve-3d;
+  transition:
+    border-color 0.4s var(--ease-out),
+    box-shadow 0.4s var(--ease-out);
+
+  // Soft spotlight under the pointer
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    background: radial-gradient(
+      28rem circle at var(--mx) var(--my),
+      rgba(var(--primary-rgb), 0.22),
+      transparent 60%
+    );
+    transition: opacity 0.4s var(--ease-out);
+  }
+
+  &:hover {
+    border-color: rgba(var(--primary-rgb), 0.45);
+    box-shadow: 0 1.5rem 4rem -1.5rem rgba(var(--primary-rgb), 0.45);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    grid-column: span 2;
+  }
+}
+
+.award--feature {
+  // A violet tint over the frosted glass
+  background-image: linear-gradient(rgba(var(--primary-rgb), 0.14), rgba(var(--primary-rgb), 0.14));
+  border-color: rgba(var(--primary-rgb), 0.4);
+
+  @media (min-width: 768px) {
+    grid-column: span 2;
+  }
+
+  @media (min-width: 1024px) {
+    grid-column: span 4;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 2.5rem;
+
+    .award__top {
+      grid-column: 1 / -1;
+    }
+
+    .award__stat {
+      align-self: end;
+    }
+
+    .award__body {
+      align-self: end;
     }
   }
 }
 
-.recognition__index {
-  color: var(--primary);
-}
-
-.recognition__type,
-.recognition__detail {
-  grid-column: 2;
-
-  @media (min-width: 1024px) {
-    grid-column: auto;
-  }
-}
-
-// Follows the cursor (teleported to <body>, positioned by GSAP)
-.proof {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 300;
-  width: 15rem;
-  aspect-ratio: 4 / 5;
-  overflow: hidden;
-  border-radius: 1rem;
-  pointer-events: none;
-  box-shadow: 0 1.5rem 4rem rgba(var(--color-deep-plum-rgb), 0.35);
-}
-
-.proof__image {
+// Optional proof photo behind the feature card
+.award__image {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0.35;
 }
 
-.proof__badge {
-  display: grid;
-  align-content: space-between;
-  gap: 0.75rem;
-  height: 100%;
-  padding: 1.25rem;
-  color: var(--on-primary);
-  background:
-    radial-gradient(circle at 75% 20%, rgba(var(--color-lavender-rgb), 0.6), transparent 55%),
-    linear-gradient(160deg, var(--primary), var(--primary-active));
-}
-
-.proof__number {
+// The year as a large outlined watermark in the corner
+.award__watermark {
+  position: absolute;
+  right: -0.06em;
+  bottom: -0.2em;
+  z-index: -1;
   font-family: var(--font-display);
-  font-size: 5rem;
-  line-height: 0.85;
-}
-
-.proof__type {
-  justify-self: start;
-  padding: 0.35em 0.8em;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--on-accent);
-}
-
-.proof__title {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: clamp(6rem, 12vw, 10rem);
   line-height: 1;
-  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(var(--foreground-rgb), 0.12);
+  pointer-events: none;
+  user-select: none;
+
+  .award--feature & {
+    font-size: clamp(8rem, 16vw, 14rem);
+  }
 }
 
-.proof__year {
-  opacity: 0.8;
+.award__top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.award__index {
+  color: var(--primary);
+}
+
+.award__year {
+  margin-left: auto;
+  color: var(--foreground-muted);
+}
+
+.award__stat {
+  display: grid;
+  gap: 0.5rem;
+  transform: translateZ(30px);
+}
+
+.award__value {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 6vw, 5rem);
+  line-height: 0.85;
+  text-transform: uppercase;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+
+  .award--feature & {
+    font-size: clamp(5rem, 9vw, 8.5rem);
+  }
+}
+
+.award__stat-label {
+  color: var(--foreground-muted);
+}
+
+.award__body {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: auto;
+  transform: translateZ(20px);
+}
+
+.award__title {
+  font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.2;
+
+  .award--feature & {
+    font-size: clamp(1.6rem, 2.4vw, 2.25rem);
+  }
+}
+
+.award__detail {
+  max-width: 34rem;
+  color: var(--foreground-muted);
+}
+
+.award__link {
+  justify-self: start;
+  margin-top: 0.4rem;
+  color: var(--foreground);
+  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.3);
+  transition:
+    color 0.3s var(--ease-out),
+    border-color 0.3s var(--ease-out);
+
+  span {
+    display: inline-block;
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--primary);
+    border-color: var(--primary);
+
+    span {
+      transform: translateX(0.3em);
+    }
+  }
 }
 </style>

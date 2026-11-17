@@ -90,8 +90,13 @@ export default defineContentConfig({
             id: z.string(),
             title: z.string(),
             type: z.string(),
+            /** The headline number or word on the card ("34th", "2,000+"), and what it means */
+            stat: z.string(),
+            statLabel: z.string(),
             detail: z.string(),
             year: z.number().optional(),
+            /** Slug of the related project, linked from the card */
+            project: z.string().optional(),
             images: z.array(z.string()).default([]),
           })
         ),
