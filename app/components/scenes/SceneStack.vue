@@ -7,6 +7,8 @@ import type { TextSide } from '~/webgl/config/scenes'
 
 export interface SceneContent {
   label: string
+  /** Bottom layout: a large italic lead before the headline ("Got an idea?") */
+  lead?: string
   headline: string
   text: string
   /** Defaults: left, constellation */
@@ -23,6 +25,11 @@ const props = defineProps<{
   intro?: string
   /** Names the scene set for screen readers ("Hero", "About") */
   label: string
+  /**
+   * Past the last scene, glide this far down (in screen heights) instead of to the end of
+   * the scenes: the home hero continues into its scroll-driven outro (HeroScenes)
+   */
+  releaseDistance?: number
 }>()
 const store = useAppStore()
 const lenis = useLenis()
@@ -41,7 +48,10 @@ const total = computed(() => scenes.value.length)
 // render too, so the shapes are ready before the page finishes loading)
 store.heroScenes = scenes.value.map((s) => ({ shape: s.particleShape, side: s.side }))
 store.scenesRoute = normalizePath(route.path)
-const plain = (text: string) => text.replace(/\*/g, '')
+const plain = (text: string) => text.replace(/\*/g, '').replace(/==/g, '')
+/** The full headline as read aloud: the lead and the headline together */
+const spoken = (scene: SceneContent) =>
+  plain([scene.lead, scene.headline].filter(Boolean).join(' '))
 
 const root = ref<HTMLElement | null>(null)
 // Scene elements in DOM order (read from the DOM: a v-for ref array has no guaranteed order)
@@ -98,7 +108,9 @@ const { current, locked, goTo, start, enter, release } = useScenes({
   transition,
   // Past the last scene: glide down to the content below the hero
   onRelease: () => {
-    if (root.value) lenis?.scrollTo(root.value.offsetHeight, { duration: 1.2 })
+    if (props.releaseDistance != null) {
+      lenis?.scrollTo(window.innerHeight * props.releaseDistance, { duration: 1.6 })
+    } else if (root.value) lenis?.scrollTo(root.value.offsetHeight, { duration: 1.2 })
   },
 })
 
@@ -208,6 +220,7 @@ onBeforeUnmount(() => {
       <span class="hero__scrim-layer hero__scrim-layer--left" />
       <span class="hero__scrim-layer hero__scrim-layer--right" />
       <span class="hero__scrim-layer hero__scrim-layer--center" />
+      <span class="hero__scrim-layer hero__scrim-layer--bottom" />
     </div>
     <section
       v-for="(scene, i) in scenes"
@@ -217,7 +230,27 @@ onBeforeUnmount(() => {
       :aria-label="`Scene ${i + 1} of ${total}`"
       :aria-hidden="interactive && current !== i ? 'true' : undefined"
     >
-      <div class="scene__content">
+      <!-- Bottom layout: label and line top-left; the lead and a huge headline along the foot -->
+      <div v-if="scene.side === 'bottom'" class="scene__content scene__content--bottom">
+        <div class="scene__top">
+          <div class="scene__meta">
+            <UiTag :variant="i === total - 1 ? 'accent' : 'outline'">{{ scene.label }}</UiTag>
+            <span class="t-label t-muted">
+              [{{ projectNumber(i + 1) }}/{{ projectNumber(total) }}]
+            </span>
+          </div>
+          <p class="scene__text scene__split"><UiAccentText :text="scene.text" /></p>
+        </div>
+        <h2 class="scene__big">
+          <span v-if="scene.lead" class="scene__lead">
+            <span class="scene__split">{{ scene.lead }}</span>
+            <span class="scene__arrow" aria-hidden="true">↳</span>
+          </span>
+          <span class="scene__main scene__split"><UiAccentText :text="scene.headline" /></span>
+        </h2>
+      </div>
+
+      <div v-else class="scene__content">
         <div class="scene__meta">
           <UiTag :variant="i === total - 1 ? 'accent' : 'outline'">{{ scene.label }}</UiTag>
           <span class="t-label t-muted">
@@ -242,7 +275,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="hero__dot"
-            :aria-label="`Scene ${i + 1}: ${plain(scene.headline)}`"
+            :aria-label="`Scene ${i + 1}: ${spoken(scene)}`"
             :aria-current="current === i ? 'step' : undefined"
             @click="onNavClick(i)"
           />
@@ -256,7 +289,7 @@ onBeforeUnmount(() => {
 
     <p v-if="interactive" class="sr-only" aria-live="polite">
       Scene {{ current + 1 }} of {{ total }}:
-      {{ plain(scenes[current]?.headline ?? '') }}
+      {{ spoken(scenes[current] ?? { label: '', headline: '', text: '' }) }}
     </p>
   </div>
 </template>
@@ -303,9 +336,14 @@ onBeforeUnmount(() => {
   background: radial-gradient(ellipse 60% 48% at 50% 52%, var(--scene-scrim), transparent);
 }
 
+.hero__scrim-layer--bottom {
+  background: linear-gradient(0deg, var(--scene-scrim) 5%, transparent 58%);
+}
+
 .hero__scrim[data-side='left'] .hero__scrim-layer--left,
 .hero__scrim[data-side='right'] .hero__scrim-layer--right,
-.hero__scrim[data-side='center'] .hero__scrim-layer--center {
+.hero__scrim[data-side='center'] .hero__scrim-layer--center,
+.hero__scrim[data-side='bottom'] .hero__scrim-layer--bottom {
   opacity: 1;
 }
 
@@ -313,7 +351,8 @@ onBeforeUnmount(() => {
 @media (max-width: 767px) {
   .hero__scrim-layer--left,
   .hero__scrim-layer--right,
-  .hero__scrim-layer--center {
+  .hero__scrim-layer--center,
+  .hero__scrim-layer--bottom {
     background: linear-gradient(0deg, var(--scene-scrim), transparent 65%);
   }
 }
@@ -399,6 +438,69 @@ onBeforeUnmount(() => {
     justify-items: center;
     text-align: center;
   }
+}
+
+// ---------------------------------------------------------------- Bottom layout
+// The shape floats in the sky; the words sit along the foot of the screen: the label and a
+// small uppercase line top-left, then the italic lead with its arrow and a huge headline.
+.scene--bottom {
+  align-items: flex-end;
+  padding-bottom: clamp(4.5rem, 9vh, 6.5rem);
+}
+
+.scene__content--bottom {
+  width: 100%;
+  max-width: none;
+  gap: clamp(1.5rem, 4vh, 3rem);
+}
+
+.scene__top {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 26rem;
+}
+
+.scene--bottom .scene__text {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.scene__big {
+  display: grid;
+  gap: 0.5rem 2rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: minmax(0, 0.38fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.scene__lead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
+  font-size: clamp(3.2rem, 7vw, 7rem);
+  font-style: italic;
+  line-height: 0.9;
+}
+
+.scene__arrow {
+  font-size: 0.45em;
+  font-style: normal;
+  color: var(--scene-accent);
+}
+
+.scene__main {
+  font-size: clamp(3.8rem, 10vw, 10.5rem);
+  line-height: 0.84;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 // Interactive mode: scenes stack on top of each other inside one screen

@@ -110,7 +110,7 @@ export class Particles {
         uProgress: { value: 1 },
         uDrift: { value: 1 },
         uScatter: { value: 1 },
-        uSize: { value: 0.026 },
+        uSize: { value: 0.03 },
         uResolutionY: { value: 1 },
         uPointer: { value: new Vector3(999, 999, 0) },
         uPointerRadius: { value: PHYSICS.pointerRadius },
@@ -275,7 +275,14 @@ export class Particles {
     ;(uColorA!.value as Vector3).set(colors.logoA.r, colors.logoA.g, colors.logoA.b)
     ;(uColorB!.value as Vector3).set(colors.logoB.r, colors.logoB.g, colors.logoB.b)
     ;(uColorC!.value as Vector3).set(colors.logoC.r, colors.logoC.g, colors.logoC.b)
-    ;(uSparkColor!.value as Vector3).set(colors.spark.r, colors.spark.g, colors.spark.b)
+    // Sparks: pale white beads at night; on the pastel day sky (where white would vanish)
+    // they blend towards the main violet
+    const d = palette.darkness
+    ;(uSparkColor!.value as Vector3).set(
+      colors.logoA.r + (1 - colors.logoA.r) * d,
+      colors.logoA.g + (0.93 - colors.logoA.g) * d,
+      colors.logoA.b + (1 - colors.logoA.b) * d
+    )
     uSparkRatio!.value = 0.035 + palette.darkness * 0.015
     uIntensity!.value = values.intensity
     // A brighter core and glint on dark backgrounds, where bloom picks them up

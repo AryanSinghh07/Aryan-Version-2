@@ -2,7 +2,7 @@
 // Which shape each scene shows comes from content (profile.json heroScenes, about.json scenes:
 // particleShape), so changing a shape there needs no code change.
 
-export type TextSide = 'left' | 'right' | 'center'
+export type TextSide = 'left' | 'right' | 'center' | 'bottom'
 
 export interface HeroSceneInfo {
   shape: string
@@ -24,6 +24,8 @@ export function layoutFor(side: TextSide, portrait: boolean): Layout {
     return { x: 0, y: 1.45, scale: 0.42, opacity: side === 'center' ? 0.35 : 0.55 }
   }
   if (side === 'center') return { x: 0, y: 0, scale: 1.1, opacity: 0.4 }
+  // Text along the bottom: the shape floats in the sky above it, at full strength
+  if (side === 'bottom') return { x: 0, y: 0.85, scale: 0.8, opacity: 1 }
   // Sides: kept clear of the centre line so shapes never run into the headline
   return { x: side === 'right' ? -2.15 : 2.15, y: 0, scale: 0.78, opacity: 1 }
 }

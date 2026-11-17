@@ -95,7 +95,7 @@ onMounted(async () => {
   open.value = false
   await nextTick()
   // The page below just got shorter: re-measure scroll-triggered reveals
-  ScrollTrigger.refresh()
+  refreshScroll()
   if (prefersReducedMotion() || !head.value) return
   headCtx = gsap.context(() => {
     for (const n of head.value!.querySelectorAll<HTMLElement>('[data-count]')) countUp(n, true)
@@ -105,6 +105,12 @@ onMounted(async () => {
 onBeforeUnmount(() => headCtx?.revert())
 
 let animating = false
+
+/** The page height changed: re-measure Lenis' scroll limit and the scroll triggers */
+function refreshScroll() {
+  lenis?.resize()
+  ScrollTrigger.refresh()
+}
 
 async function toggle() {
   if (animating) return
@@ -128,14 +134,14 @@ async function toggle() {
           onComplete: () => {
             gsap.set(el, { clearProps: 'height,overflow' })
             animating = false
-            ScrollTrigger.refresh()
+            refreshScroll()
           },
         }
       )
       play()
     }
     lenis?.scrollTo(el, { offset: -120, duration: 1.2 })
-    if (reduced) ScrollTrigger.refresh()
+    if (reduced) refreshScroll()
     return
   }
 
@@ -143,7 +149,7 @@ async function toggle() {
   if (!el || reduced) {
     open.value = false
     await nextTick()
-    ScrollTrigger.refresh()
+    refreshScroll()
     return
   }
   animating = true
@@ -156,7 +162,7 @@ async function toggle() {
       open.value = false
       gsap.set(el, { clearProps: 'height,overflow' })
       animating = false
-      ScrollTrigger.refresh()
+      refreshScroll()
     },
   })
 }

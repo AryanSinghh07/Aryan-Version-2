@@ -58,6 +58,8 @@ interface Themed {
  */
 export class Landscape {
   group = new Group()
+  /** Switched off by the World (the home hero outro ends the landscape) */
+  hidden = false
   /** 0 → 1 while it fades in after loading */
   appear = 0
 
@@ -229,7 +231,7 @@ export class Landscape {
 
   update(palette: Palette, delta: number, reduced: boolean) {
     if (!this.ready) return
-    this.group.visible = true
+    this.group.visible = !this.hidden
     if (this.appear < 1) {
       this.appear = Math.min(1, this.appear + delta / (reduced ? 0.01 : 1.6))
       const t = this.appear * this.appear * (3 - 2 * this.appear)

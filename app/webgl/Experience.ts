@@ -32,6 +32,8 @@ export interface AppStateSource {
   scenesRoute: string | null
   pageShape: string | null
   nextPreview: { route: string; progress: number } | null
+  /** Home hero outro progress, or null on pages without one */
+  outro: number | null
   carousel: CarouselState | null
   /** Written back by the Experience: the Work page panel under the pointer (-1: none) */
   carouselHover: number
@@ -63,6 +65,8 @@ export interface FrameState {
   elapsed: number
   /** 0 at the top of the page, 1 once the visitor has scrolled one screen down */
   scrollFade: number
+  /** Home hero outro progress (0 → 1), or -1 on pages without one */
+  outro: number
   /** Taller than wide (phones held upright) */
   portrait: boolean
   /** Drawing-buffer height in pixels, for resolution-independent particle sizes */
@@ -159,6 +163,7 @@ export class Experience {
       particleCount: this.particleCount(),
       elapsed: 0,
       scrollFade: 0,
+      outro: -1,
       portrait: false,
       resolutionY: 1,
       aspect: 1,
@@ -278,7 +283,14 @@ export class Experience {
     particles.add(u.uPointerRadius!, 'value', 0.1, 3, 0.01).name('pointer radius')
     const shapes = { shape: this.world.particles.shape ?? 'letter-a' }
     particles
-      .add(shapes, 'shape', ['letter-a', 'neural-net', 'leaf', 'chat-bubble', 'constellation'])
+      .add(shapes, 'shape', [
+        'letter-a',
+        'neural-net',
+        'leaf',
+        'chat-bubble',
+        'constellation',
+        'ring',
+      ])
       .name('preview shape')
       .onChange((name: string) => void this.world.particles.morphTo(name))
   }
@@ -328,6 +340,7 @@ export class Experience {
     if (state.theme !== this.palette.theme) this.palette.setTheme(state.theme, frame.reducedMotion)
     frame.elapsed = elapsed
     frame.scrollFade = Math.min(Math.max(window.scrollY / Math.max(this.sizes.height, 1), 0), 1)
+    frame.outro = state.outro ?? -1
     frame.portrait = this.sizes.width < this.sizes.height * 0.9
     frame.resolutionY = this.sizes.height * this.sizes.pixelRatio
     frame.aspect = this.sizes.width / Math.max(this.sizes.height, 1)

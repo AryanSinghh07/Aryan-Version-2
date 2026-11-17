@@ -42,9 +42,14 @@ export default defineContentConfig({
         heroScenes: z.array(
           z.object({
             label: z.string(),
+            /**
+             * Bottom layout only: a large italic word before the headline ("Got an idea?"),
+             * with an arrow pointing into it
+             */
+            lead: z.string().optional(),
             headline: z.string(),
             text: z.string(),
-            side: z.enum(['left', 'right', 'center']),
+            side: z.enum(['left', 'right', 'center', 'bottom']),
             particleShape: z.string(),
           })
         ),
@@ -139,9 +144,10 @@ export default defineContentConfig({
         scenes: z.array(
           z.object({
             label: z.string(),
+            lead: z.string().optional(),
             headline: z.string(),
             text: z.string(),
-            side: z.enum(['left', 'right', 'center']).default('left'),
+            side: z.enum(['left', 'right', 'center', 'bottom']).default('left'),
             particleShape: z.string().default('constellation'),
           })
         ),

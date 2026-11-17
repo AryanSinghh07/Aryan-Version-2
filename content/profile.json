@@ -70,10 +70,11 @@
     },
     {
       "label": "Open to work",
-      "headline": "Got an idea? *Let's build it*",
+      "lead": "Got an idea?",
+      "headline": "Let's build *it*",
       "text": "Open to ==freelance==, ==collaborations==, and ==full-time== opportunities.",
-      "side": "center",
-      "particleShape": "constellation"
+      "side": "bottom",
+      "particleShape": "ring"
     }
   ],
   "about": {

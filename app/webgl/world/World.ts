@@ -24,10 +24,17 @@ import { Floor } from './Floor'
 import { Fragments } from './Fragments'
 import { Landscape, LANDSCAPE_SCALE } from './Landscape'
 import { Particles } from './Particles'
+import { Portal } from './Portal'
 import { Sky } from './Sky'
 import { Sparkles } from './Sparkles'
 
 const blend = (a: number, b: number, t: number) => a + (b - a) * t
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(Math.max((x - a) / (b - a), 0), 1)
+  return t * t * (3 - 2 * t)
+}
+/** Outro: the landscape ends once the portal covers the screen */
+const OUTRO_END = 0.68
 const DEG = Math.PI / 180
 
 /** How far the camera leans with the pointer, in world units */
@@ -53,9 +60,12 @@ export class World {
   landscape: Landscape
   fragments: Fragments
   carousel: Carousel
+  portal: Portal
   ready = false
 
   private environment: Environment
+  /** Glass shards shown on this quality tier */
+  private shards = true
   private fog: Fog
   private revealed = false
   private layout: Layout = { x: 0, y: 0, scale: 1, opacity: 0 }
@@ -93,9 +103,13 @@ export class World {
     this.fragments = new Fragments(scene, renderer, this.particles.points)
     this.sparkles = new Sparkles(scene)
     this.carousel = new Carousel(scene)
+    this.portal = new Portal(scene)
+    // The particles draw after the portal, so the ring stays in front of it
+    this.particles.points.renderOrder = 1000
     this.floor = new Floor(scene, () => [
       this.fragments.group,
       this.carousel.group,
+      this.portal.mesh,
       ...this.landscape.hiddenInReflection,
     ])
     // Reaches out to the far mountains (about 48 units away)
@@ -134,6 +148,7 @@ export class World {
   setQuality(tier: QualityTier, width: number, height: number, pixelRatio: number) {
     const q = QUALITY[tier]
     this.fragments.setQuality(tier)
+    this.shards = q.shards
     this.carousel.setQuality(tier)
     this.sparkles.setQuality(q.sparkles, q.fireflies)
     this.floor.setQuality(q.floor, width, height, pixelRatio)
@@ -194,10 +209,14 @@ export class World {
       : state.portrait
         ? PAGE_LAYOUT_PORTRAIT
         : view.layout
-    const fade = inScenes ? state.scrollFade : 0
+    // Home hero outro (0 → 1 while scrolling past the last scene, -1 when there is none):
+    // the particles stay in place and fade only as the portal swallows the screen
+    const outro = inScenes && state.outro >= 0 ? state.outro : -1
+    const fade = inScenes ? (outro >= 0 ? smooth(0.58, 0.72, outro) : state.scrollFade) : 0
+    const lift = outro >= 0 ? 0 : fade
     const l = this.layout
     l.x = MathUtils.lerp(l.x, target.x, ease)
-    l.y = MathUtils.lerp(l.y, target.y + fade * 2.2, ease)
+    l.y = MathUtils.lerp(l.y, target.y + lift * 2.2, ease)
     l.scale = MathUtils.lerp(l.scale, target.scale, ease)
     // Footer text on screen: dim the particles so links and the email stay easy to read.
     // On the Work page carousel they become a soft void behind the panels.
@@ -221,7 +240,18 @@ export class World {
     const { points } = particles
     points.position.set(this.logoX, l.y, 0)
     points.scale.setScalar(l.scale)
+    // Outro: the ring grows and rushes at the camera, so its balls swell and fly past
+    if (outro > 0 && !reduced) {
+      const grow = smooth(0, 0.7, outro) ** 2
+      points.scale.multiplyScalar(1 + grow * 5.5)
+      points.position.lerp(this.camera.position, grow * 0.7)
+    }
     this.logo.copy(points.position)
+
+    // Behind the portal the 3D landscape ends; it comes back when scrolling up again
+    const ended = outro >= OUTRO_END
+    this.landscape.hidden = ended
+    this.fragments.group.visible = this.shards && !ended
 
     // Orbit for the current scene (no orbit and no drift with reduced motion)
     const goal = SCENE_ORBITS[state.scene % SCENE_ORBITS.length]!
@@ -285,7 +315,8 @@ export class World {
       reduced
     )
     this.sky.update(palette, this.camera.position, this.logo, state.elapsed, reduced)
-    this.floor.update(palette, this.logo, state.elapsed, !onCarousel, delta)
+    this.floor.update(palette, this.logo, state.elapsed, !onCarousel && !ended, delta)
+    this.portal.update(outro, this.logo, this.camera, state.aspect, state.elapsed)
 
     // Pointer on a plane through the logo, facing the camera, for the particle physics
     const pointerOn = state.pointerActive && !reduced && state.entered ? 0.45 : 0
@@ -310,6 +341,7 @@ export class World {
 
   dispose() {
     this.carousel.dispose()
+    this.portal.dispose()
     this.parallaxX.tween.kill()
     this.parallaxY.tween.kill()
     this.scene.fog = null

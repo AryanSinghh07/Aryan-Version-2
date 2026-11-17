@@ -292,7 +292,29 @@ export const constellation: ShapeGenerator = (count) => {
   return normalize(out.points, SHAPE_RADIUS * 1.15)
 }
 
+// ---------------------------------------------------------------- Ring (the portal)
+/**
+ * A thick ring facing the camera, like a doughnut of light: the closing hero scene, which
+ * then grows and opens into the portal as the visitor scrolls on. Denser towards the tube's
+ * centre, with a few strays around it.
+ */
+export const ring: ShapeGenerator = (count) => {
+  const rand = createRandom(7)
+  const out = writer(count)
+  const major = 1.15
+  while (!out.full) {
+    const a = rand() * Math.PI * 2
+    // Tube radius: mostly inside, thinning out towards the edge
+    const t = Math.abs(gaussian(rand)) * 0.22 + (rand() < 0.04 ? rand() * 0.35 : 0)
+    const b = rand() * Math.PI * 2
+    const r = major + Math.cos(b) * t
+    out.push(Math.cos(a) * r, Math.sin(a) * r, Math.sin(b) * t * 0.8)
+  }
+  return normalize(out.points)
+}
+
 export const GENERATORS: Record<string, ShapeGenerator> = {
+  ring,
   'letter-a': letterA,
   'neural-net': neuralNet,
   leaf,

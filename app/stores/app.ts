@@ -81,6 +81,11 @@ export const useAppStore = defineStore('app', () => {
   /** Home hero has page scroll locked while scenes play */
   const heroLocked = ref(false)
   /**
+   * Home hero outro, 0 → 1 as the visitor scrolls past the last scene: the ring grows, the
+   * portal opens and the 3D landscape ends. null on pages without one.
+   */
+  const outro = ref<number | null>(null)
+  /**
    * Particle shape and text side for each full-screen scene (home hero, about story), from
    * content, read by the WebGL world. Only applies on scenesRoute, the page that set them.
    */
@@ -168,6 +173,7 @@ export const useAppStore = defineStore('app', () => {
     loaded,
     entered,
     heroLocked,
+    outro,
     overlayOpen,
     autoTier,
     webgl,

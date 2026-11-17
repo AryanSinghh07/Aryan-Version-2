@@ -42,6 +42,9 @@ void main() {
   float pulse = 0.75 + 0.25 * sin(uTime * 1.6);
   color += base * vCenter * uGlow * pulse;
 
+  // A darker band at the very edge, so each ball reads as a separate glossy bead
+  color *= mix(1.0, 0.55, smoothstep(0.8, 1.0, r2));
+
   // A soft edge one pixel wide keeps the balls round without hard aliasing
   float edge = 1.0 - smoothstep(0.82, 1.0, r2);
   float alpha = edge * uOpacity * vDepthFade;

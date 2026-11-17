@@ -103,8 +103,10 @@ onMounted(() => {
   window.addEventListener('wheel', onInput, { passive: true })
   window.addEventListener('touchmove', onInput, { passive: true })
   window.addEventListener('keydown', onInput)
-  if (lenis) lenis.on('scroll', update)
-  else window.addEventListener('scroll', update, { passive: true })
+  // Lenis drives smooth scrolling; the native event also catches jumps Lenis doesn't report
+  // (scrollTo, anchor links), so the progress never goes stale
+  lenis?.on('scroll', update)
+  window.addEventListener('scroll', update, { passive: true })
   window.addEventListener('resize', update)
 })
 
