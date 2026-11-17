@@ -7,6 +7,7 @@ type: AI / ML
 scope: Conversational AI, web app
 stack: [Python, FastAPI, LangChain, Ollama, NLP, React, TypeScript, Tailwind CSS]
 summary: 24/7 AI-powered Cognitive Behavioural Therapy chatbot delivering grounding techniques — 5-4-3-2-1, guided breathing, mind-training games. Finalist at Code Astraa Hackathon 2025 (Galgotias × IEEE).
+cover: /projects/cbt-chatbot/cover.webp
 github: https://github.com/AryanSinghh07
 awards:
   - 'Finalist, Code Astraa Hackathon 2025 (Galgotias × IEEE)'

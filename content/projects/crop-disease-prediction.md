@@ -7,6 +7,7 @@ type: AI / ML
 scope: Computer vision, web app
 stack: [Python, TensorFlow, OpenCV, React, MySQL]
 summary: Detects crop diseases from field images using computer vision. Placed 11th at GU Hackathon 2024, recognised at Smart India Hackathon 2024, and presented to 2,000+ attendees at the UP International Trade Show.
+cover: /projects/crop-disease-prediction/cover.webp
 github: https://github.com/AryanSinghh07/AI-Driven-Crop-Disease-Prediction-and-Management-System
 awards:
   - '11th place, GU Hackathon 2024 (200+ teams)'

@@ -47,6 +47,7 @@ const items = computed<CarouselItem[]>(() =>
     domain: p.domain,
     color: DOMAIN_COLORS[p.domain as Domain] ?? DOMAIN_COLORS['Full Stack'],
     year: p.year,
+    cover: p.cover,
   }))
 )
 

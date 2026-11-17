@@ -64,6 +64,8 @@ export class Carousel {
   private detail = 1
   /** Items of the last sync, for redrawing textures once fonts arrive */
   private lastItems: CarouselState['items'] = []
+  /** Cover images by URL, loaded once and kept across filter changes */
+  private covers = new Map<string, HTMLImageElement>()
 
   constructor(private scene: Scene) {
     this.group.visible = false
@@ -212,7 +214,24 @@ export class Carousel {
     return mesh
   }
 
-  /** Draws a project's card (number, title, domain, year) into its panel texture */
+  /** The cover image once it has loaded (starts loading it, and redraws the panels when ready) */
+  private cover(url?: string) {
+    if (!url) return null
+    let img = this.covers.get(url)
+    if (!img) {
+      img = new Image()
+      img.decoding = 'async'
+      img.src = url
+      this.covers.set(url, img)
+      img
+        .decode()
+        .then(() => this.panels.forEach((p, i) => this.draw(p, i)))
+        .catch(() => {})
+    }
+    return img.complete && img.naturalWidth ? img : null
+  }
+
+  /** Draws a project's card (cover, number, title, domain, year) into its panel texture */
   private draw(panel: Panel, index: number, state?: CarouselState) {
     const item = state?.items[index] ?? this.lastItems[index]
     if (!item) return
@@ -255,10 +274,57 @@ export class Carousel {
       ctx.stroke()
     }
 
-    ctx.fillStyle = '#c9b8ff'
-    ctx.font = `400 220px ${display}`
+    // The cover: the top of the card, cropped to fill, with rounded corners, fading into the
+    // card at its foot
+    const img = this.cover(item.cover)
+    const pad = 24
+    const coverH = Math.round(h * 0.6)
+    if (img) {
+      const bw = w - pad * 2
+      const bh = coverH - pad
+      const scale = Math.max(bw / img.naturalWidth, bh / img.naturalHeight)
+      const sw = bw / scale
+      const sh = bh / scale
+      ctx.save()
+      roundRect(ctx, pad, pad, bw, bh, 22)
+      ctx.clip()
+      ctx.drawImage(
+        img,
+        (img.naturalWidth - sw) / 2,
+        (img.naturalHeight - sh) / 2,
+        sw,
+        sh,
+        pad,
+        pad,
+        bw,
+        bh
+      )
+      const fade = ctx.createLinearGradient(0, pad + bh * 0.45, 0, pad + bh)
+      fade.addColorStop(0, 'rgba(18, 10, 31, 0)')
+      fade.addColorStop(1, 'rgba(18, 10, 31, 0.92)')
+      ctx.fillStyle = fade
+      ctx.fillRect(pad, pad, bw, bh)
+      ctx.restore()
+      ctx.strokeStyle = hexToRgba(item.color, 0.55)
+      ctx.lineWidth = 2
+      roundRect(ctx, pad, pad, bw, bh, 22)
+      ctx.stroke()
+    }
+
     ctx.textBaseline = 'top'
-    ctx.fillText(item.number, 44, 40)
+    if (img) {
+      // Number over the foot of the cover
+      ctx.fillStyle = '#c9b8ff'
+      ctx.font = `400 150px ${display}`
+      ctx.shadowColor = 'rgba(18, 10, 31, 0.8)'
+      ctx.shadowBlur = 24
+      ctx.fillText(item.number, 44, coverH - 150)
+      ctx.shadowBlur = 0
+    } else {
+      ctx.fillStyle = '#c9b8ff'
+      ctx.font = `400 220px ${display}`
+      ctx.fillText(item.number, 44, 40)
+    }
 
     ctx.fillStyle = hexToRgba(item.color, 1)
     ctx.font = `500 22px ${mono}`
@@ -268,9 +334,20 @@ export class Carousel {
     ctx.font = `400 58px ${display}`
     wrap(ctx, item.title, 48, h - 180, w - 96, 60, 2)
 
-    ctx.fillStyle = 'rgba(251, 250, 255, 0.6)'
     ctx.font = `500 20px ${mono}`
-    ctx.fillText(String(item.year), w - 48 - ctx.measureText(String(item.year)).width, 56)
+    const year = String(item.year)
+    const yw = ctx.measureText(year).width
+    if (img) {
+      // On the cover the year sits on a small dark chip
+      ctx.fillStyle = 'rgba(18, 10, 31, 0.72)'
+      roundRect(ctx, w - 48 - yw - 16, 44, yw + 32, 38, 19)
+      ctx.fill()
+      ctx.fillStyle = '#fbfaff'
+      ctx.fillText(year, w - 48 - yw, 54)
+    } else {
+      ctx.fillStyle = 'rgba(251, 250, 255, 0.6)'
+      ctx.fillText(year, w - 48 - yw, 56)
+    }
 
     panel.texture.needsUpdate = true
   }
@@ -327,4 +404,17 @@ function wrap(
     }
   }
   if (line && row < lines) ctx.fillText(line, x, y + row * lineHeight)
+}
+
+/** A rounded rectangle path */
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath()
+  ctx.roundRect(x, y, w, h, r)
 }

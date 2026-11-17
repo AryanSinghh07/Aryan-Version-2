@@ -7,6 +7,7 @@ type: Full Stack
 scope: Web platform, e-commerce
 stack: [React, Node.js, Express.js, MongoDB, GSAP, Tailwind CSS]
 summary: A digital platform that bridges the gap between animal shelters and adopters — automated shelter workflows, adoption applications, pet health records, and integrated e-commerce for pet care.
+cover: /projects/paws/cover.webp
 github: https://github.com/AryanSinghh07/Paws
 results:
   - 'Full MERN stack'

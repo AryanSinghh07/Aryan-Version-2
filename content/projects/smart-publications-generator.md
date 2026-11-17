@@ -7,6 +7,7 @@ type: AI / ML
 scope: NLP tool, web app
 stack: [Python, NLP, React, Node.js]
 summary: NLP tool for faculty to automatically generate standardised academic publication summaries and one-click citation details for CVs, portfolios, and grant applications.
+cover: /projects/smart-publications-generator/cover.webp
 github: https://github.com/AryanSinghh07/CiteCraft
 domain: 'NLP'
 particleShape: document

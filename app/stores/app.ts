@@ -15,6 +15,8 @@ export interface CarouselItem {
   /** Domain glow colour, hex */
   color: string
   year: number
+  /** Cover image URL, drawn on the panel when the project has one */
+  cover?: string
 }
 
 /** The Work page carousel, set by the page and drawn by the WebGL world */

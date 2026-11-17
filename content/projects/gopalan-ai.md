@@ -7,6 +7,7 @@ type: AI / ML
 scope: Computer vision, API
 stack: [Python, TensorFlow, OpenCV, FastAPI, CNN]
 summary: AI classification and scoring system built for the Rashtriya Gokul Mission (SIH 2025). Removes human bias and observer fatigue in identifying elite indigenous bovine breeding stock.
+cover: /projects/gopalan-ai/cover.webp
 github: https://github.com/AryanSinghh07
 awards:
   - 'Smart India Hackathon 2025, 34th place'

@@ -7,6 +7,7 @@ type: Full Stack
 scope: Real-time video, web app
 stack: [React, Firebase, WebRTC, Node.js]
 summary: Modern online meeting platform with AI features — built for business meetings, college classes, and team collaboration. Real-time video via WebRTC with AI-powered summaries.
+cover: /projects/aapki-meet/cover.webp
 github: https://github.com/AryanSinghh07
 domain: 'Full Stack'
 particleShape: video-rings
