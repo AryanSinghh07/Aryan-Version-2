@@ -64,7 +64,6 @@ export default defineContentConfig({
         contact: z.object({
           headline: z.string(),
           body: z.string(),
-          marquee: z.array(z.string()),
           availability: z.string(),
           lookingFor: z.array(z.string()),
           budgets: z.array(z.string()),

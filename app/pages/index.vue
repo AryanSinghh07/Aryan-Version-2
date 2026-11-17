@@ -15,6 +15,5 @@ await usePersonSchema()
     <SectionsSelectedWork />
     <SectionsRecognition />
     <SectionsBackground />
-    <SectionsContactCta />
   </div>
 </template>
