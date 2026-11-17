@@ -220,13 +220,19 @@ const rows = computed(() => [
   max-width: 100%;
 }
 
+// Hidden at rest: no width, and moved out to the left (in em: a percentage of a zero-width box
+// is zero, which left the glyph drawn over the title's first letters). On hover it slides in
+// and makes room for itself.
 .show-card__arrow {
   flex: none;
   width: 0;
+  overflow: hidden;
   color: var(--primary);
-  transform: translateX(-110%);
+  opacity: 0;
+  transform: translateX(-1.2em);
   transition:
     width 0.5s var(--ease-out),
+    opacity 0.3s var(--ease-out),
     transform 0.5s var(--ease-out);
 }
 
@@ -243,6 +249,7 @@ const rows = computed(() => [
 
     .show-card__arrow {
       width: 1.1em;
+      opacity: 1;
       transform: none;
     }
 
