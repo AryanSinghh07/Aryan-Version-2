@@ -45,6 +45,12 @@ body {
     font-style: italic;
     text-transform: none;
   }
+
+  // Split into letters for the text motion, each word becomes its own box and the slanted
+  // first letter leans into the space before it: give it back a little room
+  em:has(.tm-char) {
+    padding-left: 0.08em;
+  }
 }
 
 // Large sizes are capped by viewport width so long words never overflow on phones

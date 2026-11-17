@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { SplitText } from 'gsap/SplitText'
+import type { SplitText } from 'gsap/SplitText'
 
 import type { TextSide } from '~/webgl/config/scenes'
 
@@ -53,56 +53,44 @@ let disposed = false
 let stopEnteredWatch: (() => void) | undefined
 
 const nav = () => root.value?.querySelector<HTMLElement>('.hero__nav') ?? []
-const lines = (el?: HTMLElement) => (el ? [...el.querySelectorAll<HTMLElement>('.hero-line')] : [])
 const metas = (el?: HTMLElement) =>
   el ? [...el.querySelectorAll<HTMLElement>('.scene__meta, .scene__intro')] : []
+// The tag and the [02/05] counter, which decode from random characters
+const labels = (el?: HTMLElement) =>
+  el ? [...el.querySelectorAll<HTMLElement>('.scene__meta .tag, .scene__meta .t-muted')] : []
 
-// One timeline per scene change: outgoing lines slide out of their masks, incoming slide in
+// One timeline per scene change. The outgoing text folds away letter by letter while the
+// incoming headline flips up out of its masks (the accent word springs in after it, then the
+// paragraph rises word by word and the keyword underlines draw). The timeline only covers the
+// hand-over, about 0.9 s, so the next scroll is never held up by the finishing touches.
 function transition(from: number, to: number, direction: 1 | -1) {
   const outgoing = sceneEls.value[from]
   const incoming = sceneEls.value[to]
   if (!outgoing || !incoming) return null
-  const outLines = lines(outgoing)
   const outMeta = metas(outgoing)
 
-  // About 1.3s in total: the incoming scene starts before the outgoing one has fully left.
-  // Lines leave blurring and leaning in the direction of travel, and arrive the same way,
-  // sharpening as they settle (a lighter take on text smearing in a 3D canvas).
-  const lean = 7 * direction
   return gsap
     .timeline()
-    .to(outLines, {
-      yPercent: -110 * direction,
-      skewY: -lean,
-      filter: 'blur(6px)',
-      duration: 0.5,
-      stagger: 0.03,
-      ease: 'power3.in',
-    })
+    .add(textOut(outgoing, direction), 0)
     .to(outMeta, { autoAlpha: 0, y: -16 * direction, duration: 0.35, ease: 'power2.in' }, 0)
-    .set(incoming, { autoAlpha: 1 }, 0.45)
-    .fromTo(
-      lines(incoming),
-      { yPercent: 110 * direction, skewY: lean, filter: 'blur(6px)' },
-      {
-        yPercent: 0,
-        skewY: 0,
-        filter: 'blur(0px)',
-        duration: 0.8,
-        stagger: 0.05,
-        ease: 'power4.out',
-        clearProps: 'filter,transform',
+    .set(incoming, { autoAlpha: 1 }, 0.4)
+    .call(
+      () => {
+        textIn(incoming, direction, 1.25)
+        scrambleIn(labels(incoming), 0.1)
       },
-      0.45
+      [],
+      0.4
     )
     .fromTo(
       metas(incoming),
       { autoAlpha: 0, y: 16 * direction },
       { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' },
-      0.55
+      0.5
     )
-    .set(outgoing, { autoAlpha: 0 }, 0.6)
-    .set([...outLines, ...outMeta], { clearProps: 'transform,opacity,visibility,filter' }, 0.6)
+    .set(outgoing, { autoAlpha: 0 }, 0.9)
+    .call(() => resetText(outgoing), [], 0.9)
+    .set(outMeta, { clearProps: 'transform,opacity,visibility' }, 0.9)
 }
 
 const { current, locked, goTo, start, enter, release } = useScenes({
@@ -117,15 +105,13 @@ const { current, locked, goTo, start, enter, release } = useScenes({
 function playIntro() {
   const first = sceneEls.value[0]
   if (!first) return
+  // A slower, grander version of the scene entrance for the first impression
   introTimeline = gsap
     .timeline()
-    .fromTo(
-      lines(first),
-      { yPercent: 110 },
-      { yPercent: 0, duration: 1.2, stagger: 0.08, ease: 'power4.out' }
-    )
-    .fromTo(metas(first), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.8 }, '<0.3')
-    .fromTo(nav(), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, '<0.2')
+    .add(textIn(first, 1, 0.85), 0)
+    .fromTo(metas(first), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.8 }, 0.3)
+    .add(scrambleIn(labels(first)), 0.35)
+    .fromTo(nav(), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, 0.6)
 }
 
 // True on the first page load; false when arriving through an in-site link or Back/Forward
@@ -145,7 +131,7 @@ function begin() {
     const last = total.value - 1
     gsap.set(sceneEls.value, { autoAlpha: 0 })
     gsap.set(sceneEls.value[last] ?? [], { autoAlpha: 1 })
-    gsap.set(lines(sceneEls.value[0]), { clearProps: 'transform' })
+    if (sceneEls.value[0]) resetText(sceneEls.value[0])
     gsap.set([...metas(sceneEls.value[0]), nav()].flat(), { autoAlpha: 1 })
     goToWithoutAnimation(last)
     start(false)
@@ -178,22 +164,15 @@ onMounted(async () => {
   // The hero just shrank from five screens to one: re-measure scroll-triggered reveals
   ScrollTrigger.refresh()
 
-  splits = sceneEls.value.map((el) =>
-    SplitText.create(el.querySelectorAll('.scene__split'), {
-      type: 'lines',
-      mask: 'lines',
-      linesClass: 'hero-line',
-      // Lines only: the words stay whole text inside each line, so screen readers read it as
-      // normal. ('auto' would add aria-label, which isn't allowed on paragraphs.)
-      aria: 'none',
-      autoSplit: true,
-    })
+  // Headlines into lines, words and letters; paragraphs into lines and words (textMotion.ts)
+  splits = sceneEls.value.flatMap((el) =>
+    [...el.querySelectorAll('.scene__split')].map((part) => splitText(part))
   )
 
-  // Only the first scene is visible; its lines wait below their masks for the intro
+  // Only the first scene is visible; its text waits below the masks for the intro
   gsap.set(sceneEls.value, { autoAlpha: 0 })
   gsap.set(sceneEls.value[0] ?? [], { autoAlpha: 1 })
-  gsap.set(lines(sceneEls.value[0]), { yPercent: 110 })
+  if (sceneEls.value[0]) hideText(sceneEls.value[0])
   gsap.set([...metas(sceneEls.value[0]), nav()].flat(), { autoAlpha: 0 })
 
   if (store.entered) begin()
@@ -376,15 +355,19 @@ onBeforeUnmount(() => {
   letter-spacing: -0.005em;
   text-shadow: 0 1px 14px var(--scene-shadow);
 
-  // Keywords: the accent colour, bolder, with a fine underline in the same colour
+  // Keywords: the accent colour, bolder, with a fine underline in the same colour that draws
+  // in from the left once the sentence has landed (--kw-line, animated in textMotion.ts)
   :deep(.keyword) {
+    padding-bottom: 0.12em;
     color: var(--scene-accent);
     font-weight: 650;
-    background: none;
-    text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--scene-accent) 45%, transparent);
-    text-decoration-thickness: 0.08em;
-    text-underline-offset: 0.18em;
+    background: linear-gradient(
+        color-mix(in srgb, var(--scene-accent) 50%, transparent),
+        color-mix(in srgb, var(--scene-accent) 50%, transparent)
+      )
+      no-repeat left bottom / var(--kw-line, 100%) 0.08em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
 }
 
