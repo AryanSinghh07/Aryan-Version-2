@@ -59,6 +59,8 @@ export default defineContentConfig({
             prefix: z.string().optional(),
             suffix: z.string().optional(),
             label: z.string(),
+            /** Glyph on the stat card (utils/inlineIcons.ts) */
+            icon: z.string().optional(),
           })
         ),
         contact: z.object({

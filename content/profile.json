@@ -79,29 +79,33 @@
   "about": {
     "headline": "Behind the *build*",
     "paragraphs": [
-      "Full-Stack Developer and AI/ML Engineer building systems that solve real problems, from cattle classification for the Rashtriya Gokul Mission to mental-health platforms for students. IEEE Code Astraa 2025 finalist; presented to 2,000+ industry stakeholders at UP International Trade Show 2024.",
-      "My work has been presented at government missions and industry events, which shaped how I approach every project: build to ship, not just to demo. Currently seeking internship opportunities to build impactful products at scale."
+      "**Full-Stack Developer** and **AI/ML Engineer** :spark: building systems that solve ==real problems==, from ==cattle classification== :leaf: for the Rashtriya Gokul Mission to ==mental-health platforms== :heart: for students. **IEEE Code Astraa 2025 finalist** :trophy: presented to ==2,000+== industry stakeholders :mic: at UP International Trade Show 2024.",
+      "My work has been presented at **government missions** and **industry events**, which shaped how I approach every project: ==build to ship== :rocket: not just to demo. Currently seeking ==internship opportunities== to build **impactful products** at scale."
     ],
-    "funLine": "I train AI models that help real farmers, build chatbots that calm 2 AM anxiety, and craft web apps that feel alive. Slap my code on any problem and act surprised when it actually ships."
+    "funLine": "I train AI models that help ==real farmers==, build chatbots that calm ==2 AM anxiety==, and craft web apps that ==feel alive==. Slap my code on any problem and act surprised when it **actually ships**."
   },
   "stats": [
     {
       "value": 7,
       "suffix": "+",
-      "label": "Projects built"
+      "label": "Projects built",
+      "icon": "rocket"
     },
     {
       "value": 3,
-      "label": "Hackathons"
+      "label": "Hackathons",
+      "icon": "trophy"
     },
     {
       "value": 2000,
       "suffix": "+",
-      "label": "Trade show audience"
+      "label": "Trade show audience",
+      "icon": "mic"
     },
     {
       "value": 5,
-      "label": "Certifications"
+      "label": "Certifications",
+      "icon": "badge"
     }
   ],
   "contact": {
