@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
-// Recognition as a bento grid of glass cards. The first award is the large feature card;
-// each card leads with its stat ("34th", "2,000+"), counting up as the grid scrolls in, with
-// the award's type, year (also as a large outlined watermark), title, detail and a link to the
-// related project. On mouse/trackpad devices cards tilt towards the pointer under a soft
-// spotlight. Without JavaScript or with reduced motion everything is simply shown.
+// Recognition as a bento grid of glass cards. The first award is the wide feature card; each
+// card leads with its stat ("34th", "2,000+"), counting up as the grid scrolls in, with the
+// award's type, year (also as a large outlined watermark), title, detail and a link to the
+// related project. Card motion (rise in, tilt and spotlight) comes from useGlassCards.
 const { data: recognition } = await useRecognition()
 
 const grid = ref<HTMLElement | null>(null)
-let ctx: gsap.Context | null = null
 
 /** "2,000+" → { prefix: '', value: 2000, suffix: '+', grouped: true }; words don't count */
 function parseStat(stat: string) {
@@ -23,26 +21,10 @@ function parseStat(stat: string) {
   }
 }
 
-onMounted(() => {
-  if (!grid.value || prefersReducedMotion()) return
-  const cards = [...grid.value.querySelectorAll<HTMLElement>('.award')]
-
-  ctx = gsap.context(() => {
-    // Cards rise into place one after another, sharpening from a blur
-    gsap.from(cards, {
-      y: 60,
-      autoAlpha: 0,
-      scale: 0.96,
-      filter: 'blur(10px)',
-      duration: 1.1,
-      stagger: 0.09,
-      ease: 'expo.out',
-      clearProps: 'filter',
-      scrollTrigger: { trigger: grid.value, start: 'top 82%', once: true },
-    })
-
-    // Numeric stats count up as they arrive
-    for (const el of grid.value!.querySelectorAll<HTMLElement>('[data-stat]')) {
+useGlassCards(grid, {
+  // Numeric stats count up as they arrive
+  onMount: (root) => {
+    for (const el of root.querySelectorAll<HTMLElement>('[data-stat]')) {
       const stat = parseStat(el.dataset.stat ?? '')
       if (!stat) continue
       const counter = { n: 0 }
@@ -57,31 +39,8 @@ onMounted(() => {
         scrollTrigger: { trigger: el, start: 'top 90%', once: true },
       })
     }
-  }, grid.value)
-
-  if (!hasFinePointer()) return
-  // Tilt towards the pointer, with a spotlight that follows it
-  for (const card of cards) {
-    const rx = gsap.quickTo(card, 'rotationX', { duration: 0.6, ease: 'power3.out' })
-    const ry = gsap.quickTo(card, 'rotationY', { duration: 0.6, ease: 'power3.out' })
-    gsap.set(card, { transformPerspective: 900 })
-    card.addEventListener('pointermove', (e) => {
-      const r = card.getBoundingClientRect()
-      const x = (e.clientX - r.left) / r.width
-      const y = (e.clientY - r.top) / r.height
-      card.style.setProperty('--mx', `${x * 100}%`)
-      card.style.setProperty('--my', `${y * 100}%`)
-      ry((x - 0.5) * 8)
-      rx((0.5 - y) * 8)
-    })
-    card.addEventListener('pointerleave', () => {
-      rx(0)
-      ry(0)
-    })
-  }
+  },
 })
-
-onBeforeUnmount(() => ctx?.revert())
 </script>
 
 <template>
@@ -101,8 +60,8 @@ onBeforeUnmount(() => ctx?.revert())
       <li
         v-for="(item, i) in recognition.items"
         :key="item.id"
-        class="award"
-        :class="{ 'award--feature': i === 0 }"
+        class="award glass-card"
+        :class="{ 'award--feature glass-card--tint': i === 0 }"
       >
         <img v-if="item.images?.[0]" :src="item.images?.[0]" alt="" class="award__image" />
         <span v-if="item.year" class="award__watermark" aria-hidden="true">{{ item.year }}</span>
@@ -116,7 +75,9 @@ onBeforeUnmount(() => ctx?.revert())
         <div class="award__stat">
           <!-- The counter is decorative while it counts; screen readers get the final value -->
           <span class="sr-only">{{ item.stat }}</span>
-          <span class="award__value" :data-stat="item.stat" aria-hidden="true">{{ item.stat }}</span>
+          <span class="award__value" :data-stat="item.stat" aria-hidden="true">{{
+            item.stat
+          }}</span>
           <span class="award__stat-label t-label">{{ item.statLabel }}</span>
         </div>
 
@@ -150,50 +111,11 @@ onBeforeUnmount(() => ctx?.revert())
 }
 
 .award {
-  --mx: 50%;
-  --my: 0%;
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
   min-height: 17rem;
   padding: clamp(1.25rem, 2vw, 1.75rem);
-  overflow: hidden;
-  isolation: isolate;
-  border: 1px solid rgba(var(--foreground-rgb), 0.12);
-  border-radius: 1.5rem;
-  // Frosted enough that small labels stay readable over the 3D world in both themes
-  background-color: rgba(var(--background-rgb), 0.62);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
-  transform-style: preserve-3d;
-  transition:
-    border-color 0.4s var(--ease-out),
-    box-shadow 0.4s var(--ease-out);
-
-  // Soft spotlight under the pointer
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    opacity: 0;
-    background: radial-gradient(
-      28rem circle at var(--mx) var(--my),
-      rgba(var(--primary-rgb), 0.22),
-      transparent 60%
-    );
-    transition: opacity 0.4s var(--ease-out);
-  }
-
-  &:hover {
-    border-color: rgba(var(--primary-rgb), 0.45);
-    box-shadow: 0 1.5rem 4rem -1.5rem rgba(var(--primary-rgb), 0.45);
-
-    &::before {
-      opacity: 1;
-    }
-  }
 
   @media (min-width: 1024px) {
     grid-column: span 2;
@@ -201,10 +123,6 @@ onBeforeUnmount(() => ctx?.revert())
 }
 
 .award--feature {
-  // A violet tint over the frosted glass
-  background-image: linear-gradient(rgba(var(--primary-rgb), 0.14), rgba(var(--primary-rgb), 0.14));
-  border-color: rgba(var(--primary-rgb), 0.4);
-
   @media (min-width: 768px) {
     grid-column: span 2;
   }

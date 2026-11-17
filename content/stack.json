@@ -3,6 +3,8 @@
   "groups": [
     {
       "title": "Frontend",
+      "icon": "frontend",
+      "blurb": "Interfaces that feel alive: 3D, motion and fast, accessible pages.",
       "tools": [
         "React.js",
         "Next.js",
@@ -17,6 +19,8 @@
     },
     {
       "title": "Backend",
+      "icon": "backend",
+      "blurb": "APIs and services that stay up, from REST to real-time sockets.",
       "tools": [
         "Python",
         "Node.js",
@@ -30,6 +34,8 @@
     },
     {
       "title": "AI / ML",
+      "icon": "ai",
+      "blurb": "Models trained, evaluated and shipped: vision, language and retrieval.",
       "tools": [
         "PyTorch",
         "TensorFlow",
@@ -45,6 +51,8 @@
     },
     {
       "title": "Database and DevOps",
+      "icon": "devops",
+      "blurb": "From commit to production: containers, pipelines and the cloud.",
       "tools": [
         "Docker",
         "Kubernetes",

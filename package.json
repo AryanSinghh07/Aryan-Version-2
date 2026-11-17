@@ -27,6 +27,7 @@
     "nuxt": "4.6.4",
     "pinia": "4.1.0",
     "postprocessing": "6.39.6",
+    "simple-icons": "16.38.0",
     "three": "0.187.0",
     "vue": "3.5.45",
     "vue-router": "5.4.0"

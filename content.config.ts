@@ -76,7 +76,17 @@ export default defineContentConfig({
       source: 'stack.json',
       schema: z.object({
         headline: z.string(),
-        groups: z.array(z.object({ title: z.string(), tools: z.array(z.string()) })),
+        groups: z.array(
+          z.object({
+            title: z.string(),
+            /** Area glyph: frontend, backend, ai or devops (utils/techIcons.ts) */
+            icon: z.enum(['frontend', 'backend', 'ai', 'devops']),
+            /** One line about the area */
+            blurb: z.string(),
+            /** Tool names; logos are matched by name in utils/techIcons.ts */
+            tools: z.array(z.string()),
+          })
+        ),
       }),
     }),
 
