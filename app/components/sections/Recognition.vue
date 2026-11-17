@@ -23,7 +23,7 @@ function parseStat(stat: string) {
 
 useGlassCards(grid, {
   // Numeric stats count up as they arrive
-  onMount: (root) => {
+  enter: (root) => {
     for (const el of root.querySelectorAll<HTMLElement>('[data-stat]')) {
       const stat = parseStat(el.dataset.stat ?? '')
       if (!stat) continue

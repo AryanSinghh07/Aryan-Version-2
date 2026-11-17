@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-// The stack: a headline with live counts, two logo walls drifting in opposite directions, and
-// a glass card per area (frontend, backend, AI / ML, DevOps) with its glyph, a one-line blurb
-// and a tile for every tool. Logos sit in the text colour and light up in the brand's own
-// colour on hover. Motion: cards rise in (useGlassCards), area glyphs draw themselves, tiles
-// pop in one after another and the counts tick up. Reduced motion: everything simply shows.
+// The stack: a headline with live counts, two logo walls drifting in opposite directions (every
+// logo in its real brand colour), and a "View all" button that opens the four area cards right
+// here on the page (frontend, backend, AI / ML, DevOps: glyph, blurb and a tile per tool).
+// Opening plays the cards in (useGlassCards): they rise, their glyphs draw, the tiles pop and
+// the counts tick up. The page is rendered with the cards open, so they work without
+// JavaScript; once the page is interactive they fold away behind the button.
+// Reduced motion: no drifting or animating, the panel simply opens and closes.
 const { data: stack } = await useStack()
+const lenis = useLenis()
 
+const head = ref<HTMLElement | null>(null)
+const panel = ref<HTMLElement | null>(null)
 const areas = ref<HTMLElement | null>(null)
+/** Open in the server render (no JavaScript needed); folded once interactive */
+const open = ref(true)
+const interactive = ref(false)
 
 const tools = computed(() => stack.value?.groups.flatMap((g) => g.tools) ?? [])
 // Two walls: the first half of the tools on top, the rest below
@@ -18,11 +27,30 @@ const walls = computed(() => {
   return [all.slice(0, half), all.slice(half)]
 })
 
-useGlassCards(areas, {
+/** Ticks a [data-count] element up from zero, now or when it scrolls into view */
+function countUp(n: HTMLElement, onScroll: boolean) {
+  const target = Number(n.dataset.count)
+  const pad = n.dataset.pad === 'true'
+  const counter = { v: 0 }
+  const show = () => {
+    const v = Math.round(counter.v)
+    n.textContent = pad ? projectNumber(v) : String(v)
+  }
+  show()
+  gsap.to(counter, {
+    v: target,
+    duration: 1.4,
+    ease: 'power3.out',
+    onUpdate: show,
+    ...(onScroll ? { scrollTrigger: { trigger: n, start: 'top 90%', once: true } } : {}),
+  })
+}
+
+const { play } = useGlassCards(areas, {
   selector: '.area',
-  onMount: (el) => {
-    const section = el.closest('section') ?? el
-    // Area glyphs draw their outline, then fill in their colour
+  manual: true,
+  enter: (el) => {
+    // Area glyphs draw their outline
     for (const path of el.querySelectorAll<SVGPathElement>('.area__glyph path')) {
       const length = path.getTotalLength()
       gsap.fromTo(
@@ -31,17 +59,14 @@ useGlassCards(areas, {
         {
           strokeDashoffset: 0,
           duration: 1.6,
+          delay: 0.2,
           ease: 'power2.inOut',
           clearProps: 'strokeDasharray,strokeDashoffset',
-          scrollTrigger: { trigger: path, start: 'top 88%', once: true },
         }
       )
     }
-
     // Tool tiles pop in, one after another within each card
-    for (const card of el.querySelectorAll<HTMLElement>('.area')) {
-      // fromTo with explicit end values: a second set-up (remount) can never capture the
-      // hidden starting state as the "final" one
+    el.querySelectorAll<HTMLElement>('.area').forEach((card, i) => {
       gsap.fromTo(
         card.querySelectorAll('.tool'),
         { y: 18, scale: 0.6, rotate: -6, autoAlpha: 0 },
@@ -53,38 +78,93 @@ useGlassCards(areas, {
           duration: 0.7,
           stagger: 0.035,
           ease: 'back.out(2)',
-          delay: 0.25,
+          delay: 0.35 + i * 0.09,
           clearProps: 'transform',
-          scrollTrigger: { trigger: card, start: 'top 82%', once: true },
+          overwrite: 'auto',
         }
       )
-    }
-
-    // The counts tick up
-    for (const n of section.querySelectorAll<HTMLElement>('[data-count]')) {
-      const target = Number(n.dataset.count)
-      const pad = n.dataset.pad === 'true'
-      const counter = { v: 0 }
-      const show = () => {
-        const v = Math.round(counter.v)
-        n.textContent = pad ? projectNumber(v) : String(v)
-      }
-      show()
-      gsap.to(counter, {
-        v: target,
-        duration: 1.4,
-        ease: 'power3.out',
-        onUpdate: show,
-        scrollTrigger: { trigger: n, start: 'top 90%', once: true },
-      })
-    }
+    })
+    for (const n of el.querySelectorAll<HTMLElement>('[data-count]')) countUp(n, false)
   },
 })
+
+let headCtx: gsap.Context | null = null
+
+onMounted(async () => {
+  interactive.value = true
+  open.value = false
+  await nextTick()
+  // The page below just got shorter: re-measure scroll-triggered reveals
+  ScrollTrigger.refresh()
+  if (prefersReducedMotion() || !head.value) return
+  headCtx = gsap.context(() => {
+    for (const n of head.value!.querySelectorAll<HTMLElement>('[data-count]')) countUp(n, true)
+  }, head.value)
+})
+
+onBeforeUnmount(() => headCtx?.revert())
+
+let animating = false
+
+async function toggle() {
+  if (animating) return
+  const reduced = prefersReducedMotion()
+
+  if (!open.value) {
+    open.value = true
+    await nextTick()
+    const el = panel.value
+    if (!el) return
+    if (!reduced) {
+      animating = true
+      // The panel unfolds while the cards rise in, and the page glides to them
+      gsap.fromTo(
+        el,
+        { height: 0, overflow: 'hidden' },
+        {
+          height: 'auto',
+          duration: 0.9,
+          ease: 'power3.inOut',
+          onComplete: () => {
+            gsap.set(el, { clearProps: 'height,overflow' })
+            animating = false
+            ScrollTrigger.refresh()
+          },
+        }
+      )
+      play()
+    }
+    lenis?.scrollTo(el, { offset: -120, duration: 1.2 })
+    if (reduced) ScrollTrigger.refresh()
+    return
+  }
+
+  const el = panel.value
+  if (!el || reduced) {
+    open.value = false
+    await nextTick()
+    ScrollTrigger.refresh()
+    return
+  }
+  animating = true
+  gsap.to(el, {
+    height: 0,
+    overflow: 'hidden',
+    duration: 0.6,
+    ease: 'power3.inOut',
+    onComplete: () => {
+      open.value = false
+      gsap.set(el, { clearProps: 'height,overflow' })
+      animating = false
+      ScrollTrigger.refresh()
+    },
+  })
+}
 </script>
 
 <template>
   <section v-if="stack" class="stack section container" aria-labelledby="stack-title">
-    <div class="stack__head">
+    <div ref="head" class="stack__head">
       <div class="section__head">
         <UiSectionLabel :index="2" label="Stack" />
         <h2 id="stack-title" v-reveal class="t-h2"><UiAccentText :text="stack.headline" /></h2>
@@ -124,33 +204,46 @@ useGlassCards(areas, {
       </div>
     </div>
 
-    <ol ref="areas" role="list" class="areas">
-      <li v-for="(group, i) in stack.groups" :key="group.title" class="area glass-card">
-        <div class="area__top">
-          <svg class="area__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path :d="AREA_ICONS[group.icon]" />
-          </svg>
-          <span class="area__index t-label">{{ projectNumber(i + 1) }}</span>
-          <span class="area__count t-label">
-            <span aria-hidden="true" :data-count="group.tools.length" data-pad="true">{{
-              projectNumber(group.tools.length)
-            }}</span>
-            <span class="sr-only">{{ group.tools.length }}</span>
-            tools
-          </span>
-        </div>
+    <div v-if="interactive" class="stack__more">
+      <UiGlassButton
+        variant="secondary"
+        :aria-expanded="open"
+        aria-controls="stack-areas"
+        @click="toggle"
+      >
+        {{ open ? 'Show less' : `View all ${tools.length} tools` }}
+      </UiGlassButton>
+    </div>
 
-        <h3 class="area__title">{{ group.title }}</h3>
-        <p class="area__blurb">{{ group.blurb }}</p>
+    <div v-show="open" id="stack-areas" ref="panel" class="stack__panel">
+      <ol ref="areas" role="list" class="areas">
+        <li v-for="(group, i) in stack.groups" :key="group.title" class="area glass-card">
+          <div class="area__top">
+            <svg class="area__glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path :d="AREA_ICONS[group.icon]" />
+            </svg>
+            <span class="area__index t-label">{{ projectNumber(i + 1) }}</span>
+            <span class="area__count t-label">
+              <span aria-hidden="true" :data-count="group.tools.length" data-pad="true">{{
+                projectNumber(group.tools.length)
+              }}</span>
+              <span class="sr-only">{{ group.tools.length }}</span>
+              tools
+            </span>
+          </div>
 
-        <ul role="list" class="tools">
-          <li v-for="tool in group.tools" :key="tool" class="tool">
-            <UiTechIcon :name="tool" />
-            <span class="tool__name">{{ tool }}</span>
-          </li>
-        </ul>
-      </li>
-    </ol>
+          <h3 class="area__title">{{ group.title }}</h3>
+          <p class="area__blurb">{{ group.blurb }}</p>
+
+          <ul role="list" class="tools">
+            <li v-for="tool in group.tools" :key="tool" class="tool">
+              <UiTechIcon :name="tool" />
+              <span class="tool__name">{{ tool }}</span>
+            </li>
+          </ul>
+        </li>
+      </ol>
+    </div>
   </section>
 </template>
 
@@ -246,22 +339,36 @@ useGlassCards(areas, {
   background-color: rgba(var(--background-rgb), 0.5);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  color: var(--foreground-muted);
+  color: var(--foreground);
   font-size: 0.95rem;
   white-space: nowrap;
   transition:
     color 0.3s var(--ease-out),
     border-color 0.3s var(--ease-out);
 
+  // Every logo in its real brand colour (near-black brands use the text colour so they
+  // show on the dark theme; drawn glyphs take the theme's violet)
+  :deep(.tech-icon) {
+    color: var(--brand);
+  }
+
+  :deep(.tech-icon--outline) {
+    color: var(--primary);
+  }
+
   &:hover {
-    color: var(--foreground);
     border-color: rgba(var(--primary-rgb), 0.45);
 
     :deep(.tech-icon) {
-      color: var(--brand);
       transform: scale(1.15);
     }
   }
+}
+
+// "View all" sits centred under the walls
+.stack__more {
+  display: flex;
+  justify-content: center;
 }
 
 // ---------------------------------------------------------------- Area cards
