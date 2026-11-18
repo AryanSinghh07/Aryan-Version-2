@@ -14,7 +14,7 @@ const { data: profile } = await useProfile()
     <!-- Five full-screen story scenes, like the home hero (stacked without JS or motion) -->
     <ScenesSceneStack :scenes="about.scenes" label="About" />
 
-    <SectionsBackground :teaser="false" />
+    <SectionsBackground />
 
     <section class="section container" aria-labelledby="approach-title">
       <div class="section__head">

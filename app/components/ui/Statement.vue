@@ -6,12 +6,17 @@ import { SplitText } from 'gsap/SplitText'
 // display serif, its first line indented behind an arrow. The words light up from grey to
 // full colour as the statement scrolls by (scrubbed, so scrolling back dims them again).
 // Without JavaScript or with reduced motion the statement is simply in full colour.
-defineProps<{
-  /** Id of the heading, for the section's aria-labelledby */
-  id: string
-  label: string
-  text: string
-}>()
+withDefaults(
+  defineProps<{
+    /** Id of the heading, for the section's aria-labelledby */
+    id?: string
+    label: string
+    text: string
+    /** The pill is the section's heading (h2) unless the section has its own */
+    tag?: 'h2' | 'span'
+  }>(),
+  { id: undefined, tag: 'h2' }
+)
 
 const body = ref<HTMLElement | null>(null)
 let split: SplitText | null = null
@@ -41,7 +46,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="statement">
-    <h2 :id="id" class="statement__tag t-label">{{ label }}</h2>
+    <component :is="tag" :id="id" class="statement__tag t-label">{{ label }}</component>
     <p ref="body" class="statement__text">
       <span class="statement__indent" aria-hidden="true"
         ><span class="statement__arrow">↳</span></span

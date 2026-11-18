@@ -4,7 +4,7 @@ import { siCisco, siHp } from 'simple-icons'
 
 // "Always learning": education and certifications, in the language of the sections above it
 // (a violet pill, the display serif, mono numbers on the plain page) but laid out differently,
-// and without a pin. On the home page it ends with a link to /about.
+// and without a pin.
 //
 // An editorial heading: "Always" on the left and "learning" on the line below at the right,
 // drifting together as the section scrolls in, with a short intro beside them. Education is a
@@ -12,7 +12,6 @@ import { siCisco, siHp } from 'simple-icons'
 // tiles with the issuer's mark in its brand colour; they rise in one after another and glow in
 // that colour under the pointer. Without JavaScript or with reduced motion everything is
 // simply shown.
-withDefaults(defineProps<{ teaser?: boolean }>(), { teaser: true })
 
 const { data: education } = await useEducation()
 
@@ -183,12 +182,6 @@ onBeforeUnmount(() => ctx?.revert())
         </li>
       </ul>
     </div>
-
-    <div v-if="teaser" class="learning__more">
-      <UiGlassButton to="/about">
-        Read my story <span class="learning__arrow" aria-hidden="true">↳</span>
-      </UiGlassButton>
-    </div>
   </section>
 </template>
 
@@ -280,11 +273,18 @@ onBeforeUnmount(() => ctx?.revert())
 }
 
 .learning__label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.6rem;
+  justify-self: start;
   margin: 0;
+  padding: 0.45em 0.95em;
+  border: 1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
   color: var(--foreground);
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .learning__count {
@@ -457,12 +457,6 @@ onBeforeUnmount(() => ctx?.revert())
 .cert__issuer {
   margin: 0;
   color: var(--foreground-muted);
-}
-
-// ---------------------------------------------------------------- More
-.learning__arrow {
-  display: inline-block;
-  margin-left: 0.35em;
 }
 
 @media (prefers-reduced-motion: reduce) {

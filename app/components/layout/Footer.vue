@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { siGithub, siX } from 'simple-icons'
 
 // Site footer in three zones:
 //   1. contact block: availability, headline, the two calls to action, and a data grid
@@ -17,6 +18,16 @@ const pages = [
   { to: '/contact', label: 'Contact' },
 ]
 const index = (i: number) => `[${String(i + 1).padStart(2, '0')}]`
+
+// Social pills carry the platform's mark (LinkedIn isn't in Simple Icons any more)
+const LINKEDIN =
+  'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.125 2.062 2.062 0 0 1 0 4.125zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'
+function socialMark(url: string) {
+  if (url.includes('github')) return siGithub.path
+  if (url.includes('linkedin')) return LINKEDIN
+  if (url.includes('x.com') || url.includes('twitter')) return siX.path
+  return null
+}
 
 // Live clock in India Standard Time, refreshed every 30 s. Rendered only in the browser,
 // so the prerendered page never shows a stale time.
@@ -142,19 +153,25 @@ onBeforeUnmount(() => {
         <div class="footer__details">
           <p class="footer__intro t-label">{{ profile.footer.intro }}</p>
           <div class="footer__data">
-            <div class="footer__cell">
+            <div class="footer__cell footer__cell--social">
               <p class="footer__label">Social</p>
-              <ul role="list">
-                <li v-for="(s, i) in profile.socials" :key="s.url">
+              <ul role="list" class="footer__socials">
+                <li v-for="s in profile.socials" :key="s.url">
                   <a
                     :href="s.url"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="footer__link footer__link--external t-label"
+                    class="footer__social t-label"
                   >
-                    <span class="footer__index" aria-hidden="true" :data-text="index(i)">{{
-                      index(i)
-                    }}</span>
+                    <svg
+                      v-if="socialMark(s.url)"
+                      class="footer__social-mark"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path :d="socialMark(s.url)!" />
+                    </svg>
                     <UiRollText>{{ s.label }}</UiRollText>
                     <span class="footer__ext" aria-hidden="true">↗</span>
                   </a>
@@ -369,6 +386,55 @@ onBeforeUnmount(() => {
   ul {
     display: grid;
     gap: 0.35rem;
+  }
+}
+
+// Social links as pills: the platform's mark, its name and an arrow; filled violet on hover
+.footer__cell--social {
+  grid-column: 1 / -1;
+}
+
+.footer__cell .footer__socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.footer__social {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  min-height: 44px;
+  padding: 0.55em 1.15em;
+  border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  color: var(--foreground);
+  transition:
+    background-color 0.35s var(--ease-out),
+    border-color 0.35s var(--ease-out),
+    color 0.35s var(--ease-out),
+    transform 0.35s var(--ease-out);
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+}
+
+.footer__social-mark {
+  width: 1.05em;
+  height: 1.05em;
+  fill: currentColor;
+}
+
+.footer__social .footer__ext {
+  .footer__social:hover &,
+  .footer__social:focus-visible & {
+    transform: translate(0.15em, -0.15em);
   }
 }
 

@@ -23,7 +23,12 @@ usePinnedSteps(
 
 <template>
   <section v-if="recognition" class="proof section container" aria-labelledby="recognition-title">
-    <UiStatement id="recognition-title" :label="recognition.label" :text="recognition.statement" />
+    <div class="proof__intro">
+      <h2 id="recognition-title" class="proof__heading">
+        <UiAccentText :text="recognition.headline" />
+      </h2>
+      <UiStatement tag="span" :label="recognition.label" :text="recognition.statement" />
+    </div>
 
     <div ref="block" class="proof__block">
       <!-- One card per award, stacked; the one on display shows -->
@@ -60,6 +65,26 @@ usePinnedSteps(
 .proof {
   display: grid;
   gap: clamp(4rem, 10vw, 9rem);
+}
+
+.proof__intro {
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+// The section's title, large in the display serif; the accent word in violet italic
+.proof__heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 10vw, 10rem);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+
+  :deep(em) {
+    color: var(--primary);
+  }
 }
 
 .proof__block {
