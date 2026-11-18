@@ -1,5 +1,5 @@
 import { gsap } from 'gsap'
-import { Fog, MathUtils, Plane, Raycaster, Vector2, Vector3 } from 'three'
+import { Fog, MathUtils, Plane, Quaternion, Raycaster, Vector2, Vector3 } from 'three'
 import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three'
 import { QUALITY } from '../config/quality'
 import type { QualityTier } from '../config/quality'
@@ -66,6 +66,9 @@ export class World {
   private environment: Environment
   /** Glass shards shown on this quality tier */
   private shards = true
+  /** 0 → 1: how fully the shape faces the camera (the bottom-layout ring reads as a circle) */
+  private faceMix = 0
+  private turned = new Quaternion()
   private fog: Fog
   private revealed = false
   private layout: Layout = { x: 0, y: 0, scale: 1, opacity: 0 }
@@ -240,8 +243,13 @@ export class World {
     const { points } = particles
     points.position.set(this.logoX, l.y, 0)
     points.scale.setScalar(l.scale)
-    // Outro: the ring grows and rushes at the camera, so its balls swell and fly past
+    // Outro: the ring glides to the very centre of the screen (where the camera looks), then
+    // grows and rushes at the camera, so its balls swell and fly past. The portal opens in
+    // its middle.
     if (outro > 0 && !reduced) {
+      const toCentre = smooth(0, 0.3, outro)
+      points.position.x = MathUtils.lerp(points.position.x, 0, toCentre)
+      points.position.y = MathUtils.lerp(points.position.y, 0, toCentre)
       const grow = smooth(0, 0.7, outro) ** 2
       points.scale.multiplyScalar(1 + grow * 5.5)
       points.position.lerp(this.camera.position, grow * 0.7)
@@ -268,6 +276,17 @@ export class World {
       points.rotation.x = Math.sin(state.elapsed * 0.17) * 0.06
     } else {
       points.rotation.set(0, 0, 0)
+    }
+    // The bottom-layout ring turns to face the camera exactly (no sway), so it reads as a true
+    // circle rather than a tilted ellipse; blended in and out as the scene changes
+    this.faceMix = MathUtils.lerp(
+      this.faceMix,
+      inScenes && side === 'bottom' ? 1 : 0,
+      reduced ? 1 : 1 - Math.exp(-delta * 3)
+    )
+    if (this.faceMix > 0.001) {
+      this.turned.copy(points.quaternion)
+      points.quaternion.copy(this.turned).slerp(this.camera.quaternion, this.faceMix)
     }
 
     // Camera position: on the orbit around the logo, or the page's fixed view

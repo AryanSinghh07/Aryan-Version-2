@@ -36,7 +36,7 @@ export class Portal {
           uRadius: { value: 0 },
           uTime: { value: 0 },
           uOpacity: { value: 0 },
-          uCore: { value: new Color('#0d0a14') },
+          uCore: { value: new Color('#0c0418') },
           uHalo: { value: new Color('#f4efff') },
         },
       })
@@ -61,11 +61,9 @@ export class Portal {
     this.mesh.visible = outro > 0.12 && fade > 0.001
     this.covering = outro >= 0.66
     if (!this.mesh.visible) return
-    // Centred on the ring, drifting to the middle of the screen as it opens
+    // Always exactly in the middle of the ring (which itself glides to the screen's centre)
     this.center.copy(logo).project(camera)
-    const c = u.uCenter!.value as Vector2
-    c.set(this.center.x * 0.5 + 0.5, this.center.y * 0.5 + 0.5)
-    c.lerp(new Vector2(0.5, 0.5), open)
+    ;(u.uCenter!.value as Vector2).set(this.center.x * 0.5 + 0.5, this.center.y * 0.5 + 0.5)
     u.uAspect!.value = aspect
     // Grows slowly at first, then rushes to cover the screen (corners included)
     u.uRadius!.value = 0.02 + open * open * 1.25

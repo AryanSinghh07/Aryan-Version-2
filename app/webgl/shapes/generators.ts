@@ -304,11 +304,11 @@ export const ring: ShapeGenerator = (count) => {
   const major = 1.15
   while (!out.full) {
     const a = rand() * Math.PI * 2
-    // Tube radius: mostly inside, thinning out towards the edge
-    const t = Math.abs(gaussian(rand)) * 0.22 + (rand() < 0.04 ? rand() * 0.35 : 0)
+    // An even, dense tube that softens at its surface, with only a few strays
+    const t = Math.min(Math.abs(gaussian(rand)) * 0.17, 0.34) + (rand() < 0.015 ? rand() * 0.2 : 0)
     const b = rand() * Math.PI * 2
     const r = major + Math.cos(b) * t
-    out.push(Math.cos(a) * r, Math.sin(a) * r, Math.sin(b) * t * 0.8)
+    out.push(Math.cos(a) * r, Math.sin(a) * r, Math.sin(b) * t * 0.6)
   }
   return normalize(out.points)
 }
