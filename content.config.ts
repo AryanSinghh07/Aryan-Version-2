@@ -55,6 +55,10 @@ export default defineContentConfig({
         ),
         about: z.object({
           headline: z.string(),
+          /** Home "Behind the build": the pill, the big statement and the numbered list */
+          label: z.string(),
+          statement: z.string(),
+          services: z.array(z.string()),
           paragraphs: z.array(z.string()),
           funLine: z.string(),
         }),

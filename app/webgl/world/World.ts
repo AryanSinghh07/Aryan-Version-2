@@ -238,7 +238,9 @@ export class World {
       (state.entered ? 1 : 0.6) *
       (1 - Math.min(state.footerCover * 1.4, 1) * 0.65) *
       (onCarousel ? 0.35 : 1)
-    l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * 0.9) * visible, ease)
+    // Scrolled down, the logo stays as a faint presence; past the hero's portal it is gone
+    const keep = outro >= 0 ? 0 : 0.1
+    l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * (1 - keep)) * visible, ease)
 
     // Orbiting (scene pages): the logo stays at the centre of the stage and the view is shifted
     // so it sits beside the text. Fixed views: the logo itself moves aside.

@@ -79,6 +79,18 @@
   ],
   "about": {
     "headline": "Behind the *build*",
+    "label": "Behind the build",
+    "statement": "I design and engineer full-stack products with AI at their core — from cattle classification for the Rashtriya Gokul Mission to mental-health platforms for students. I start with the problem, then build to ship, not to demo",
+    "services": [
+      "Full-Stack Web Apps",
+      "AI & Machine Learning",
+      "Computer Vision",
+      "Chatbots & Conversational AI",
+      "Interactive 3D & WebGL",
+      "APIs & Backends",
+      "Dashboards & Data",
+      "UI Engineering"
+    ],
     "paragraphs": [
       "**Full-Stack Developer** and **AI/ML Engineer** :spark: building systems that solve ==real problems==, from ==cattle classification== :leaf: for the Rashtriya Gokul Mission to ==mental-health platforms== :heart: for students. **IEEE Code Astraa 2025 finalist** :trophy: presented to ==2,000+== industry stakeholders :mic: at UP International Trade Show 2024.",
       "My work has been presented at **government missions** and **industry events**, which shaped how I approach every project: ==build to ship== :rocket: not just to demo. Currently seeking ==internship opportunities== to build **impactful products** at scale."
