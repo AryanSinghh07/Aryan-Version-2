@@ -62,12 +62,11 @@ let introTimeline: gsap.core.Timeline | null = null
 let disposed = false
 let stopEnteredWatch: (() => void) | undefined
 
-const nav = () => root.value?.querySelector<HTMLElement>('.hero__nav') ?? []
 const metas = (el?: HTMLElement) =>
   el ? [...el.querySelectorAll<HTMLElement>('.scene__meta, .scene__intro')] : []
-// The tag and the [02/05] counter, which decode from random characters
+// The scene tag, which decodes from random characters
 const labels = (el?: HTMLElement) =>
-  el ? [...el.querySelectorAll<HTMLElement>('.scene__meta .tag, .scene__meta .t-muted')] : []
+  el ? [...el.querySelectorAll<HTMLElement>('.scene__meta .tag')] : []
 
 // One timeline per scene change. The outgoing text folds away letter by letter while the
 // incoming headline flips up out of its masks (the accent word springs in after it, then the
@@ -103,7 +102,7 @@ function transition(from: number, to: number, direction: 1 | -1) {
     .set(outMeta, { clearProps: 'transform,opacity,visibility' }, 0.9)
 }
 
-const { current, locked, goTo, start, enter } = useScenes({
+const { current, start } = useScenes({
   count: total.value,
   transition,
   // Past the last scene: glide down to the content below the hero
@@ -123,7 +122,6 @@ function playIntro() {
     .add(textIn(first, 1, 0.85), 0)
     .fromTo(metas(first), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.8 }, 0.3)
     .add(scrambleIn(labels(first)), 0.35)
-    .fromTo(nav(), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, 0.6)
 }
 
 // True on the first page load; false when arriving through an in-site link or Back/Forward
@@ -144,7 +142,7 @@ function begin() {
     gsap.set(sceneEls.value, { autoAlpha: 0 })
     gsap.set(sceneEls.value[last] ?? [], { autoAlpha: 1 })
     if (sceneEls.value[0]) resetText(sceneEls.value[0])
-    gsap.set([...metas(sceneEls.value[0]), nav()].flat(), { autoAlpha: 1 })
+    gsap.set(metas(sceneEls.value[0]), { autoAlpha: 1 })
     goToWithoutAnimation(last)
     start(false)
     return
@@ -157,11 +155,6 @@ function begin() {
 function goToWithoutAnimation(index: number) {
   current.value = index
   store.setScene(index)
-}
-
-function onNavClick(index: number) {
-  if (!locked.value) enter()
-  goTo(index)
 }
 
 onMounted(async () => {
@@ -185,7 +178,7 @@ onMounted(async () => {
   gsap.set(sceneEls.value, { autoAlpha: 0 })
   gsap.set(sceneEls.value[0] ?? [], { autoAlpha: 1 })
   if (sceneEls.value[0]) hideText(sceneEls.value[0])
-  gsap.set([...metas(sceneEls.value[0]), nav()].flat(), { autoAlpha: 0 })
+  gsap.set(metas(sceneEls.value[0]), { autoAlpha: 0 })
 
   if (store.entered) begin()
   else {
@@ -235,9 +228,6 @@ onBeforeUnmount(() => {
         <div class="scene__top">
           <div class="scene__meta">
             <UiTag :variant="i === total - 1 ? 'accent' : 'outline'">{{ scene.label }}</UiTag>
-            <span class="t-label t-muted">
-              [{{ projectNumber(i + 1) }}/{{ projectNumber(total) }}]
-            </span>
           </div>
           <p class="scene__text scene__split"><UiAccentText :text="scene.text" /></p>
         </div>
@@ -253,9 +243,6 @@ onBeforeUnmount(() => {
       <div v-else class="scene__content">
         <div class="scene__meta">
           <UiTag :variant="i === total - 1 ? 'accent' : 'outline'">{{ scene.label }}</UiTag>
-          <span class="t-label t-muted">
-            [{{ projectNumber(i + 1) }}/{{ projectNumber(total) }}]
-          </span>
         </div>
 
         <h1 v-if="i === 0" class="t-hero scene__split">
@@ -268,20 +255,6 @@ onBeforeUnmount(() => {
         <p v-if="i === 0 && intro" class="scene__intro t-label t-muted">{{ intro }}</p>
       </div>
     </section>
-
-    <nav v-if="interactive" class="hero__nav container" :aria-label="`${label} scenes`">
-      <ol role="list" class="hero__dots">
-        <li v-for="(scene, i) in scenes" :key="scene.label">
-          <button
-            type="button"
-            class="hero__dot"
-            :aria-label="`Scene ${i + 1}: ${spoken(scene)}`"
-            :aria-current="current === i ? 'step' : undefined"
-            @click="onNavClick(i)"
-          />
-        </li>
-      </ol>
-    </nav>
 
     <p v-if="interactive" class="sr-only" aria-live="polite">
       Scene {{ current + 1 }} of {{ total }}:
@@ -510,52 +483,6 @@ onBeforeUnmount(() => {
     inset: 0;
     min-height: 0;
     visibility: hidden;
-  }
-}
-
-.hero__nav {
-  position: absolute;
-  inset: auto 0 0;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding-bottom: 2rem;
-}
-
-.hero__dots {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.hero__dot {
-  position: relative;
-  width: 28px;
-  height: 28px;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: 1px solid var(--foreground-muted);
-    transform: translate(-50%, -50%);
-    transition:
-      background-color 0.3s ease,
-      width 0.3s ease,
-      border-color 0.3s ease;
-  }
-
-  &:hover::after {
-    border-color: var(--primary);
-  }
-
-  &[aria-current='step']::after {
-    width: 22px;
-    border-radius: 999px;
-    border-color: var(--primary);
-    background: var(--primary);
   }
 }
 </style>

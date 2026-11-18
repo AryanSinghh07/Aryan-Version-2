@@ -67,10 +67,9 @@ onBeforeUnmount(() => {
     top: 0;
   }
 
-  // The words, dots and scrim fade away as the ring starts to grow (a filter, because the
+  // The words and scrim fade away as the ring starts to grow (a filter, because the
   // scene motion writes its own inline opacity on these elements)
   :deep(.scene__content),
-  :deep(.hero__nav),
   :deep(.hero__scrim) {
     filter: opacity(clamp(0, calc(1 - var(--outro, 0) * 3.5), 1));
   }

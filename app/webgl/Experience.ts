@@ -361,7 +361,7 @@ export class Experience {
       state.entered && !frame.reducedMotion && this.post.enabled
     )
 
-    this.post.update(this.palette, frame.reducedMotion)
+    this.post.update(this.palette, frame.reducedMotion, this.world.blank)
     this.mediaPointer.set(
       ((this.pointer.ndc.x + 1) / 2) * this.sizes.width,
       ((1 - this.pointer.ndc.y) / 2) * this.sizes.height

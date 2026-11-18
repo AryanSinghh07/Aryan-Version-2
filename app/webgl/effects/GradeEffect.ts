@@ -20,13 +20,15 @@ export class GradeEffect extends Effect {
     })
   }
 
-  sync(palette: Palette) {
+  /** `neutral` 0 → 1 eases the grade off (the plain page backdrop past the hero's portal) */
+  sync(palette: Palette, neutral = 0) {
     const u = this.uniforms
     const v = palette.values
-    u.get('uLift')!.value = v.lift
-    u.get('uContrast')!.value = v.contrast
-    u.get('uSaturation')!.value = v.saturation
-    u.get('uShadowTintAmount')!.value = v.shadowTintAmount
+    const k = 1 - neutral
+    u.get('uLift')!.value = v.lift * k
+    u.get('uContrast')!.value = 1 + (v.contrast - 1) * k
+    u.get('uSaturation')!.value = 1 + (v.saturation - 1) * k
+    u.get('uShadowTintAmount')!.value = v.shadowTintAmount * k
     const tint = palette.colors.shadowTint
     ;(u.get('uShadowTint')!.value as Vector3).set(tint.r, tint.g, tint.b)
   }

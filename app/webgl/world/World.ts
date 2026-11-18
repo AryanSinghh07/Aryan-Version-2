@@ -57,6 +57,8 @@ export class World {
   sky: Sky
   floor: Floor
   sparkles: Sparkles
+  /** 0 → 1 past the home hero's portal: the plain page backdrop replaces the 3D world */
+  blank = 0
   landscape: Landscape
   fragments: Fragments
   carousel: Carousel
@@ -350,7 +352,10 @@ export class World {
       delta,
       reduced
     )
-    this.sky.update(palette, this.camera.position, this.logo, state.elapsed, reduced)
+    // Past the portal: a flat backdrop and no stars, the new page begins
+    this.blank = outro >= 0 ? smooth(0.62, 0.74, outro) : 0
+    this.sparkles.points.visible = this.blank < 0.99
+    this.sky.update(palette, this.camera.position, this.logo, state.elapsed, reduced, this.blank)
     this.floor.update(palette, this.logo, state.elapsed, !onCarousel && !ended, delta)
     this.portal.update(outro, this.logo, this.camera, state.aspect, state.elapsed)
 

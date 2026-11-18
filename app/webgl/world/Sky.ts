@@ -1,5 +1,6 @@
-import { BackSide, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from 'three'
+import { BackSide, Color, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from 'three'
 import type { Scene } from 'three'
+import { lookColor } from '../config/landscape'
 import type { Palette } from '../core/Palette'
 import fragmentShader from '../shaders/sky/fragment.glsl'
 import vertexShader from '../shaders/sky/vertex.glsl'
@@ -14,6 +15,7 @@ const RADIUS = 60
 export class Sky {
   mesh: Mesh<SphereGeometry, ShaderMaterial>
   private logoDir = new Vector3()
+  private backdrop = new Color()
 
   constructor(private scene: Scene) {
     const material = new ShaderMaterial({
@@ -33,6 +35,8 @@ export class Sky {
         uLogoDir: { value: new Vector3(0, 0, -1) },
         uTime: { value: 0 },
         uCloud: { value: 0.8 },
+        uBlank: { value: 0 },
+        uBlankColor: { value: new Vector3() },
       },
     })
     this.mesh = new Mesh(new SphereGeometry(RADIUS, 48, 24), material)
@@ -47,7 +51,9 @@ export class Sky {
     cameraPosition: Vector3,
     logo: Vector3,
     elapsed: number,
-    reduced: boolean
+    reduced: boolean,
+    /** 0 → 1: the sky gives way to the flat page backdrop (after the home hero's portal) */
+    blank = 0
   ) {
     this.mesh.position.copy(cameraPosition)
     const u = this.mesh.material.uniforms
@@ -63,6 +69,9 @@ export class Sky {
     this.logoDir.copy(logo).sub(cameraPosition).normalize()
     ;(u.uLogoDir!.value as Vector3).copy(this.logoDir)
     u.uTime!.value = reduced ? 0 : elapsed
+    u.uBlank!.value = blank
+    lookColor('backdrop', palette.darkness, this.backdrop)
+    ;(u.uBlankColor!.value as Vector3).set(this.backdrop.r, this.backdrop.g, this.backdrop.b)
   }
 
   dispose() {

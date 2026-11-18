@@ -11,7 +11,9 @@ uniform vec3 uCloudColor;
 uniform vec3 uGlow;
 uniform vec3 uLogoDir;   // from the camera towards the logo
 uniform float uTime;
-uniform float uCloud;    // cloud strength
+uniform float uCloud;
+uniform float uBlank;        // 0 → 1: fade to the flat page backdrop
+uniform vec3 uBlankColor;    // cloud strength
 
 varying vec3 vDir;
 
@@ -43,6 +45,9 @@ void main() {
   // Soft light behind the logo
   float g = pow(max(dot(dir, normalize(uLogoDir)), 0.0), 7.0);
   color = mix(color, uGlow, g * 0.5);
+
+  // Past the hero's portal the new page sits on a flat, plain backdrop
+  color = mix(color, uBlankColor, uBlank);
 
   gl_FragColor = vec4(color, 1.0);
   #include <colorspace_fragment>

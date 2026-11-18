@@ -101,7 +101,8 @@ export class PostProcessing {
     this.effects = effects
   }
 
-  update(palette: Palette, reducedMotion: boolean) {
+  /** `blank` 0 → 1: past the home hero's portal the page backdrop shows in its true colour */
+  update(palette: Palette, reducedMotion: boolean, blank = 0) {
     const e = this.effects
     if (!e) return
     const v = palette.values
@@ -110,8 +111,8 @@ export class PostProcessing {
       e.bloom.luminanceMaterial.threshold = v.bloomThreshold
     }
     if (e.fluid && this.fluid) e.fluid.sync(this.fluid, palette)
-    e.grade.sync(palette)
-    e.vignette.darkness = v.vignette
+    e.grade.sync(palette, blank)
+    e.vignette.darkness = v.vignette * (1 - blank)
     // Moving grain is motion: keep it off for visitors who prefer less
     e.grain.blendMode.opacity.value = reducedMotion ? 0 : v.grain
   }

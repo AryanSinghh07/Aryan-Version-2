@@ -26,6 +26,8 @@ export interface LandscapeLook {
   ripple: number
   waveGlint: string
   cloud: string
+  /** The flat page backdrop past the home hero's portal */
+  backdrop: string
   cloudEmissive: number
   particleGlow: number
   starGlow: number
@@ -55,6 +57,7 @@ export const LANDSCAPE_LOOKS: { dark: LandscapeLook; light: LandscapeLook } = {
     ripple: 0.014,
     waveGlint: '#d9b8ff',
     cloud: '#7d6ab0',
+    backdrop: '#121212',
     cloudEmissive: 0.25,
     particleGlow: 4,
     starGlow: 40,
@@ -81,6 +84,7 @@ export const LANDSCAPE_LOOKS: { dark: LandscapeLook; light: LandscapeLook } = {
     ripple: 0.01,
     waveGlint: '#ffffff',
     cloud: '#ffffff',
+    backdrop: '#fbfaff',
     cloudEmissive: 0.7,
     particleGlow: 0.8,
     starGlow: 6,
