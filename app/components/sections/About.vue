@@ -8,14 +8,17 @@ import { SplitText } from 'gsap/SplitText'
 // along the right.
 //
 // Motion: the statement's words light up from grey to full colour as the section scrolls by
-// (scrubbed, so scrolling back dims them again). The list has one active row (an arrow in
-// place of its number, full colour) that steps down the list with the scroll; the rows around
-// it dim with distance. Hovering a row makes it the active one. Without JavaScript or with
-// reduced motion the statement is simply in full colour and the first row is active.
+// (scrubbed, so scrolling back dims them again). Once it has gone by, the button and the list
+// pin in the middle of the screen: scrolling now only steps the active row (an arrow in place
+// of its number, full colour) down the eight rows, the others dimming with distance. After the
+// last row the page scrolls on. Hovering a row makes it the active one. Without JavaScript or
+// with reduced motion nothing pins, the statement is in full colour and the first row active.
 const { data: profile } = await useProfile()
 
 const statement = ref<HTMLElement | null>(null)
 const list = ref<HTMLElement | null>(null)
+const foot = ref<HTMLElement | null>(null)
+const lenis = useLenis()
 const active = ref(0)
 const hovered = ref<number | null>(null)
 const shown = computed(() => hovered.value ?? active.value)
@@ -30,11 +33,14 @@ function rowOpacity(i: number) {
   return Math.max(0.12, 1 - Math.abs(i - shown.value) * 0.17)
 }
 
-onMounted(() => {
+/** Scroll distance for each row while the list is pinned, in screen heights */
+const SCROLL_PER_ROW = 0.3
+
+onMounted(async () => {
   if (prefersReducedMotion()) return
   const text = statement.value
-  const rows = list.value
-  if (!text || !rows) return
+  const block = foot.value
+  if (!text || !block) return
 
   ctx = gsap.context(() => {
     // Words light up one after another while the statement crosses the screen
@@ -50,17 +56,25 @@ onMounted(() => {
       }
     )
 
-    // The active row follows the scroll down the list
+    // The button and the list pin mid-screen while the scroll steps through the rows
     const count = profile.value?.about.services.length ?? 1
     ScrollTrigger.create({
-      trigger: rows,
-      start: 'top 75%',
-      end: 'bottom 45%',
+      trigger: block,
+      // Centred when it fits; otherwise held near the top
+      start: () => (block.offsetHeight < window.innerHeight * 0.8 ? 'center center' : 'top 12%'),
+      end: () => `+=${count * window.innerHeight * SCROLL_PER_ROW}`,
+      pin: true,
+      invalidateOnRefresh: true,
       onUpdate: (self) => {
         active.value = Math.min(count - 1, Math.floor(self.progress * count))
       },
     })
   })
+
+  // The pin made the page taller: re-measure the triggers below and the scroll limit
+  await nextTick()
+  ScrollTrigger.refresh()
+  lenis?.resize()
 })
 
 onBeforeUnmount(() => {
@@ -79,7 +93,7 @@ onBeforeUnmount(() => {
       </p>
     </div>
 
-    <div class="about__foot">
+    <div ref="foot" class="about__foot">
       <div class="about__cta">
         <UiGlassButton to="/about">
           More about me <span class="about__cta-arrow" aria-hidden="true">↳</span>
