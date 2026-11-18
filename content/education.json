@@ -1,5 +1,6 @@
 {
   "headline": "Background",
+  "intro": "A degree in AI and machine learning, and certificates from AWS, Cisco, IBM and more. Every project starts with learning something new.",
   "education": [
     {
       "item": "BCA, AI and ML Specialization",
@@ -15,10 +16,25 @@
     }
   ],
   "certifications": [
-    { "title": "AWS Academy Graduate — Cloud Foundations", "issuer": "Amazon Web Services" },
-    { "title": "CCNA Cyber Ops", "issuer": "Cisco" },
-    { "title": "Machine Learning with Python", "issuer": "IBM" },
-    { "title": "Web Development", "issuer": "EduSkills by AICTE" },
-    { "title": "AI for Beginners", "issuer": "HP LIFE" }
+    {
+      "title": "AWS Academy Graduate — Cloud Foundations",
+      "issuer": "Amazon Web Services"
+    },
+    {
+      "title": "CCNA Cyber Ops",
+      "issuer": "Cisco"
+    },
+    {
+      "title": "Machine Learning with Python",
+      "issuer": "IBM"
+    },
+    {
+      "title": "Web Development",
+      "issuer": "EduSkills by AICTE"
+    },
+    {
+      "title": "AI for Beginners",
+      "issuer": "HP LIFE"
+    }
   ]
 }

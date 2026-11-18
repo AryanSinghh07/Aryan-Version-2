@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { siCisco, siHp } from 'simple-icons'
 
-// Education and certifications ("Always learning"). On the home page it is a teaser linking to
-// /about.
+// "Always learning": education and certifications, in the language of the sections above it
+// (a violet pill, the display serif, mono numbers on the plain page) but laid out differently,
+// and without a pin. On the home page it ends with a link to /about.
 //
-// Education is a timeline: a glowing line draws down as the visitor scrolls, and each stop's
-// node lights up when the line reaches it; the cards slide in beside it with their years as a
-// large outlined numeral. Certifications are holographic credential cards with the issuer's
-// mark in its brand colour: they flip in like dealt cards, tilt under the pointer and catch a
-// rainbow sheen where the pointer is. Without JavaScript or with reduced motion everything is
+// An editorial heading: "Always" on the left and "learning" on the line below at the right,
+// drifting together as the section scrolls in, with a short intro beside them. Education is a
+// ruled index: each row's line draws across and its text rises in. Certifications are clean
+// tiles with the issuer's mark in its brand colour; they rise in one after another and glow in
+// that colour under the pointer. Without JavaScript or with reduced motion everything is
 // simply shown.
-withDefaults(defineProps<{ index?: number; teaser?: boolean }>(), { index: 5, teaser: true })
+withDefaults(defineProps<{ teaser?: boolean }>(), { teaser: true })
 
 const { data: education } = await useEducation()
 
-const timeline = ref<HTMLElement | null>(null)
-const creds = ref<HTMLElement | null>(null)
+const root = ref<HTMLElement | null>(null)
 
 interface Mark {
   /** Filled brand logo path, outline glyph path, or a short wordmark */
@@ -47,77 +46,71 @@ const ISSUERS: Record<string, Mark> = {
 const fallback: Mark = { word: '✦', color: 'var(--primary)' }
 const mark = (issuer: string) => ISSUERS[issuer] ?? fallback
 
-// Education glyphs: a mortarboard for the degree, a book for school
-const EDU_GLYPHS = [
-  'M2.5 9 12 4.5 21.5 9 12 13.5zM6.5 11v4.5c0 1.6 2.5 3 5.5 3s5.5-1.4 5.5-3V11M21.5 9v5.5',
-  'M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 21H20M8 7h8M8 10.5h6',
-]
-
-/** "2023–2026" → ["2023", "2026"] */
-const years = (range: string) => range.split(/[–-]/).map((y) => y.trim())
-
-// Credential cards: flip in, tilt and the holographic sheen (--mx/--my from useGlassCards)
-useGlassCards(creds, {
-  selector: '.cred',
-  enter: (el, cards, manual) => {
-    gsap.fromTo(
-      cards,
-      { rotateY: -75, transformOrigin: '0% 50%' },
-      {
-        rotateY: 0,
-        duration: 1.2,
-        stagger: 0.1,
-        ease: 'expo.out',
-        ...(manual ? {} : { scrollTrigger: { trigger: el, start: 'top 82%', once: true } }),
-      }
-    )
-  },
-})
+const count = (n: number) => `(${String(n).padStart(2, '0')})`
+const number = (i: number) => `(${String(i + 1).padStart(3, '0')})`
 
 let ctx: gsap.Context | null = null
 
 onMounted(() => {
-  const el = timeline.value
-  if (!el) return
-  // Reduced motion: every stop is simply lit
-  if (prefersReducedMotion()) {
-    el.querySelectorAll('.edu').forEach((stop) => stop.classList.add('is-lit'))
-    return
-  }
+  const el = root.value
+  if (!el || prefersReducedMotion()) return
   ctx = gsap.context(() => {
-    // The line draws down with scrolling
+    // The two words of the heading drift together as the section scrolls in
+    const head = { trigger: '.learning__head', start: 'top 95%', end: 'top 25%', scrub: 0.8 }
     gsap.fromTo(
-      el.querySelector('.timeline__progress'),
-      { scaleY: 0 },
+      '.learning__word--a',
+      { xPercent: -14, opacity: 0.3 },
+      { xPercent: 0, opacity: 1, ease: 'none', scrollTrigger: head }
+    )
+    gsap.fromTo(
+      '.learning__word--b',
+      { xPercent: 14, opacity: 0.3 },
+      { xPercent: 0, opacity: 1, ease: 'none', scrollTrigger: head }
+    )
+    gsap.fromTo(
+      '.learning__intro, .learning__tag',
+      { y: 24, autoAlpha: 0 },
       {
-        scaleY: 1,
-        ease: 'none',
-        scrollTrigger: { trigger: el, start: 'top 70%', end: 'bottom 55%', scrub: 0.6 },
+        y: 0,
+        autoAlpha: 1,
+        duration: 1,
+        stagger: 0.1,
+        ease: 'expo.out',
+        scrollTrigger: { trigger: '.learning__head', start: 'top 70%', once: true },
       }
     )
-    // Each stop lights up as the line reaches it, and its card slides in
-    for (const stop of el.querySelectorAll<HTMLElement>('.edu')) {
-      gsap.fromTo(
-        stop.querySelector('.edu__card'),
-        { x: -40, autoAlpha: 0, filter: 'blur(8px)' },
-        {
-          x: 0,
-          autoAlpha: 1,
-          filter: 'blur(0px)',
-          duration: 1,
-          ease: 'expo.out',
-          clearProps: 'filter',
-          scrollTrigger: { trigger: stop, start: 'top 75%', once: true },
-        }
-      )
-      // Lit once the line reaches it; unlit again only when scrolling back above it
-      ScrollTrigger.create({
-        trigger: stop.querySelector('.edu__node'),
-        start: 'top 62%',
-        onEnter: () => stop.classList.add('is-lit'),
-        onLeaveBack: () => stop.classList.remove('is-lit'),
-      })
+
+    // Education rows: the rule draws across, then the text rises in
+    for (const row of el.querySelectorAll<HTMLElement>('.edu-row')) {
+      gsap
+        .timeline({ scrollTrigger: { trigger: row, start: 'top 88%', once: true } })
+        .fromTo(
+          row.querySelector('.edu-row__line'),
+          { scaleX: 0 },
+          { scaleX: 1, duration: 1.1, ease: 'expo.out' }
+        )
+        .fromTo(
+          row.querySelectorAll('.edu-row__years, .edu-row__main, .edu-row__note'),
+          { y: 32, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 0.9, stagger: 0.08, ease: 'expo.out' },
+          0.15
+        )
     }
+
+    // Certification tiles rise in one after another
+    gsap.fromTo(
+      '.cert',
+      { y: 48, autoAlpha: 0 },
+      {
+        y: 0,
+        autoAlpha: 1,
+        duration: 1,
+        stagger: 0.08,
+        ease: 'expo.out',
+        clearProps: 'transform',
+        scrollTrigger: { trigger: '.certs', start: 'top 85%', once: true },
+      }
+    )
   }, el)
 })
 
@@ -125,58 +118,54 @@ onBeforeUnmount(() => ctx?.revert())
 </script>
 
 <template>
-  <section v-if="education" class="background section container" aria-labelledby="background-title">
-    <div class="section__head">
-      <UiSectionLabel :index="index" label="Background" />
-      <h2 id="background-title" v-reveal class="t-h2"><UiAccentText text="Always *learning*" /></h2>
+  <section
+    v-if="education"
+    ref="root"
+    class="learning section container"
+    aria-labelledby="background-title"
+  >
+    <header class="learning__head">
+      <span class="learning__tag t-label">{{ education.headline }}</span>
+      <h2 id="background-title" class="learning__title">
+        <span class="learning__word learning__word--a">Always</span>
+        <span class="learning__word learning__word--b"><em>learning</em></span>
+      </h2>
+      <p class="learning__intro">{{ education.intro }}</p>
+    </header>
+
+    <!-- Education: a ruled index -->
+    <div class="learning__group">
+      <h3 class="learning__label t-label">
+        Education <span class="learning__count">{{ count(education.education.length) }}</span>
+      </h3>
+      <ol role="list" class="edu-rows">
+        <li v-for="e in education.education" :key="e.item" class="edu-row">
+          <span class="edu-row__line" aria-hidden="true" />
+          <span class="edu-row__years t-label">{{ e.years }}</span>
+          <div class="edu-row__main">
+            <p class="edu-row__title">{{ e.item }}</p>
+            <p class="edu-row__school">{{ e.institution }}</p>
+          </div>
+          <p class="edu-row__note">{{ e.note }}</p>
+        </li>
+      </ol>
     </div>
 
-    <div class="background__grid">
-      <!-- Education timeline -->
-      <div>
-        <h3 class="background__heading t-label">
-          <span>Education</span>
-          <span class="background__count">{{ projectNumber(education.education.length) }}</span>
-        </h3>
-        <div ref="timeline" class="timeline">
-          <span class="timeline__track" aria-hidden="true">
-            <span class="timeline__progress" />
-          </span>
-          <ol role="list" class="timeline__list">
-            <li v-for="(e, i) in education.education" :key="e.item" class="edu">
-              <span class="edu__node" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path :d="EDU_GLYPHS[i] ?? EDU_GLYPHS[0]" />
-                </svg>
-              </span>
-              <div class="edu__card glass-card">
-                <span class="edu__year" aria-hidden="true">{{ years(e.years)[0] }}</span>
-                <p class="edu__years t-label">{{ e.years }}</p>
-                <p class="edu__title">{{ e.item }}</p>
-                <p class="edu__school">{{ e.institution }}</p>
-                <p class="edu__note">{{ e.note }}</p>
-              </div>
-            </li>
-          </ol>
-        </div>
-      </div>
-
-      <!-- Credential cards -->
-      <div>
-        <h3 class="background__heading t-label">
-          <span>Certifications</span>
-          <span class="background__count">{{
-            projectNumber(education.certifications.length)
-          }}</span>
-        </h3>
-        <ul ref="creds" role="list" class="creds">
-          <li
-            v-for="(c, i) in education.certifications"
-            :key="c.title"
-            class="cred glass-card"
-            :style="{ '--issuer': mark(c.issuer).color }"
-          >
-            <span class="cred__mark" aria-hidden="true">
+    <!-- Certifications: tiles with the issuer's mark -->
+    <div class="learning__group">
+      <h3 class="learning__label t-label">
+        Certifications
+        <span class="learning__count">{{ count(education.certifications.length) }}</span>
+      </h3>
+      <ul role="list" class="certs">
+        <li
+          v-for="(c, i) in education.certifications"
+          :key="c.title"
+          class="cert"
+          :style="{ '--issuer': mark(c.issuer).color }"
+        >
+          <div class="cert__top">
+            <span class="cert__mark" aria-hidden="true">
               <svg
                 v-if="mark(c.issuer).path"
                 viewBox="0 0 24 24"
@@ -185,222 +174,252 @@ onBeforeUnmount(() => ctx?.revert())
               >
                 <path :d="mark(c.issuer).path" />
               </svg>
-              <span v-else class="cred__word">{{ mark(c.issuer).word }}</span>
+              <span v-else class="cert__word">{{ mark(c.issuer).word }}</span>
             </span>
-            <span class="cred__index t-label" aria-hidden="true">{{ projectNumber(i + 1) }}</span>
-            <span class="cred__title">{{ c.title }}</span>
-            <span class="cred__issuer t-label">{{ c.issuer }}</span>
-          </li>
-        </ul>
-      </div>
+            <span class="cert__index t-label" aria-hidden="true">{{ number(i) }}</span>
+          </div>
+          <p class="cert__title">{{ c.title }}</p>
+          <p class="cert__issuer t-label">{{ c.issuer }}</p>
+        </li>
+      </ul>
     </div>
 
-    <div v-if="teaser" class="background__more">
-      <UiGlassButton to="/about" variant="secondary">Read my story →</UiGlassButton>
+    <div v-if="teaser" class="learning__more">
+      <UiGlassButton to="/about">
+        Read my story <span class="learning__arrow" aria-hidden="true">↳</span>
+      </UiGlassButton>
     </div>
   </section>
 </template>
 
 <style scoped lang="scss">
-.background__grid {
+.learning {
   display: grid;
-  gap: 3.5rem 4rem;
+  gap: clamp(4rem, 8vw, 7rem);
+}
+
+// ---------------------------------------------------------------- Heading
+.learning__head {
+  display: grid;
+  gap: 1.5rem;
 
   @media (min-width: 1024px) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'tag tag'
+      'title title'
+      'intro .';
+    column-gap: 3rem;
+
+    .learning__tag {
+      grid-area: tag;
+    }
+
+    .learning__title {
+      grid-area: title;
+    }
+
+    .learning__intro {
+      grid-area: intro;
+    }
   }
 }
 
-.background__heading {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  color: var(--foreground-muted);
+.learning__tag {
+  justify-self: start;
+  padding: 0.45em 0.95em;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
 
-  &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(var(--foreground-rgb), 0.15);
+.learning__title {
+  display: grid;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 13vw, 13rem);
+  font-weight: 400;
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+}
+
+.learning__word {
+  display: block;
+  will-change: transform;
+}
+
+// "learning" sits on the line below, at the right, in violet italic
+.learning__word--b {
+  justify-self: end;
+
+  em {
+    color: var(--primary);
   }
 }
 
-.background__count {
-  color: var(--primary);
+.learning__intro {
+  max-width: 24rem;
+  margin: 0;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+
+  @media (min-width: 1024px) {
+    // Up beside "learning"
+    margin-top: calc(clamp(4rem, 13vw, 13rem) * -0.85);
+  }
 }
 
-// ---------------------------------------------------------------- Timeline
-.timeline {
-  position: relative;
-  padding-left: 3.75rem;
-}
-
-.timeline__list {
+// ---------------------------------------------------------------- Group labels
+.learning__group {
   display: grid;
   gap: 1.5rem;
 }
 
-// The track, and the glowing line that draws down it
-.timeline__track {
-  position: absolute;
-  top: 1.4rem;
-  bottom: 1.4rem;
-  left: 1.35rem;
-  width: 2px;
-  border-radius: 2px;
-  background: rgba(var(--foreground-rgb), 0.12);
+.learning__label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: var(--foreground);
 }
 
-.timeline__progress {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--primary);
-  box-shadow: 0 0 14px 1px rgba(var(--primary-rgb), 0.7);
-  transform-origin: top;
+.learning__count {
+  color: var(--foreground-muted);
 }
 
-.edu {
+// ---------------------------------------------------------------- Education index
+.edu-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+
+.edu-row {
   position: relative;
+  display: grid;
+  gap: 0.75rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem) 0;
+
+  @media (min-width: 900px) {
+    grid-template-columns: 11rem minmax(0, 1.3fr) minmax(0, 1fr);
+    align-items: baseline;
+    gap: 2rem;
+  }
 }
 
-// The stop: a ring with its glyph, lit once the line reaches it
-.edu__node {
+// The rule above each row, drawn across as the row arrives
+.edu-row__line {
   position: absolute;
-  top: 1rem;
-  left: -3.75rem;
-  display: grid;
-  place-items: center;
-  width: 2.8rem;
-  height: 2.8rem;
-  border-radius: 50%;
-  border: 1px solid rgba(var(--foreground-rgb), 0.2);
-  background-color: rgba(var(--background-rgb), 0.85);
+  inset: 0 0 auto;
+  height: 1px;
+  background: color-mix(in srgb, var(--foreground) 14%, transparent);
+  transform-origin: left;
+}
+
+.edu-row__years {
   color: var(--foreground-muted);
-  transition:
-    color 0.5s var(--ease-out),
-    border-color 0.5s var(--ease-out),
-    box-shadow 0.5s var(--ease-out),
-    transform 0.5s var(--ease-out);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.4s var(--ease-out);
+}
 
-  svg {
-    width: 55%;
-    height: 55%;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+.edu-row__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.6vw, 2.6rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  transition: transform 0.5s var(--ease-out);
+}
+
+.edu-row__school {
+  margin: 0.4rem 0 0;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+
+.edu-row__note {
+  margin: 0;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+
+  @media (min-width: 900px) {
+    text-align: right;
   }
+}
 
-  .edu.is-lit & {
+.edu-row:hover {
+  .edu-row__years {
     color: var(--primary);
-    border-color: var(--primary);
-    box-shadow:
-      0 0 0 6px rgba(var(--primary-rgb), 0.15),
-      0 0 24px rgba(var(--primary-rgb), 0.55);
-    transform: scale(1.06);
+  }
+
+  .edu-row__title {
+    transform: translateX(10px);
   }
 }
 
-.edu__card {
+// ---------------------------------------------------------------- Certification tiles
+.certs {
   display: grid;
-  gap: 0.35rem;
-  padding: clamp(1.25rem, 2.2vw, 1.75rem);
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (min-width: 1100px) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
-// The start year, a large outlined numeral behind the card's text
-.edu__year {
-  position: absolute;
-  top: -0.12em;
-  right: 0.2em;
-  z-index: -1;
-  font-family: var(--font-display);
-  font-size: clamp(5rem, 9vw, 7.5rem);
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(var(--primary-rgb), 0.35);
-  pointer-events: none;
-}
-
-.edu__years {
-  color: var(--primary);
-}
-
-.edu__title {
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.edu__school {
-  font-weight: 600;
-}
-
-.edu__note {
-  color: var(--foreground-muted);
-}
-
-// ---------------------------------------------------------------- Credential cards
-.creds {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
-  gap: 1rem;
-  perspective: 1200px;
-}
-
-.cred {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto 1fr auto;
-  gap: 0.9rem 0.75rem;
-  min-height: 11rem;
+.cert {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 13rem;
   padding: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+  transition:
+    transform 0.5s var(--ease-out),
+    border-color 0.4s var(--ease-out),
+    background-color 0.4s var(--ease-out),
+    box-shadow 0.5s var(--ease-out);
 
-  // Holographic sheen where the pointer is
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    opacity: 0;
-    background: radial-gradient(
-      18rem circle at var(--mx) var(--my),
-      rgba(255, 120, 200, 0.22),
-      rgba(120, 200, 255, 0.18) 35%,
-      rgba(180, 255, 160, 0.12) 55%,
-      transparent 70%
-    );
-    mix-blend-mode: screen;
-    transition: opacity 0.4s var(--ease-out);
-    pointer-events: none;
-  }
-
-  &:hover::after {
-    opacity: 1;
-  }
-
-  // The issuer's colour edges the card on hover
   &:hover {
+    transform: translateY(-4px);
     border-color: color-mix(in srgb, var(--issuer) 60%, transparent);
-    box-shadow: 0 1.5rem 4rem -1.5rem color-mix(in srgb, var(--issuer) 55%, transparent);
+    background-color: color-mix(in srgb, var(--issuer) 8%, transparent);
+    box-shadow: 0 18px 40px -20px color-mix(in srgb, var(--issuer) 55%, transparent);
   }
 }
 
-// The issuer's mark in its brand colour, on a tile tinted with it
-.cred__mark {
+.cert__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: auto;
+  padding-bottom: 1.5rem;
+}
+
+.cert__mark {
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.9rem;
-  border: 1px solid color-mix(in srgb, var(--issuer) 45%, transparent);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.8rem;
   background: color-mix(in srgb, var(--issuer) 14%, transparent);
   color: var(--issuer);
-  transition: transform 0.5s var(--ease-out);
 
   svg {
     width: 58%;
@@ -410,50 +429,47 @@ onBeforeUnmount(() => ctx?.revert())
     &.is-outline {
       fill: none;
       stroke: currentColor;
-      stroke-width: 1.8;
+      stroke-width: 1.7;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
   }
-
-  .cred:hover & {
-    transform: rotate(-8deg) scale(1.08);
-  }
 }
 
-.cred__word {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  letter-spacing: 0.04em;
+.cert__word {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
-.cred__index {
-  justify-self: end;
-  align-self: start;
+.cert__index {
   color: var(--foreground-muted);
 }
 
-.cred__title {
-  grid-column: 1 / -1;
-  align-self: end;
-  font-size: 1.1rem;
-  font-weight: 600;
+.cert__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
   line-height: 1.3;
+  color: var(--foreground);
 }
 
-.cred__issuer {
-  grid-column: 1 / -1;
-  color: var(--issuer);
+.cert__issuer {
+  margin: 0;
+  color: var(--foreground-muted);
 }
 
-// An odd last card takes the full row rather than sitting alone
-@media (min-width: 640px) {
-  .cred:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
+// ---------------------------------------------------------------- More
+.learning__arrow {
+  display: inline-block;
+  margin-left: 0.35em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cert,
+  .edu-row__title,
+  .edu-row__years {
+    transition: none;
   }
-}
-
-.background__more {
-  margin-top: 3rem;
 }
 </style>

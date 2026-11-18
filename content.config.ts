@@ -132,6 +132,8 @@ export default defineContentConfig({
       source: 'education.json',
       schema: z.object({
         headline: z.string(),
+        /** A line beside the "Always learning" heading */
+        intro: z.string(),
         education: z.array(
           z.object({
             item: z.string(),
