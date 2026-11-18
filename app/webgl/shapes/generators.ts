@@ -70,43 +70,83 @@ function lerpPoint(
   ]
 }
 
-// ---------------------------------------------------------------- Scene 1: the letter a
-/** A lowercase "a" in the display font, sampled from a canvas and given a little depth */
-export const letterA: ShapeGenerator = async (count) => {
-  const family = '"Instrument Serif", "Times New Roman", serif'
+// ---------------------------------------------------------------- Text shapes
+/**
+ * Text in a web font, drawn on a canvas and sampled into points with a little depth. The font
+ * is loaded first (falling back to whatever the stack offers).
+ */
+async function textShape(
+  count: number,
+  text: string,
+  family: string,
+  weight: number,
+  seed: number,
+  depth = 60,
+  radius = SHAPE_RADIUS,
+  /** Nudge sideways after centring (a wide shape kept clear of a long headline) */
+  shiftX = 0
+) {
   try {
-    await document.fonts.load(`400 400px ${family}`, 'a')
+    await document.fonts.load(`${weight} 400px ${family}`, text)
   } catch {
-    // Fall back to whatever serif is available
+    // Fall back to whatever font in the stack is available
   }
 
-  const size = 512
+  const size = 1024
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = size
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   ctx.fillStyle = '#fff'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
-  ctx.font = `400 470px ${family}`
-  const metrics = ctx.measureText('a')
+  // Fit the text into most of the canvas, whatever its width
+  ctx.font = `${weight} 400px ${family}`
+  const fit = Math.min((size * 0.9) / ctx.measureText(text).width, 2.2)
+  ctx.font = `${weight} ${Math.round(400 * fit)}px ${family}`
+  const metrics = ctx.measureText(text)
   const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-  ctx.fillText('a', size / 2, size / 2 + height / 2 - metrics.actualBoundingBoxDescent)
+  ctx.fillText(text, size / 2, size / 2 + height / 2 - metrics.actualBoundingBoxDescent)
 
   const data = ctx.getImageData(0, 0, size, size).data
   const filled: number[] = []
   for (let p = 0; p < size * size; p++) if (data[p * 4 + 3]! > 128) filled.push(p)
 
-  const rand = createRandom(1)
+  const rand = createRandom(seed)
   const out = writer(count)
   if (!filled.length) return normalize(out.points)
   while (!out.full) {
     const p = filled[Math.floor(rand() * filled.length)]!
     const x = (p % size) + rand() - 0.5
     const y = Math.floor(p / size) + rand() - 0.5
-    out.push(x - size / 2, size / 2 - y, (rand() - 0.5) * 60)
+    out.push(x - size / 2, size / 2 - y, (rand() - 0.5) * depth * 2)
   }
-  return normalize(out.points)
+  const points = normalize(out.points, radius)
+  if (shiftX) for (let i = 0; i < points.length; i += 3) points[i]! += shiftX
+  return points
 }
+
+// ---------------------------------------------------------------- Scene 1: the letter a
+/** A lowercase "a" in the display font */
+export const letterA: ShapeGenerator = (count) =>
+  textShape(count, 'a', '"Instrument Serif", "Times New Roman", serif', 400, 1)
+
+// ---------------------------------------------------------------- Scene 2: code
+/**
+ * "Full stack meets AI / ML": the code symbol </> in the monospace font, bold, so it reads at
+ * a glance
+ */
+export const code: ShapeGenerator = (count) =>
+  // A little smaller than the other shapes: three characters are wide
+  textShape(
+    count,
+    '</>',
+    '"JetBrains Mono", ui-monospace, "Courier New", monospace',
+    700,
+    12,
+    80,
+    1.12,
+    0.35
+  )
 
 // ---------------------------------------------------------------- Scene 2: neural network
 /** Layers of nodes joined by connections, like a small neural network diagram */
@@ -315,6 +355,7 @@ export const ring: ShapeGenerator = (count) => {
 
 export const GENERATORS: Record<string, ShapeGenerator> = {
   ring,
+  code,
   'letter-a': letterA,
   'neural-net': neuralNet,
   leaf,

@@ -1,6 +1,6 @@
 import { gsap } from 'gsap'
 import { Fog, MathUtils, Plane, Quaternion, Raycaster, Vector2, Vector3 } from 'three'
-import type { PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import type { Camera, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
 import { QUALITY } from '../config/quality'
 import type { QualityTier } from '../config/quality'
 import {
@@ -69,6 +69,16 @@ export class World {
   /** 0 → 1: how fully the shape faces the camera (the bottom-layout ring reads as a circle) */
   private faceMix = 0
   private turned = new Quaternion()
+  /**
+   * On the scene pages the particles draw last, after the portal, on a fresh depth buffer: the
+   * shape is never cut by the landscape (the lighthouse, the tree) around it. Elsewhere (the
+   * Work carousel) and in the lake's mirror image they are depth-tested as usual. Attached in
+   * update(): the particle system builds a new points object when it (re)builds.
+   */
+  private drawOnTop = (r: WebGLRenderer, _s: Scene, cam: Camera) => {
+    if (cam !== this.camera || this.orbitMix <= 0.5) return
+    r.clearDepth()
+  }
   private fog: Fog
   private revealed = false
   private layout: Layout = { x: 0, y: 0, scale: 1, opacity: 0 }
@@ -107,8 +117,6 @@ export class World {
     this.sparkles = new Sparkles(scene)
     this.carousel = new Carousel(scene)
     this.portal = new Portal(scene)
-    // The particles draw after the portal, so the ring stays in front of it
-    this.particles.points.renderOrder = 1000
     this.floor = new Floor(scene, () => [
       this.fragments.group,
       this.carousel.group,
@@ -241,6 +249,10 @@ export class World {
     this.shift = MathUtils.lerp(this.shift, inScenes ? l.x : 0, ease)
 
     const { points } = particles
+    if (points.onBeforeRender !== this.drawOnTop) {
+      points.onBeforeRender = this.drawOnTop
+      points.renderOrder = 1000
+    }
     points.position.set(this.logoX, l.y, 0)
     points.scale.setScalar(l.scale)
     // Outro: the ring glides to the very centre of the screen (where the camera looks), then
@@ -272,8 +284,13 @@ export class World {
 
     // The logo mostly turns to face the camera, so it reads at every angle
     if (!reduced) {
-      points.rotation.y = a * LOGO_FOLLOW + Math.sin(state.elapsed * 0.25) * 0.2
-      points.rotation.x = Math.sin(state.elapsed * 0.17) * 0.06
+      // All three angles every frame: turning the ring to face the camera (below) writes back
+      // into this rotation, and a leftover roll would twist every later shape
+      points.rotation.set(
+        Math.sin(state.elapsed * 0.17) * 0.06,
+        a * LOGO_FOLLOW + Math.sin(state.elapsed * 0.25) * 0.1,
+        0
+      )
     } else {
       points.rotation.set(0, 0, 0)
     }

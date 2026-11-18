@@ -46,14 +46,14 @@ export interface Orbit {
  */
 export const SCENE_ORBITS: Orbit[] = [
   { angle: 0, height: 0.35, distance: 8.4 },
-  { angle: 100, height: 0.75, distance: 8.3 },
-  { angle: 140, height: 0.3, distance: 8.6 },
+  { angle: 135, height: 0.75, distance: 8.3 },
+  { angle: 150, height: 0.3, distance: 8.6 },
   { angle: 205, height: 0.9, distance: 8.3 },
   { angle: 340, height: 0.5, distance: 8.7 },
 ]
 
 /** The logo turns to face the camera by this share of the orbit angle, so it always reads */
-export const LOGO_FOLLOW = 0.95
+export const LOGO_FOLLOW = 1
 
 /** Floor height (just below the logo) */
 export const FLOOR_Y = -2.4
