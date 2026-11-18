@@ -1,5 +1,6 @@
 {
   "headline": "Stack that *ships*",
+  "intro": "The tools I reach for every day: from the interface to the API, the model and the server it runs on. Picked for shipping, not for show.",
   "groups": [
     {
       "title": "Frontend",

@@ -87,6 +87,8 @@ export default defineContentConfig({
       source: 'stack.json',
       schema: z.object({
         headline: z.string(),
+        /** A short line under the "Stack that ships" heading */
+        intro: z.string(),
         groups: z.array(
           z.object({
             title: z.string(),

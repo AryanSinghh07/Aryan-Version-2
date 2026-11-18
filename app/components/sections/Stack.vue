@@ -174,6 +174,7 @@ async function toggle() {
       <div class="section__head">
         <UiSectionLabel :index="2" label="Stack" />
         <h2 id="stack-title" v-reveal class="t-h2"><UiAccentText :text="stack.headline" /></h2>
+        <p v-reveal class="stack__intro">{{ stack.intro }}</p>
       </div>
 
       <dl class="stack__facts">
@@ -271,6 +272,15 @@ async function toggle() {
       margin-bottom: 0;
     }
   }
+}
+
+// A short line under the heading, as the other sections have
+.stack__intro {
+  max-width: 30rem;
+  margin: 0;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
 }
 
 .stack__facts {
