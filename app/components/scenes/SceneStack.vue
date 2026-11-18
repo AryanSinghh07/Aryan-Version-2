@@ -103,7 +103,7 @@ function transition(from: number, to: number, direction: 1 | -1) {
     .set(outMeta, { clearProps: 'transform,opacity,visibility' }, 0.9)
 }
 
-const { current, locked, goTo, start, enter, release } = useScenes({
+const { current, locked, goTo, start, enter } = useScenes({
   count: total.value,
   transition,
   // Past the last scene: glide down to the content below the hero
@@ -281,10 +281,6 @@ onBeforeUnmount(() => {
           />
         </li>
       </ol>
-      <span class="hero__count t-label" aria-hidden="true">
-        {{ projectNumber(current + 1) }} / {{ projectNumber(total) }}
-      </span>
-      <button type="button" class="hero__skip t-label" @click="release()">Skip intro ↓</button>
     </nav>
 
     <p v-if="interactive" class="sr-only" aria-live="polite">
@@ -560,20 +556,6 @@ onBeforeUnmount(() => {
     border-radius: 999px;
     border-color: var(--primary);
     background: var(--primary);
-  }
-}
-
-.hero__count {
-  color: var(--foreground-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.hero__skip {
-  margin-left: auto;
-  min-height: 44px;
-
-  &:hover {
-    color: var(--primary);
   }
 }
 </style>

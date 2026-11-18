@@ -36,7 +36,7 @@ export class Portal {
           uRadius: { value: 0 },
           uTime: { value: 0 },
           uOpacity: { value: 0 },
-          uCore: { value: new Color('#0c0418') },
+          uCore: { value: new Color('#000000') },
           uHalo: { value: new Color('#f4efff') },
         },
       })
