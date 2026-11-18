@@ -59,14 +59,14 @@
       "headline": "Built to *ship*, not to demo",
       "text": "Presented at ==government missions== and ==industry events==, which shaped how I approach every project.",
       "side": "right",
-      "particleShape": "leaf"
+      "particleShape": "rocket"
     },
     {
       "label": "Impact",
       "headline": "AI that *cares*",
       "text": "I train ==AI models== that help ==real farmers== and build chatbots that calm ==2 AM anxiety==.",
       "side": "left",
-      "particleShape": "chat-bubble"
+      "particleShape": "heart"
     },
     {
       "label": "Open to work",

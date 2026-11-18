@@ -353,7 +353,115 @@ export const ring: ShapeGenerator = (count) => {
   return normalize(out.points)
 }
 
+// ---------------------------------------------------------------- Scene 3: rocket
+/**
+ * "Built to ship": a rocket lifting off at an angle. Read as a silhouette from the front, so
+ * every part has its own outline: a slim body with a porthole cut right through it (and a
+ * bright rim), a sharp nose cone, three swept-back fins, a narrow nozzle, then, after a small
+ * gap, a flame of tapering streaks and a few sparks.
+ */
+export const rocket: ShapeGenerator = (count) => {
+  const rand = createRandom(21)
+  const out = writer(count)
+  const tilt = -0.55 // leaning towards the upper right
+  const c = Math.cos(tilt)
+  const sn = Math.sin(tilt)
+  const push = (x: number, y: number, z: number) => out.push(x * c - y * sn, x * sn + y * c, z)
+  const R = 0.3 // body radius
+  const win = { y: 0.28, r: 0.13 } // porthole
+
+  // A few flame streaks, each with its own angle and length
+  const streaks = Array.from({ length: 5 }, (_, i) => ({
+    x: (i / 4 - 0.5) * 0.2,
+    lean: (i / 4 - 0.5) * 0.3,
+    length: i === 2 ? 0.95 : 0.5 + rand() * 0.3,
+  }))
+
+  while (!out.full) {
+    const pick = rand()
+    if (pick < 0.42) {
+      // Body: a slim cylinder, filled towards its surface, with the porthole cut through
+      const y = -0.6 + rand() * 1.35
+      const a = rand() * Math.PI * 2
+      const r = R * Math.sqrt(0.3 + rand() * 0.7)
+      const x = Math.cos(a) * r
+      if (Math.hypot(x, y - win.y) < win.r + 0.035) continue
+      push(x, y, Math.sin(a) * r)
+    } else if (pick < 0.56) {
+      // Nose cone, sharp at the tip
+      const t = Math.pow(rand(), 0.7)
+      const y = 0.75 + t * 0.7
+      const a = rand() * Math.PI * 2
+      const r = R * Math.pow(1 - t, 1.2) * Math.sqrt(0.3 + rand() * 0.7)
+      push(Math.cos(a) * r, y, Math.sin(a) * r)
+    } else if (pick < 0.61) {
+      // Porthole rim
+      const a = rand() * Math.PI * 2
+      const r = win.r + rand() * 0.03
+      push(Math.cos(a) * r, win.y + Math.sin(a) * r, R * 0.6 + rand() * 0.1)
+    } else if (pick < 0.8) {
+      // Fins: left and right swept back past the body's foot, and one facing the camera
+      const side = Math.floor(rand() * 3)
+      const u = Math.sqrt(rand()) // denser near the body
+      const v = rand()
+      const reach = (1 - u) * 0.5
+      const top = -0.15 - (1 - u) * 0.25
+      const bottom = -0.75 - (1 - u) * 0.2
+      const y = bottom + v * (top - bottom)
+      const thick = (rand() - 0.5) * 0.05
+      if (side === 0) push(-(R + reach * 0.95), y, thick)
+      else if (side === 1) push(R + reach * 0.95, y, thick)
+      else push(thick * 2, y, R + reach * 0.5)
+    } else if (pick < 0.85) {
+      // Nozzle: a short, narrower bell under the body
+      const t = rand()
+      const y = -0.6 - t * 0.16
+      const a = rand() * Math.PI * 2
+      const r = (0.17 + t * 0.06) * Math.sqrt(0.5 + rand() * 0.5)
+      push(Math.cos(a) * r, y, Math.sin(a) * r)
+    } else if (pick < 0.98) {
+      // Flame: thin streaks below a small gap, tapering to points
+      const s = streaks[Math.floor(rand() * streaks.length)]!
+      const t = Math.pow(rand(), 1.4)
+      const y = -0.88 - t * s.length
+      const width = 0.045 * (1 - t) + 0.004
+      push(s.x + s.lean * t + gaussian(rand) * width, y, gaussian(rand) * width)
+    } else {
+      // Sparks scattered around the flame
+      const t = rand()
+      push(gaussian(rand) * 0.25, -0.95 - t * 0.9, gaussian(rand) * 0.15)
+    }
+  }
+  return normalize(out.points)
+}
+
+// ---------------------------------------------------------------- Scene 4: heart
+/**
+ * "AI that cares": a full, rounded 3D heart. The classic heart curve, filled, and puffed out
+ * towards the middle so it reads as a solid heart rather than a flat outline.
+ */
+export const heart: ShapeGenerator = (count) => {
+  const rand = createRandom(33)
+  const out = writer(count)
+  const inside = (x: number, y: number) => {
+    const q = x * x + y * y - 1
+    return q * q * q - x * x * y * y * y <= 0
+  }
+  while (!out.full) {
+    const x = (rand() * 2 - 1) * 1.25
+    const y = -1.15 + rand() * 2.45
+    if (!inside(x, y)) continue
+    // Thickest in the middle of each lobe, thinning to the edge
+    const edge = Math.min(1, Math.hypot(x * 0.85, (y - 0.2) * 0.9))
+    const depth = 0.55 * Math.sqrt(Math.max(0, 1 - edge * edge)) + 0.05
+    out.push(x, y, (rand() * 2 - 1) * depth)
+  }
+  return normalize(out.points)
+}
+
 export const GENERATORS: Record<string, ShapeGenerator> = {
+  rocket,
+  heart,
   ring,
   code,
   'letter-a': letterA,

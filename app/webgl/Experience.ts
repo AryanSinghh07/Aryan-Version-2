@@ -285,6 +285,9 @@ export class Experience {
     particles
       .add(shapes, 'shape', [
         'letter-a',
+        'code',
+        'rocket',
+        'heart',
         'neural-net',
         'leaf',
         'chat-bubble',
