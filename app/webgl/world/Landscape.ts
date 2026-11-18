@@ -6,6 +6,7 @@ import {
   DoubleSide,
   Group,
   LoopRepeat,
+  Matrix4,
   Mesh,
   PointLight,
   ShaderMaterial,
@@ -39,8 +40,54 @@ const MERGE = /^(Rock|Stone)_/
 const NOT_MIRRORED = ['Grass_Web', 'Particles_Web', 'Merged_Rock_Mat', 'Merged_Stone_Mat']
 
 /** Materials whose look changes between night and day */
+/**
+ * Wind for grass, branches and leaves, worked out in landscape metres (as in Blender) so the
+ * gust sizes match the scene; uToRoot turns world positions back into metres.
+ */
+const WIND_GLSL = /* glsl */ `
+  uniform float uWind;
+  uniform float uWindStrength;
+  uniform mat4 uToRoot;
+  float gust(vec3 wp) {
+    return 0.55 + 0.45 * sin(wp.x * 0.045 + wp.z * 0.035 - uWind * 0.7)
+                * (0.7 + 0.3 * sin(wp.x * 0.11 - uWind * 0.37));
+  }
+  vec3 windOffset(vec3 wp, float amount) {
+    float s = sin(uWind * 1.4 + wp.x * 0.30 + wp.z * 0.22) * 0.7
+            + sin(uWind * 2.3 + wp.x * 0.80 - wp.z * 0.50) * 0.3;
+    float c = cos(uWind * 1.1 + wp.z * 0.28) * 0.5;
+    return vec3(0.8 + s, 0.0, c) * gust(wp) * amount * uWindStrength;
+  }`
+/** The blossom tree's base, in landscape metres */
+const TREE_BASE = 'vec3(-3.47, 1.27, -34.7)'
+const WIND_MODES = {
+  // Grass: the vertex colour carries the blade height (dark root, bright tip)
+  grass: /* glsl */ `
+    #ifdef USE_COLOR
+      float hgt = clamp((color.r + color.g + color.b) * 1.3 - 0.1, 0.0, 1.0);
+    #else
+      float hgt = 0.5;
+    #endif
+    vec3 wp = (uToRoot * modelMatrix * vec4(position, 1.0)).xyz;
+    transformed += windOffset(wp, 0.11 * hgt * hgt);`,
+  branches: /* glsl */ `
+    vec3 wp = (uToRoot * modelMatrix * vec4(position, 1.0)).xyz;
+    float h = clamp((wp.y - ${TREE_BASE}.y) / 11.0, 0.0, 1.0);
+    transformed += windOffset(${TREE_BASE}, 0.28 * h * h);`,
+  leaves: /* glsl */ `
+    vec3 wp = (uToRoot * modelMatrix * vec4(position, 1.0)).xyz;
+    float h = clamp((wp.y - ${TREE_BASE}.y) / 11.0, 0.0, 1.0);
+    transformed += windOffset(${TREE_BASE}, 0.28 * h * h);
+    float g = gust(wp) * uWindStrength;
+    transformed += vec3(
+      sin(uWind * 3.1 + wp.x * 4.0 + wp.y * 3.0),
+      cos(uWind * 2.6 + wp.z * 4.0) * 0.6,
+      sin(uWind * 3.4 + wp.y * 5.0 + wp.z * 2.0)) * 0.035 * g;`,
+} as const
+
 interface Themed {
   grass: MeshStandardMaterial[]
+  leaves: MeshStandardMaterial[]
   cloud: MeshStandardMaterial[]
   particle: MeshStandardMaterial[]
   star: MeshStandardMaterial[]
@@ -64,9 +111,14 @@ export class Landscape {
   appear = 0
 
   private mixer: AnimationMixer | null = null
-  private themed: Themed = { grass: [], cloud: [], particle: [], star: [] }
+  private themed: Themed = { grass: [], leaves: [], cloud: [], particle: [], star: [] }
+  /** Shared wind uniforms (time, strength, and world → landscape metres) */
+  private wind = { value: 0 }
+  private windStrength = { value: 1 }
+  private toRoot = { value: new Matrix4() }
+  private root: Object3D | null = null
   /** Each material with the opacity it settles at (clouds stay see-through) */
-  private faded: { material: Material; opacity: number }[] = []
+  private faded: { material: Material; opacity: number; keepTransparent?: boolean }[] = []
   private lamp = new PointLight('#ffb86b', 0, 8 * S, 2)
   private lantern = new PointLight('#ffdcae', 0, 30 * S, 2)
   private beam: ShaderMaterial | null = null
@@ -106,10 +158,34 @@ export class Landscape {
       seen.add(m)
       // glTF can't carry Blender's node effects (grass gradient, glow strengths): restore them
       let opacity = 1
+      let keepTransparent = false
       switch (m.name) {
         case 'Grass_Mat':
           m.side = DoubleSide
           this.themed.grass.push(m)
+          this.addWind(m, 'grass')
+          break
+        case 'Tree_Leaf_Mat':
+          m.side = DoubleSide
+          m.emissive.set('#b48cf0')
+          this.themed.leaves.push(m)
+          this.addWind(m, 'leaves')
+          break
+        case 'Bark_Mat':
+          // The trunk barely moves (the sway grows with height); the branches bend
+          this.addWind(m, 'branches')
+          break
+        case 'Cloud_Soft_Mat':
+          // Soft cloud and mist cards: see-through, unfogged, never hiding what is behind
+          m.fog = false
+          m.depthWrite = false
+          m.side = DoubleSide
+          mesh.renderOrder = 1
+          keepTransparent = true
+          this.themed.cloud.push(m)
+          break
+        case 'LilyFlower_Mat':
+          m.emissiveIntensity = 0.6
           break
         case 'Leaf_Mat':
           m.side = DoubleSide
@@ -137,7 +213,7 @@ export class Landscape {
       // Fade in after loading
       m.transparent = true
       m.opacity = 0
-      this.faded.push({ material: m, opacity })
+      this.faded.push({ material: m, opacity, keepTransparent })
     })
 
     // The lamp by the fox and the lighthouse lantern light their surroundings (point lights
@@ -146,6 +222,7 @@ export class Landscape {
     root.getObjectByName('Lighthouse_Beam_Pivot')?.add(this.lantern, this.makeBeam())
 
     this.group.add(root)
+    this.root = root
     this.groundDetail = NOT_MIRRORED.map((name) => root.getObjectByName(name)).filter(
       (o): o is Object3D => !!o
     )
@@ -163,6 +240,20 @@ export class Landscape {
           : LOOP_SPEED
       action.play()
     }
+  }
+
+  /** Bends the material's vertices with the shared wind (see WIND_GLSL) */
+  private addWind(m: MeshStandardMaterial, mode: keyof typeof WIND_MODES) {
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uWind = this.wind
+      shader.uniforms.uWindStrength = this.windStrength
+      shader.uniforms.uToRoot = this.toRoot
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', `#include <common>\n${WIND_GLSL}`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>\n${WIND_MODES[mode]}`)
+    }
+    m.customProgramCacheKey = () => `wind-${mode}`
+    m.needsUpdate = true
   }
 
   /** Two soft light cones, back to back, sweeping round with the lighthouse lamp */
@@ -235,16 +326,24 @@ export class Landscape {
     if (this.appear < 1) {
       this.appear = Math.min(1, this.appear + delta / (reduced ? 0.01 : 1.6))
       const t = this.appear * this.appear * (3 - 2 * this.appear)
-      for (const { material, opacity } of this.faded) {
+      for (const { material, opacity, keepTransparent } of this.faded) {
         material.opacity = opacity * t
         // Fully in: back to opaque rendering where possible (cheaper, and sorts correctly)
-        if (this.appear >= 1 && opacity === 1) material.transparent = false
+        if (this.appear >= 1 && opacity === 1 && !keepTransparent) material.transparent = false
       }
     }
     // Night or day, blended with the theme (lights and beam also fade in with the landscape)
     const d = palette.darkness
     const fade = this.appear * this.appear * (3 - 2 * this.appear)
     for (const m of this.themed.grass) lookColor('grass', d, m.color)
+    for (const m of this.themed.leaves) {
+      lookColor('leafTint', d, m.color)
+      m.emissiveIntensity = lookNumber('leafGlow', d)
+    }
+    // Wind: a slow gust clock, the strength of the theme's weather, metres for the shaders
+    if (!reduced) this.wind.value += delta
+    this.windStrength.value = reduced ? 0 : lookNumber('windStrength', d)
+    if (this.root) this.toRoot.value.copy(this.root.matrixWorld).invert()
     for (const m of this.themed.cloud) {
       lookColor('cloud', d, m.color)
       m.emissiveIntensity = lookNumber('cloudEmissive', d)

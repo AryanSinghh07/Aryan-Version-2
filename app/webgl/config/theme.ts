@@ -47,9 +47,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
   // Soft, airy, lifted shadows
   light: {
     glow: '#e2d6ff',
-    sky: { horizon: '#ffd9e6', mid: '#e6c4f0', high: '#b79ae8', top: '#8a6fd8' },
-    fog: '#c9b3ec',
-    lake: '#a693dc',
+    sky: { horizon: '#ffc8dc', mid: '#dcb0f2', high: '#a585ea', top: '#6c50d0' },
+    fog: '#c4a8ee',
+    lake: '#e6dcff',
     particleA: '#7b3ff2',
     particleB: '#c9b8ff',
     logo: { a: '#7a2df0', b: '#c84fe6', c: '#a46cff' },
@@ -75,9 +75,9 @@ export const SCENE_COLORS: Record<Theme, SceneColors> = {
   // Deep, contrasty, violet shadows
   dark: {
     glow: '#2a1550',
-    sky: { horizon: '#7a4f9a', mid: '#4a3480', high: '#261c52', top: '#0d0a24' },
-    fog: '#33275c',
-    lake: '#6c5ca8',
+    sky: { horizon: '#8a4fa8', mid: '#4b2f8c', high: '#24185a', top: '#0a0720' },
+    fog: '#2e2260',
+    lake: '#b8a8ea',
     particleA: '#9b6bff',
     particleB: '#ede7ff',
     logo: { a: '#9b4dff', b: '#e07bff', c: '#f5ccff' },

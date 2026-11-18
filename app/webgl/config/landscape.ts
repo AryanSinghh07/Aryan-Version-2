@@ -16,6 +16,15 @@ export interface LandscapeLook {
   sun: string
   sunI: number
   grass: string
+  /** Blossom leaves: tint and glow */
+  leafTint: string
+  leafGlow: number
+  /** How hard the wind bends the grass, branches and leaves */
+  windStrength: number
+  /** Lake: its deep base colour, how much the waves ripple the mirror, the sparkle colour */
+  lakeDeep: string
+  ripple: number
+  waveGlint: string
   cloud: string
   cloudEmissive: number
   particleGlow: number
@@ -27,7 +36,7 @@ export interface LandscapeLook {
 }
 
 export const LANDSCAPE_LOOKS: { dark: LandscapeLook; light: LandscapeLook } = {
-  // Night: deep violet, moonlight, the lamp and lighthouse glow
+  // Night: deep saturated violet with a magenta horizon, moonlight, the lamp and lighthouse glow
   dark: {
     fogNear: 40,
     fogFar: 260,
@@ -38,16 +47,22 @@ export const LANDSCAPE_LOOKS: { dark: LandscapeLook; light: LandscapeLook } = {
     hemiI: 0.6,
     sun: '#b9a2ff',
     sunI: 0.7,
-    grass: '#5b3aa0',
-    cloud: '#8d78c4',
-    cloudEmissive: 0.15,
+    grass: '#8f7fd0',
+    leafTint: '#e8d4ff',
+    leafGlow: 0.6,
+    windStrength: 1,
+    lakeDeep: '#100828',
+    ripple: 0.014,
+    waveGlint: '#d9b8ff',
+    cloud: '#7d6ab0',
+    cloudEmissive: 0.25,
     particleGlow: 4,
     starGlow: 40,
     lampI: 10,
     lighthouseI: 45,
     beam: 0.75,
   },
-  // Day: bright pastel, warm sun, saturated, almost no glow
+  // Day: rich pastel (pink horizon to violet zenith), warm sun, almost no glow
   light: {
     fogNear: 70,
     fogFar: 420,
@@ -58,9 +73,15 @@ export const LANDSCAPE_LOOKS: { dark: LandscapeLook; light: LandscapeLook } = {
     hemiI: 0.9,
     sun: '#fff0e0',
     sunI: 2.4,
-    grass: '#8a55d6',
+    grass: '#ffffff',
+    leafTint: '#ffffff',
+    leafGlow: 0.12,
+    windStrength: 0.9,
+    lakeDeep: '#4a38a0',
+    ripple: 0.01,
+    waveGlint: '#ffffff',
     cloud: '#ffffff',
-    cloudEmissive: 0.6,
+    cloudEmissive: 0.7,
     particleGlow: 0.8,
     starGlow: 6,
     lampI: 2,
@@ -69,7 +90,9 @@ export const LANDSCAPE_LOOKS: { dark: LandscapeLook; light: LandscapeLook } = {
   },
 }
 
-type ColorKey = { [K in keyof LandscapeLook]: LandscapeLook[K] extends string ? K : never }[keyof LandscapeLook]
+type ColorKey = {
+  [K in keyof LandscapeLook]: LandscapeLook[K] extends string ? K : never
+}[keyof LandscapeLook]
 type NumberKey = Exclude<keyof LandscapeLook, ColorKey>
 
 const tmp = new Color()
