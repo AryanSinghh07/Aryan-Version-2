@@ -1,265 +1,173 @@
 <script setup lang="ts">
-import { gsap } from 'gsap'
-
-// Recognition as a bento grid of glass cards. The first award is the wide feature card; each
-// card leads with its stat ("34th", "2,000+"), counting up as the grid scrolls in, with the
-// award's type, year (also as a large outlined watermark), title, detail and a link to the
-// related project. Card motion (rise in, tilt and spotlight) comes from useGlassCards.
+// "Proof of work", in the same design as "Behind the build": the section's statement
+// (UiStatement), then a numbered list of the awards (UiStepList) beside a panel for the one on
+// display: its type and year, the headline stat ("34th", "2,000+") and what it means, a line
+// about it and a link to the project. Once the statement has gone by, the panel and the list
+// pin mid-screen and the scroll steps through the awards (usePinnedSteps); after the last one
+// the page scrolls on. Hovering or focusing a row shows that award.
 const { data: recognition } = await useRecognition()
 
-const grid = ref<HTMLElement | null>(null)
+const block = ref<HTMLElement | null>(null)
+const active = ref(0)
+const shown = ref(0)
 
-/** "2,000+" → { prefix: '', value: 2000, suffix: '+', grouped: true }; words don't count */
-function parseStat(stat: string) {
-  const m = stat.match(/^(\D*)([\d,]+)(\D*)$/)
-  if (!m) return null
-  return {
-    prefix: m[1] ?? '',
-    value: Number(m[2]!.replace(/,/g, '')),
-    suffix: m[3] ?? '',
-    grouped: m[2]!.includes(','),
-  }
-}
+const titles = computed(() => recognition.value?.items.map((item) => item.title) ?? [])
 
-useGlassCards(grid, {
-  // Numeric stats count up as they arrive
-  enter: (root) => {
-    for (const el of root.querySelectorAll<HTMLElement>('[data-stat]')) {
-      const stat = parseStat(el.dataset.stat ?? '')
-      if (!stat) continue
-      const counter = { n: 0 }
-      const format = (n: number) =>
-        `${stat.prefix}${stat.grouped ? Math.round(n).toLocaleString('en-US') : Math.round(n)}${stat.suffix}`
-      el.textContent = format(0)
-      gsap.to(counter, {
-        n: stat.value,
-        duration: 1.6,
-        ease: 'power3.out',
-        onUpdate: () => (el.textContent = format(counter.n)),
-        scrollTrigger: { trigger: el, start: 'top 90%', once: true },
-      })
-    }
-  },
-})
+usePinnedSteps(
+  block,
+  () => recognition.value?.items.length ?? 1,
+  (i) => (active.value = i),
+  0.4
+)
 </script>
 
 <template>
-  <section
-    v-if="recognition"
-    class="recognition section container"
-    aria-labelledby="recognition-title"
-  >
-    <div class="section__head">
-      <UiSectionLabel :index="4" label="Recognition" />
-      <h2 id="recognition-title" v-reveal class="t-h2">
-        <UiAccentText :text="recognition.headline" />
-      </h2>
+  <section v-if="recognition" class="proof section container" aria-labelledby="recognition-title">
+    <UiStatement id="recognition-title" :label="recognition.label" :text="recognition.statement" />
+
+    <div ref="block" class="proof__block">
+      <!-- One card per award, stacked; the one on display shows -->
+      <div class="proof__panel">
+        <article
+          v-for="(item, i) in recognition.items"
+          :key="item.id"
+          class="proof__card"
+          :class="{ 'is-active': shown === i }"
+          :aria-hidden="shown !== i || undefined"
+          :inert="shown !== i || undefined"
+        >
+          <div class="proof__meta t-label">
+            <span class="proof__type">{{ item.type }}</span>
+            <span v-if="item.year" class="proof__year">{{ item.year }}</span>
+          </div>
+          <p class="proof__stat">{{ item.stat }}</p>
+          <p class="proof__stat-label t-label">{{ item.statLabel }}</p>
+          <p class="proof__detail">
+            <span class="sr-only">{{ item.title }}: </span>{{ item.detail }}
+          </p>
+          <UiGlassButton v-if="item.project" :to="`/work/${item.project}`" variant="secondary">
+            View project <span class="proof__arrow" aria-hidden="true">↳</span>
+          </UiGlassButton>
+        </article>
+      </div>
+
+      <UiStepList :items="titles" :active="active" focusable @show="shown = $event" />
     </div>
-
-    <ol ref="grid" role="list" class="awards">
-      <li
-        v-for="(item, i) in recognition.items"
-        :key="item.id"
-        class="award glass-card"
-        :class="{ 'award--feature glass-card--tint': i === 0 }"
-      >
-        <img v-if="item.images?.[0]" :src="item.images?.[0]" alt="" class="award__image" />
-        <span v-if="item.year" class="award__watermark" aria-hidden="true">{{ item.year }}</span>
-
-        <div class="award__top">
-          <span class="award__index t-label">{{ projectNumber(i + 1) }}</span>
-          <UiTag :variant="i === 0 ? 'accent' : 'outline'">{{ item.type }}</UiTag>
-          <span v-if="item.year" class="award__year t-label">{{ item.year }}</span>
-        </div>
-
-        <div class="award__stat">
-          <!-- The counter is decorative while it counts; screen readers get the final value -->
-          <span class="sr-only">{{ item.stat }}</span>
-          <span class="award__value" :data-stat="item.stat" aria-hidden="true">{{
-            item.stat
-          }}</span>
-          <span class="award__stat-label t-label">{{ item.statLabel }}</span>
-        </div>
-
-        <div class="award__body">
-          <h3 class="award__title">{{ item.title }}</h3>
-          <p class="award__detail">{{ item.detail }}</p>
-          <NuxtLink v-if="item.project" :to="`/work/${item.project}`" class="award__link t-label">
-            View project <span aria-hidden="true">→</span>
-          </NuxtLink>
-        </div>
-      </li>
-    </ol>
   </section>
 </template>
 
 <style scoped lang="scss">
-// Bento grid: the wide feature card and one more on the first row, three below
-.awards {
+.proof {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: 1fr;
+  gap: clamp(4rem, 10vw, 9rem);
+}
 
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.proof__block {
+  display: grid;
+  gap: 2.5rem;
 
   @media (min-width: 1024px) {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 4rem;
+    align-items: center;
   }
 }
 
-.award {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-  min-height: 17rem;
-  padding: clamp(1.25rem, 2vw, 1.75rem);
-
-  @media (min-width: 1024px) {
-    grid-column: span 2;
-  }
+// ---------------------------------------------------------------- Award panel
+// The cards share one grid cell, so the panel is as tall as the tallest
+.proof__panel {
+  display: grid;
 }
 
-.award--feature {
-  @media (min-width: 768px) {
-    grid-column: span 2;
-  }
-
-  @media (min-width: 1024px) {
-    grid-column: span 4;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-    column-gap: 2.5rem;
-
-    .award__top {
-      grid-column: 1 / -1;
-    }
-
-    .award__stat {
-      align-self: end;
-    }
-
-    .award__body {
-      align-self: end;
-    }
-  }
-}
-
-// Optional proof photo behind the feature card
-.award__image {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.35;
-}
-
-// The year as a large outlined watermark in the corner
-.award__watermark {
-  position: absolute;
-  right: -0.06em;
-  bottom: -0.2em;
-  z-index: -1;
-  font-family: var(--font-display);
-  font-size: clamp(6rem, 12vw, 10rem);
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(var(--foreground-rgb), 0.12);
+.proof__card {
+  grid-area: 1 / 1;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 0.9rem;
   pointer-events: none;
-  user-select: none;
 
-  .award--feature & {
-    font-size: clamp(8rem, 16vw, 14rem);
+  > * {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.5s var(--ease-out),
+      filter 0.35s var(--ease-out);
+  }
+
+  // The award on display: its parts rise in one after another
+  &.is-active {
+    pointer-events: auto;
+
+    > * {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+
+    @for $i from 1 through 5 {
+      > :nth-child(#{$i}) {
+        transition-delay: #{($i - 1) * 0.06}s;
+      }
+    }
   }
 }
 
-.award__top {
+.proof__meta {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.award__index {
-  color: var(--primary);
-}
-
-.award__year {
-  margin-left: auto;
   color: var(--foreground-muted);
 }
 
-.award__stat {
-  display: grid;
-  gap: 0.5rem;
-  transform: translateZ(30px);
-}
-
-.award__value {
-  font-family: var(--font-display);
-  font-size: clamp(3.5rem, 6vw, 5rem);
-  line-height: 0.85;
-  text-transform: uppercase;
-  color: var(--primary);
-  font-variant-numeric: tabular-nums;
-
-  .award--feature & {
-    font-size: clamp(5rem, 9vw, 8.5rem);
-  }
-}
-
-.award__stat-label {
-  color: var(--foreground-muted);
-}
-
-.award__body {
-  display: grid;
-  gap: 0.6rem;
-  margin-top: auto;
-  transform: translateZ(20px);
-}
-
-.award__title {
-  font-size: clamp(1.25rem, 1.6vw, 1.5rem);
-  font-weight: 600;
-  line-height: 1.2;
-
-  .award--feature & {
-    font-size: clamp(1.6rem, 2.4vw, 2.25rem);
-  }
-}
-
-.award__detail {
-  max-width: 34rem;
-  color: var(--foreground-muted);
-}
-
-.award__link {
-  justify-self: start;
-  margin-top: 0.4rem;
+.proof__type {
+  padding: 0.4em 0.85em;
+  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 999px;
   color: var(--foreground);
-  border-bottom: 1px solid rgba(var(--foreground-rgb), 0.3);
-  transition:
-    color 0.3s var(--ease-out),
-    border-color 0.3s var(--ease-out);
+}
 
-  span {
-    display: inline-block;
-    transition: transform 0.3s var(--ease-out);
+.proof__stat {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 9vw, 9rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.proof__stat-label {
+  margin: 0;
+  color: var(--foreground-muted);
+}
+
+.proof__detail {
+  max-width: 30rem;
+  margin: 0.75rem 0 0.5rem;
+  font-size: clamp(1.05rem, 1.3vw, 1.25rem);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 72%, transparent);
+}
+
+.proof__arrow {
+  display: inline-block;
+  margin-left: 0.35em;
+}
+
+@media (max-width: 640px) {
+  .proof__stat {
+    font-size: 3.5rem;
   }
+}
 
-  &:hover,
-  &:focus-visible {
-    color: var(--primary);
-    border-color: var(--primary);
-
-    span {
-      transform: translateX(0.3em);
-    }
+@media (prefers-reduced-motion: reduce) {
+  .proof__card > * {
+    transform: none;
+    filter: none;
+    transition: opacity 0.2s linear;
   }
 }
 </style>

@@ -106,6 +106,9 @@ export default defineContentConfig({
       source: 'recognition.json',
       schema: z.object({
         headline: z.string(),
+        /** Home "Proof of work": the pill and the big statement */
+        label: z.string(),
+        statement: z.string(),
         items: z.array(
           z.object({
             id: z.string(),
