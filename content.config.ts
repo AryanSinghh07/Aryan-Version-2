@@ -176,7 +176,6 @@ export default defineContentConfig({
         ),
         /** "How it began": the story after the room, with a photo (a path under public/) */
         story: z.object({
-          label: z.string(),
           lines: z.array(
             z.object({
               text: z.string(),
@@ -187,6 +186,16 @@ export default defineContentConfig({
           paragraphs: z.array(z.string()),
           photo: z.string().default(''),
           photoAlt: z.string().default(''),
+        }),
+        /**
+         * The year zoom after the story: "Since 2023" grows until the 0 fills the screen, and
+         * a window opens through the 0 onto a pill and a statement
+         */
+        year: z.object({
+          label: z.string(),
+          value: z.string(),
+          pill: z.string(),
+          statement: z.string(),
         }),
         approach: z.object({
           headline: z.string(),

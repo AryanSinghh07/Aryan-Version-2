@@ -90,7 +90,6 @@
     }
   ],
   "story": {
-    "label": "Since 2023",
     "lines": [
       {
         "text": "How it"
@@ -107,6 +106,12 @@
     ],
     "photo": "/about/aryan.webp",
     "photoAlt": "Aryan Singh by a lake, in a mustard t-shirt, looking off to the side"
+  },
+  "year": {
+    "label": "Since",
+    "value": "2023",
+    "pill": "No shortcuts",
+    "statement": "Most of what I know, I taught myself — which is exactly why I care about the details most people skip."
   },
   "approach": {
     "headline": "How I *work*",

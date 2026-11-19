@@ -16,6 +16,8 @@ const { data: profile } = await useProfile()
 
     <AboutStory :story="about.story" />
 
+    <AboutYear :year="about.year" />
+
     <section class="section container" aria-labelledby="approach-title">
       <div class="section__head">
         <UiSectionLabel :index="2" label="Approach" />
@@ -54,6 +56,18 @@ const { data: profile } = await useProfile()
 </template>
 
 <style scoped lang="scss">
+// The About page sits on the same plain near-black as the home page past its portal (the
+// room fades into it, see RoomStory); by day, the page colour
+.about-page {
+  --page-bg: var(--background);
+
+  background-color: var(--page-bg);
+}
+
+:global([data-theme='dark'] .about-page) {
+  --page-bg: #121212;
+}
+
 .approach {
   display: grid;
   gap: 3rem 4rem;

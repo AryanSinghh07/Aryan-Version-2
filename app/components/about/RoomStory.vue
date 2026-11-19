@@ -16,7 +16,8 @@ import type { RoomBeatContent } from './RoomBeat.vue'
 // place, as its stretch begins (its headline rising letter by letter from behind a mask, the
 // words after an arrow sliding right the way it points, the small lines following and the
 // paragraphs decoding from random characters) and fades out before the next. Scrolling back
-// replays them. At the end of the walk the hero's portal opens onto the rest of the page.
+// replays them. At the end of the walk, once the monitor fills the window, the hero's portal
+// plays once and opens onto the rest of the page.
 //
 // The shared 3D world pauses meanwhile (one 3D scene at a time). With reduced motion, without
 // WebGL, or if the room fails to load, the beats are simply shown as sections of text.
@@ -33,14 +34,20 @@ const canvas = ref<HTMLCanvasElement | null>(null)
 /** The 3D room is running */
 const enabled = ref(false)
 const loaded = ref(false)
-const progress = ref(0)
 /** 0 → 1: how far the camera is inside the monitor */
 const fill = ref(0)
 
-/** The screen fades into the page over the last tenth of the push (at once under the portal) */
-const screenOpacity = computed(() =>
-  covered.value ? 1 : Math.min(1, Math.max(0, (fill.value - 0.9) / 0.1))
-)
+/**
+ * The room gives way to the page once the end portal covers the screen (so the portal grows
+ * over the glowing monitor). Without the portal (no WebGL for it), the screen simply fades into
+ * the page over the last tenth of the push.
+ */
+const portalReady = ref(false)
+const screenOpacity = computed(() => {
+  if (covered.value) return 1
+  if (portalReady.value) return 0
+  return Math.min(1, Math.max(0, (fill.value - 0.9) / 0.1))
+})
 /** One stretch per beat, plus the push into the screen */
 const stretches = computed(() => props.beats.length + 1)
 
@@ -87,25 +94,70 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t)
 }
 
-const bump = (x: number, centre: number, width: number) =>
-  Math.max(0, 1 - Math.abs(x - centre) / width)
-
 /**
- * The end of the walk, as the camera pushes into the monitor (`push` 0 → 1 over the last
- * 14% of the walk): the hero's portal grows from the middle of the screen with glitch flares until it
- * covers it, the room behind gives way to the page, then a hole tears open and the page that
- * follows shows through. All tied to the scroll, so scrolling back plays it in reverse.
+ * The end of the walk. Once the camera has pushed into the monitor and its screen fills the
+ * window, the hero's portal plays once, like the entrance: it grows from the middle of the
+ * screen with glitch flares until it covers it (the page holds still meanwhile), the room
+ * behind gives way to the page, and then a hole slowly tears open onto the page that follows.
+ * It sits over the whole screen, so it plays out even if the visitor keeps scrolling. Going
+ * back up into the room resets it, to play again on the way down.
  */
-function endPortal(push: number) {
+let portalPlayed = false
+let portalPlaying = false
+let disposed = false
+
+async function playPortal() {
   if (!portalReveal) return
-  const grow = smooth(0.08, 0.6, push)
-  portalState.x = window.innerWidth / 2
-  portalState.y = window.innerHeight / 2
-  portalState.radius = 1.6 * grow * grow
-  portalState.hole = 1.7 * smooth(0.66, 0.97, push)
-  portalState.glitch = Math.max(bump(push, 0.12, 0.1) * 0.9, bump(push, 0.7, 0.08) * 0.8)
-  covered.value = push >= 0.62
-  portalOn.value = push > 0.08 && push < 0.995
+  portalPlayed = true
+  portalPlaying = true
+  Object.assign(portalState, {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+    radius: 0,
+    hole: 0,
+    glitch: 0,
+  })
+  portalOn.value = true
+  lenis?.stop()
+  await new Promise<void>((resolve) => {
+    gsap
+      .timeline({ onComplete: resolve })
+      .to(portalState, { radius: 1.6, duration: 1.6, ease: 'power2.in' }, 0)
+      .to(portalState, { glitch: 1, duration: 0.12, ease: 'none' }, 0)
+      .to(portalState, { glitch: 0.12, duration: 0.6, ease: 'power2.out' }, 0.12)
+      .to(portalState, { glitch: 0.9, duration: 0.08, ease: 'none' }, 1.05)
+      .to(portalState, { glitch: 0, duration: 0.45, ease: 'power2.out' }, 1.13)
+  })
+  if (disposed) return
+  // Covered: behind the portal the room gives way to the page
+  covered.value = true
+  await new Promise((r) => setTimeout(r, 350))
+  lenis?.start()
+  await openPortalHole(portalState, () => !disposed, 2)
+  portalOn.value = false
+  portalPlaying = false
+}
+
+/** The room's held screen is still in view (the visitor hasn't scrolled on past the walk) */
+function roomInView() {
+  const box = root.value?.getBoundingClientRect()
+  return !!box && box.bottom > window.innerHeight * 0.6
+}
+
+function onScreenFill(f: number) {
+  fill.value = f
+  if (!portalPlayed && f >= 0.985) {
+    // The camera eases behind the scroll: if the visitor has already scrolled past the room,
+    // don't cover what they're reading now; the room has simply given way to the page
+    if (roomInView()) void playPortal()
+    else {
+      portalPlayed = true
+      covered.value = true
+    }
+  } else if (portalPlayed && !portalPlaying && f < 0.85) {
+    portalPlayed = false
+    covered.value = false
+  }
 }
 
 function animate(el: HTMLElement) {
@@ -171,9 +223,6 @@ function animate(el: HTMLElement) {
         }
         gsap.set(frame, { autoAlpha: opacity })
       })
-      // The portal plays over the last 14% of the walk, as the camera pushes into the monitor
-      const total = Math.max(1, el.offsetHeight - window.innerHeight)
-      endPortal((scrolled / total - 0.86) / 0.14)
       const now = Math.floor(at)
       if (now === active) return
       // Arriving at a beat plays its text; going back above a beat resets it to replay
@@ -197,6 +246,8 @@ function animate(el: HTMLElement) {
 }
 
 function stop() {
+  disposed = true
+  lenis?.start()
   gsap.ticker.remove(drawPortal)
   portalReveal?.dispose()
   portalReveal = null
@@ -227,7 +278,6 @@ onMounted(async () => {
     theme: store.theme,
     // The camera follows the scroll softly: a slow, smooth walk
     damping: 1.6,
-    onProgress: (p) => (progress.value = p),
     onLoad: () => {
       loaded.value = true
       store.pageLoading = false
@@ -238,11 +288,12 @@ onMounted(async () => {
       stop()
       void nextTick(() => ScrollTrigger.refresh())
     },
-    onScreenFill: (f) => (fill.value = f),
+    onScreenFill,
   })
   if (portal.value) {
     portalReveal = createPortalReveal(portal.value, portalState)
     gsap.ticker.add(drawPortal)
+    portalReady.value = !!portalReveal
   }
   await document.fonts.ready
   if (!root.value || !enabled.value) return
@@ -272,15 +323,16 @@ onBeforeUnmount(stop)
       <!-- The beats take turns on the room's screen layer -->
       <AboutRoomBeat v-for="(beat, i) in beats" :key="i" :beat="beat" :first="i === 0" overlay />
       <div class="room__screen" :style="{ opacity: screenOpacity }" aria-hidden="true" />
-      <canvas v-show="portalOn" ref="portal" class="room__portal" aria-hidden="true" />
-      <div v-if="!loaded" class="room__loader t-label" aria-hidden="true">
-        {{ Math.round(progress * 100) }}%
-      </div>
+      <!-- Plain until the room has loaded (no percentage) -->
+      <div v-if="!loaded" class="room__loader" aria-hidden="true" />
     </div>
 
     <template v-else>
       <AboutRoomBeat v-for="(beat, i) in beats" :key="i" :beat="beat" :first="i === 0" />
     </template>
+
+    <!-- The portal at the end of the walk (over the whole screen while it plays) -->
+    <canvas v-show="portalOn" ref="portal" class="room__portal" aria-hidden="true" />
   </div>
 </template>
 
@@ -334,13 +386,14 @@ onBeforeUnmount(stop)
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: var(--background);
+  background: var(--page-bg, var(--background));
 }
 
-// The portal at the end of the walk, over everything in the room
+// The portal at the end of the walk, over the whole screen while it plays
 .room__portal {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 240;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -349,10 +402,6 @@ onBeforeUnmount(stop)
 .room__loader {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  background: var(--background);
-  color: var(--foreground-muted);
-  letter-spacing: 0.2em;
+  background: var(--page-bg, var(--background));
 }
 </style>

@@ -4,17 +4,17 @@ import { SplitText } from 'gsap/SplitText'
 import type { ArrowLine } from '~/components/ui/ArrowLines.vue'
 
 // "How it began": right after the room on the About page. A big serif headline on the left
-// (its indented line led by a ↳ arrow) with a small label at the foot of the column; on the
-// right, the story in large type and a photo.
+// (its indented line led by a ↳ arrow) holds while, on the right, the story in large type and
+// a photo scroll by. The year zoom (AboutYear) follows.
 //
 // Motion: as the section scrolls in, the headline rises letter by letter and its indented
 // words slide right the way the arrow points, the arrow coming in and then swaying gently;
-// the paragraphs decode from random characters one after another; the photo opens upwards.
+// the paragraphs' words light up from grey as they scroll by, like "Behind the build"
+// (scrubbed, so scrolling back dims them again); the photo opens upwards.
 // Words glitch lightly under the pointer (.text-glitch). Without JavaScript or with reduced
 // motion everything is simply shown.
 const props = defineProps<{
   story: {
-    label: string
     lines: ArrowLine[]
     paragraphs: string[]
     photo?: string
@@ -47,23 +47,32 @@ onMounted(async () => {
         })
       )
     }
-    const paragraphs = [...el.querySelectorAll<HTMLElement>('.story__para')]
-    const label = el.querySelector<HTMLElement>('.story__label')
     const photo = el.querySelector<HTMLElement>('.story__photo')
 
     hideText(headline)
     arrowsHide(headline)
-    gsap.set(paragraphs, { autoAlpha: 0 })
-    if (label) gsap.set(label, { autoAlpha: 0, y: 12 })
     if (photo) gsap.set(photo, { clipPath: 'inset(100% 0 0 0 round 1.25rem)' })
 
     gsap
       .timeline({ scrollTrigger: { trigger: el, start: 'top 70%', once: true } })
       .add(textIn(headline, 1, 0.9), 0)
       .add(arrowsIn(headline), 0.2)
-      .set(paragraphs, { autoAlpha: 1 }, 0.3)
-      .add(decodeText(paragraphs, { stagger: 0.35 }), 0.3)
-      .to(label ?? [], { autoAlpha: 1, y: 0, duration: 0.8, ease: 'expo.out' }, 0.6)
+
+    // The story's words light up one after another as each paragraph crosses the screen
+    for (const para of el.querySelectorAll<HTMLElement>('.story__para')) {
+      const words = SplitText.create(para, { type: 'words', aria: 'none' })
+      splits.push(words)
+      gsap.fromTo(
+        words.words,
+        { opacity: 0.28 },
+        {
+          opacity: 1,
+          stagger: 0.12,
+          ease: 'none',
+          scrollTrigger: { trigger: para, start: 'top 80%', end: 'bottom 45%', scrub: 0.6 },
+        }
+      )
+    }
 
     if (photo) {
       gsap.to(photo, {
@@ -90,7 +99,6 @@ onBeforeUnmount(() => {
         <span class="sr-only">{{ spoken }}</span>
         <UiArrowLines :lines="story.lines" />
       </h2>
-      <p class="story__label t-label">{{ story.label }}</p>
     </div>
 
     <div class="story__body">
@@ -114,7 +122,7 @@ onBeforeUnmount(() => {
   }
 }
 
-// The headline holds at the top while the story scrolls; the label sits at the foot
+// The headline holds at the top while the story scrolls
 .story__side {
   display: flex;
   flex-direction: column;
@@ -136,11 +144,6 @@ onBeforeUnmount(() => {
   text-wrap: initial;
 }
 
-.story__label {
-  margin: 0;
-  color: var(--foreground-muted);
-}
-
 .story__body {
   display: grid;
   gap: 2.5rem;
@@ -149,9 +152,6 @@ onBeforeUnmount(() => {
 
 .story__para {
   margin: 0;
-  // While it decodes, the random letters replace the spaces too: let that one long string
-  // wrap instead of running off the page (real words always fit)
-  overflow-wrap: anywhere;
   font-size: clamp(1.25rem, 1.9vw, 2rem);
   font-weight: 500;
   line-height: 1.32;
