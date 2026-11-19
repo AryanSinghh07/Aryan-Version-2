@@ -52,21 +52,22 @@ function supportsWebGL2() {
 function crossfade(el: HTMLElement) {
   fades = gsap.context(() => {
     for (const beat of el.querySelectorAll<HTMLElement>('.room__beat:not(.room__beat--push)')) {
-      // From the beat's top at the bottom of the screen to its bottom 70% down: 146vh of
-      // scroll, of which the first 40vh fade in and the last 30vh fade out
+      // From the beat's top at the bottom of the screen to its bottom 60% down: 210vh of
+      // scroll (one 170vh stretch and 40vh), of which the first 50vh fade in and the last
+      // 40vh fade out
       gsap
         .timeline({
-          scrollTrigger: { trigger: beat, start: 'top bottom', end: 'bottom 70%', scrub: 0.4 },
+          scrollTrigger: { trigger: beat, start: 'top bottom', end: 'bottom 60%', scrub: 0.6 },
         })
         .fromTo(
           beat.querySelector('.room__copy'),
           { autoAlpha: 0, y: 40 },
-          { autoAlpha: 1, y: 0, duration: 0.27, ease: 'none' }
+          { autoAlpha: 1, y: 0, duration: 0.24, ease: 'none' }
         )
         .to(
           beat.querySelector('.room__copy'),
-          { autoAlpha: 0, y: -40, duration: 0.21, ease: 'none' },
-          0.79
+          { autoAlpha: 0, y: -40, duration: 0.19, ease: 'none' },
+          0.81
         )
     }
   }, el)
@@ -94,6 +95,8 @@ onMounted(async () => {
   room = createAboutScene(canvas.value, {
     trigger: root.value,
     theme: store.theme,
+    // The camera follows the scroll softly: a slow, smooth walk
+    damping: 1.6,
     onProgress: (p) => (progress.value = p),
     onLoad: () => {
       loaded.value = true
@@ -213,8 +216,11 @@ onBeforeUnmount(stop)
 
 // ---------------------------------------------------------------- With the 3D room
 .room.is-3d {
+  // Scroll length of each stretch of the walk: longer = slower
+  --stretch: 170vh;
+
   position: relative;
-  height: calc(var(--stretches) * 116vh);
+  height: calc(var(--stretches) * var(--stretch));
 
   // The beats scroll over the room, one stretch each
   .room__beats {
@@ -227,7 +233,7 @@ onBeforeUnmount(stop)
 
   .room__beat {
     display: block;
-    height: 116vh;
+    height: var(--stretch);
     min-height: 0;
     padding-block: 0;
   }

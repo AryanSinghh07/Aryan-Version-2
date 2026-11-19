@@ -146,6 +146,11 @@ function lensAt(p: number) {
 /** Vertical field of view for a lens on Blender's 36 mm sensor (fit to width) */
 const vfovFromLens = (lens: number, aspect: number) => 2 * Math.atan(18 / lens / aspect)
 
+/** Head turn towards the pointer: radians at the screen edge, and how fast it follows */
+const PARALLAX_YAW = 0.013
+const PARALLAX_PITCH = 0.008
+const PARALLAX_FOLLOW = 1
+
 const LED_MATS = [
   'Desk_LED_Mat',
   'Shelf_LED_Mat',
@@ -590,11 +595,13 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
       }
       if (otherMonitor) otherMonitor.visible = fill < 0.85
 
-      // Subtle head parallax, fading out on the way into the screen
-      look.x = THREE.MathUtils.damp(look.x, pointer.x, 3, dt)
-      look.y = THREE.MathUtils.damp(look.y, pointer.y, 3, dt)
+      // A gentle head turn towards the pointer: small and slow, so it drifts rather than
+      // shakes (close to the hallway door even a little turn shows); it fades out on the way
+      // into the screen
+      look.x = THREE.MathUtils.damp(look.x, pointer.x, PARALLAX_FOLLOW, dt)
+      look.y = THREE.MathUtils.damp(look.y, pointer.y, PARALLAX_FOLLOW, dt)
       const k = 1 - fill
-      tmpE.set(-look.y * 0.03 * k, -look.x * 0.05 * k, 0, 'YXZ')
+      tmpE.set(-look.y * PARALLAX_PITCH * k, -look.x * PARALLAX_YAW * k, 0, 'YXZ')
       blenderCam.quaternion.multiply(tmpQ.setFromEuler(tmpE))
       blenderCam.updateProjectionMatrix()
 
