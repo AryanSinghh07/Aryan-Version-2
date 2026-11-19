@@ -199,7 +199,18 @@ export default defineContentConfig({
         }),
         approach: z.object({
           headline: z.string(),
-          steps: z.array(z.object({ title: z.string(), text: z.string() })),
+          /** A line under the heading */
+          intro: z.string().optional(),
+          steps: z.array(
+            z.object({
+              title: z.string(),
+              text: z.string(),
+              /** What happens in the step */
+              details: z.array(z.string()).default([]),
+              /** The tools used in it */
+              tools: z.string().optional(),
+            })
+          ),
         }),
         faq: z.array(z.object({ question: z.string(), answer: z.string() })),
       }),

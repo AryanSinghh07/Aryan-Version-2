@@ -176,7 +176,7 @@ export function whenSettled(min = 350, max = 3000) {
 
 /**
  * Opens the ring: it appears and grows from a point until it has passed the edges of the
- * screen, then fades. It runs on its own clock, which never steps more than a frame at a time:
+ * screen, then fades. It runs on its own clock, which never steps more than 0.1 s at a time:
  * if the page stalls the browser, the ring pauses instead of jumping. Resolves true when done,
  * or false if `alive()` turned false on the way (the portal went away).
  */
@@ -196,7 +196,8 @@ export function openRing(
         return resolve(false)
       }
       const now = performance.now()
-      t = Math.min(duration, t + Math.min((now - last) / 1000, 1 / 30))
+      // Steps of at most 0.1 s: normal speed even at a low frame rate, a pause through a stall
+      t = Math.min(duration, t + Math.min((now - last) / 1000, 0.1))
       last = now
       const k = t / duration
       state.radius = RING_COVER * ease(k)

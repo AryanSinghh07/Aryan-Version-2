@@ -3,8 +3,9 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SplitText } from 'gsap/SplitText'
 
-// The year zoom, after "How it began" on the About page. A screen holds while the visitor
-// scrolls through a tall stretch: "Since 2023" waits small at the foot on the left; then it
+// The year zoom, after "How it began" on the About page (which it wraps, as its slot: the
+// "Since 2023" label is part of that section). A screen holds while the visitor scrolls
+// through a tall stretch: "Since 2023", small at the foot on the left all through the story; then it
 // grows into giant type that glides until the 0 sits in the middle of the screen ("Since"
 // sliding off to the left); then the camera dives into the 0, and its hole is a window onto a
 // purple section with a pill and a statement in the display serif, which rises in letter by
@@ -25,6 +26,7 @@ const SMALL = 15
 
 const root = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
+const overlay = ref<HTMLElement | null>(null)
 const big = ref<HTMLElement | null>(null)
 const win = ref<HTMLElement | null>(null)
 const enabled = ref(false)
@@ -103,7 +105,7 @@ onMounted(async () => {
   await nextTick()
   await document.fonts.ready
   const el = root.value
-  if (!el || !stage.value || !big.value || !win.value) return
+  if (!el || !stage.value || !overlay.value || !big.value || !win.value) return
 
   ctx = gsap.context(() => {
     const type = big.value!
@@ -167,21 +169,21 @@ onMounted(async () => {
         ox = zr.width * 0.36
         oy = zr.height * 0.42
       }
-      const H = stage.value!.clientHeight
+      const H = overlay.value!.clientHeight
       const F = parseFloat(getComputedStyle(type).fontSize)
       s0 = SMALL / F
       // At the start: small, at the page's left edge, a little above the foot
-      const anchor = stage.value!.querySelector<HTMLElement>('.year__anchor')!
+      const anchor = overlay.value!.querySelector<HTMLElement>('.year__anchor')!
       x0 =
         anchor.getBoundingClientRect().left -
-        stage.value!.getBoundingClientRect().left +
+        overlay.value!.getBoundingClientRect().left +
         parseFloat(getComputedStyle(anchor).paddingLeft)
       y0 = H - Math.max(32, H * 0.05) - er.height * s0
     }
 
     const render = (p: number) => {
-      const W = stage.value!.clientWidth
-      const H = stage.value!.clientHeight
+      const W = overlay.value!.clientWidth
+      const H = overlay.value!.clientHeight
       // The type grows until the 0 is in the middle, then the camera dives into the 0
       const grow = smooth(0.04, 0.45, p)
       const dive = smooth(0.45, 0.86, p)
@@ -208,6 +210,14 @@ onMounted(async () => {
         render(self.progress)
       },
     })
+    // On phones the story is one column: the label waits until the zoom is near, so it
+    // never sits on the story's words
+    ScrollTrigger.create({
+      trigger: el,
+      start: 'top bottom',
+      end: 'bottom top',
+      onToggle: (self) => type.classList.toggle('is-near', self.isActive),
+    })
     render(0)
   }, el)
 })
@@ -219,33 +229,38 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section
-    ref="root"
-    class="year"
-    :class="{ 'is-motion': enabled }"
-    :aria-label="`${year.label} ${year.value}`"
-  >
-    <div ref="stage" class="year__stage">
-      <!-- The window through the 0: a purple section with the statement -->
-      <div ref="win" class="year__window">
-        <div class="year__aurora" aria-hidden="true" />
-        <div class="year__content container">
-          <span class="year__pill t-label">{{ year.pill }}</span>
-          <p class="year__statement text-glitch">{{ year.statement }}</p>
+  <div class="year-wrap" :class="{ 'is-motion': enabled }">
+    <!-- "Since 2023": at the foot of How it began while it scrolls by, then it grows into the
+         zoom. This layer holds the screen through both. Decorative. -->
+    <div v-if="enabled" ref="overlay" class="year__overlay" aria-hidden="true">
+      <div class="year__anchor container" />
+      <p ref="big" class="year__type">
+        <span class="year__type-label">{{ year.label }}</span>
+        <span v-for="(d, i) in digits" :key="i" data-digit>{{ d }}</span>
+      </p>
+    </div>
+
+    <!-- How it began -->
+    <slot />
+
+    <section
+      ref="root"
+      class="year"
+      :class="{ 'is-motion': enabled }"
+      :aria-label="`${year.label} ${year.value}`"
+    >
+      <div ref="stage" class="year__stage">
+        <!-- The window through the 0: a purple section with the statement -->
+        <div ref="win" class="year__window">
+          <div class="year__aurora" aria-hidden="true" />
+          <div class="year__content container">
+            <span class="year__pill t-label">{{ year.pill }}</span>
+            <p class="year__statement text-glitch">{{ year.statement }}</p>
+          </div>
         </div>
       </div>
-
-      <template v-if="enabled">
-        <!-- Measures the page's side padding -->
-        <div class="year__anchor container" aria-hidden="true" />
-        <!-- Decorative: "Since 2023", small at first, then giant -->
-        <p ref="big" class="year__type" aria-hidden="true">
-          <span class="year__type-label">{{ year.label }}</span>
-          <span v-for="(d, i) in digits" :key="i" data-digit>{{ d }}</span>
-        </p>
-      </template>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -278,6 +293,18 @@ onBeforeUnmount(() => {
     opacity: 0;
     will-change: clip-path;
   }
+}
+
+// Holds the screen from the top of How it began to the end of the zoom, over both (it takes
+// no room in the page: the negative margin)
+.year__overlay {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 100svh;
+  margin-bottom: -100svh;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .year__anchor {
@@ -357,8 +384,18 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   color: var(--foreground);
   transform-origin: 0 0;
-  will-change: transform;
+  // No will-change: the browser would keep the type rasterised at one size and blur it as it
+  // grows; without it the letters stay sharp at every size
   pointer-events: none;
+
+  @media (max-width: 1023px) {
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-out);
+
+    &.is-near {
+      opacity: 1;
+    }
+  }
 
   span {
     display: inline-block;

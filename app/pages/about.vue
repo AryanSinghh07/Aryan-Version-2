@@ -14,9 +14,10 @@ const { data: profile } = await useProfile()
     <!-- A walk through the room, the story's five beats over it, into the monitor -->
     <AboutRoomStory :beats="about.room" />
 
-    <AboutStory :story="about.story" />
-
-    <AboutYear :year="about.year" />
+    <!-- How it began, with "Since 2023" growing into the year zoom after it -->
+    <AboutYear :year="about.year">
+      <AboutStory :story="about.story" />
+    </AboutYear>
 
     <section class="section container" aria-labelledby="approach-title">
       <div class="section__head">
@@ -24,12 +25,26 @@ const { data: profile } = await useProfile()
         <h2 id="approach-title" v-reveal class="t-h2">
           <UiAccentText :text="about.approach.headline" />
         </h2>
+        <p v-if="about.approach.intro" v-reveal class="approach__intro">
+          {{ about.approach.intro }}
+        </p>
       </div>
+      <!-- A ruled index: the step and its number, what it is, then what happens and the tools -->
       <ol role="list" class="approach">
         <li v-for="(step, i) in about.approach.steps" :key="step.title" class="approach__step">
-          <span class="t-label approach__index">[{{ projectNumber(i + 1) }}]</span>
-          <h3 class="t-h3">{{ step.title }}</h3>
-          <p class="t-muted">{{ step.text }}</p>
+          <span class="t-label approach__index">({{ String(i + 1).padStart(2, '0') }})</span>
+          <div class="approach__main">
+            <h3 v-reveal class="approach__title text-glitch">{{ step.title }}</h3>
+            <p v-reveal class="approach__text">{{ step.text }}</p>
+          </div>
+          <div class="approach__more">
+            <ul v-if="step.details?.length" role="list" class="approach__details">
+              <li v-for="d in step.details" :key="d">{{ d }}</li>
+            </ul>
+            <p v-if="step.tools" class="approach__tools t-label">
+              <span class="approach__tools-label">Tools</span> {{ step.tools }}
+            </p>
+          </div>
         </li>
       </ol>
     </section>
@@ -68,25 +83,100 @@ const { data: profile } = await useProfile()
   --page-bg: #121212;
 }
 
+.approach__intro {
+  max-width: 34rem;
+  margin: 0;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
 .approach {
   display: grid;
-  gap: 3rem 4rem;
-
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--border);
 }
 
 .approach__step {
   display: grid;
-  gap: 0.75rem;
-  align-content: start;
-  padding-top: 1.5rem;
+  gap: 1.25rem;
+  padding-block: clamp(1.75rem, 3.5vw, 2.75rem);
   border-top: 1px solid var(--border);
+
+  @media (min-width: 900px) {
+    grid-template-columns: 6rem minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 2.5rem;
+  }
 }
 
 .approach__index {
   color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.approach__main {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.approach__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.4vw, 2.4rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.approach__text {
+  max-width: 34rem;
+  margin: 0;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--foreground) 72%, transparent);
+}
+
+.approach__more {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+// What happens in the step: short lines, each led by a small violet arrow
+.approach__details {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    position: relative;
+    padding-left: 1.4em;
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--foreground) 85%, transparent);
+
+    &::before {
+      content: '↳';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+    }
+  }
+}
+
+.approach__tools {
+  margin: 0;
+  color: var(--foreground-muted);
+}
+
+.approach__tools-label {
+  margin-right: 0.6em;
+  padding: 0.3em 0.7em;
+  border: 1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  border-radius: 999px;
+  color: var(--foreground);
 }
 
 .faq {

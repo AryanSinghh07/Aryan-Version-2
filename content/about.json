@@ -115,18 +115,57 @@
   },
   "approach": {
     "headline": "How I *work*",
+    "intro": "Every project, from a hackathon weekend to a semester-long build, runs through the same five steps. Here's what happens in each one.",
     "steps": [
       {
         "title": "Understand the problem",
-        "text": "Talk to the people who have it. Farmers, students and shelters shaped my last projects more than any spec."
+        "text": "Talk to the people who have it. Farmers, students and shelters shaped my last projects more than any spec.",
+        "details": [
+          "Interviews and field visits with the people who'll use it",
+          "A one-line problem statement everyone agrees on",
+          "What success looks like, written down before any code"
+        ],
+        "tools": "Notes, Figma, Google Forms"
+      },
+      {
+        "title": "Plan the data and the model",
+        "text": "AI is only as good as what it learns from. I work out what data we need, where it comes from and which model fits, before training anything.",
+        "details": [
+          "Collect, clean and label the dataset",
+          "Start with the simplest model that could work, then compare",
+          "Set a baseline the final model has to beat"
+        ],
+        "tools": "Python, Pandas, Jupyter, Scikit-learn"
       },
       {
         "title": "Build the smallest real thing",
-        "text": "Get a working model or app in front of users early, then improve it with what they actually do."
+        "text": "Get a working model or app in front of users early, then improve it with what they actually do.",
+        "details": [
+          "One thin slice that works end to end: interface, API and model",
+          "Deployed early so real people can try it",
+          "Improved week by week from what they do, not what we guess"
+        ],
+        "tools": "FastAPI, Node.js, Express, MySQL, REST APIs"
+      },
+      {
+        "title": "Test with real users",
+        "text": "A model that scores well on a test set can still fail in a field or a classroom. I test with the people it's for and fix what confuses them.",
+        "details": [
+          "Short sessions watching people use it",
+          "Accuracy checked on fresh, real-world data",
+          "Edge cases: slow networks, old phones, messy inputs"
+        ],
+        "tools": "MLflow, browser dev tools, user feedback"
       },
       {
         "title": "Ship and present",
-        "text": "Deploy it, measure it, and explain it clearly, whether to a hackathon jury or 2,000 people at a trade show."
+        "text": "Deploy it, measure it, and explain it clearly, whether to a hackathon jury or 2,000 people at a trade show.",
+        "details": [
+          "Continuous deployment, so every fix goes live",
+          "Watched after launch, not forgotten",
+          "A clear story: the problem, the build and the result"
+        ],
+        "tools": "GitHub Actions, Vercel, Render, Nginx"
       }
     ]
   },

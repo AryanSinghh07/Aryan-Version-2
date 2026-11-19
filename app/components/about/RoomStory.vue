@@ -100,7 +100,7 @@ const smooth = (a: number, b: number, x: number) => {
  * the page's own colour inside it, the glowing screen outside, until it passes the edges (the
  * page holds still meanwhile); the room then gives way to the page. It sits over the whole
  * screen, so it plays out even if the visitor keeps scrolling. Going back up into the room
- * resets it, to play again on the way down.
+ * plays it the other way (playBack), and it plays again on the next way down.
  */
 let portalPlayed = false
 let portalPlaying = false
@@ -147,10 +147,42 @@ function onScreenFill(f: number) {
       portalPlayed = true
       covered.value = true
     }
-  } else if (portalPlayed && !portalPlaying && f < 0.85) {
+  } else if (portalPlayed && !portalPlaying && f < 0.97) {
+    // Scrolling back up into the room: the ring opens again, the room inside it this time
+    if (roomInView()) void playBack()
+    else {
+      portalPlayed = false
+      covered.value = false
+    }
+  }
+}
+
+/**
+ * The way back: from the page's colour, the ring opens from the middle with the room inside it
+ * (the mirror of the way out), until it passes the edges. Scrolling stays free meanwhile.
+ */
+async function playBack() {
+  if (!portalReveal) {
     portalPlayed = false
     covered.value = false
+    return
   }
+  portalPlaying = true
+  portalState.x = window.innerWidth / 2
+  portalState.y = window.innerHeight / 2
+  portalState.radius = 0
+  portalState.fade = 0
+  portalReveal.setColors({ inside: 'clear', outside: pageBg() })
+  // The canvas takes over (all page colour) before the room underneath shows again
+  portalOn.value = true
+  await nextTick()
+  portalReveal.draw()
+  covered.value = false
+  await openRing(portalState, { duration: 2.2, alive: () => !disposed })
+  if (disposed) return
+  portalOn.value = false
+  portalPlayed = false
+  portalPlaying = false
 }
 
 function animate(el: HTMLElement) {

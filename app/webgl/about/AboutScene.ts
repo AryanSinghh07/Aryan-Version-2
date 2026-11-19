@@ -181,11 +181,6 @@ function lensAt(p: number) {
 /** Vertical field of view for a lens on Blender's 36 mm sensor (fit to width) */
 const vfovFromLens = (lens: number, aspect: number) => 2 * Math.atan(18 / lens / aspect)
 
-/** Head turn towards the pointer: radians at the screen edge, and how fast it follows */
-const PARALLAX_YAW = 0.013
-const PARALLAX_PITCH = 0.008
-const PARALLAX_FOLLOW = 1
-
 const LED_MATS = [
   'Desk_LED_Mat',
   'Shelf_LED_Mat',
@@ -589,14 +584,6 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
     onUpdate: (self) => (target = self.progress),
   })
 
-  // ---------------------------------------------------------------- Pointer parallax (a subtle head turn)
-  const pointer = new THREE.Vector2()
-  const look = new THREE.Vector2()
-  const isTouch = window.matchMedia('(pointer: coarse)').matches
-  const onMove = (e: PointerEvent) =>
-    pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1)
-  if (!isTouch) window.addEventListener('pointermove', onMove)
-
   // ---------------------------------------------------------------- Resize
   function resize() {
     const w = canvas.clientWidth || window.innerWidth
@@ -656,15 +643,16 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
 
   // ---------------------------------------------------------------- Loop
   const timer = new THREE.Timer()
-  const tmpQ = new THREE.Quaternion()
-  const tmpE = new THREE.Euler()
   let lastFill = -1
 
   renderer.setAnimationLoop(() => {
     timer.update()
     const dt = Math.min(timer.getDelta(), 0.1)
-    smoothed = THREE.MathUtils.damp(smoothed, target, o.damping * 2.2, dt)
-    current = THREE.MathUtils.damp(current, smoothed, o.damping, dt)
+    // The camera follows the scroll softly; in the last stretch it catches up faster, so the
+    // push into the monitor finishes soon after the visitor reaches the end
+    const catchUp = 1 + 3 * smooth(0.9, 1, target)
+    smoothed = THREE.MathUtils.damp(smoothed, target, o.damping * 2.2 * catchUp, dt)
+    current = THREE.MathUtils.damp(current, smoothed, o.damping * catchUp, dt)
     const p = Math.min(current, 0.9999)
     for (const a of scrubbed) a.time = p * a.getClip().duration
     mixer.update(dt)
@@ -682,14 +670,6 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
       }
       if (otherMonitor) otherMonitor.visible = fill < 0.85
 
-      // A gentle head turn towards the pointer: small and slow, so it drifts rather than
-      // shakes (close to the hallway door even a little turn shows); it fades out on the way
-      // into the screen
-      look.x = THREE.MathUtils.damp(look.x, pointer.x, PARALLAX_FOLLOW, dt)
-      look.y = THREE.MathUtils.damp(look.y, pointer.y, PARALLAX_FOLLOW, dt)
-      const k = 1 - fill
-      tmpE.set(-look.y * PARALLAX_PITCH * k, -look.x * PARALLAX_YAW * k, 0, 'YXZ')
-      blenderCam.quaternion.multiply(tmpQ.setFromEuler(tmpE))
       blenderCam.updateProjectionMatrix()
 
       if (Math.abs(fill - lastFill) > 0.002) {
@@ -712,7 +692,6 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
     gsap.killTweensOf(theme)
     renderer.setAnimationLoop(null)
     timer.dispose()
-    window.removeEventListener('pointermove', onMove)
     st.kill()
     ro.disconnect()
     mixer.stopAllAction()
