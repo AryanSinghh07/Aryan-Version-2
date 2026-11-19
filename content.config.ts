@@ -152,14 +152,26 @@ export default defineContentConfig({
       type: 'data',
       source: 'about.json',
       schema: z.object({
-        scenes: z.array(
+        /**
+         * The About room's beats, one per stretch of the walk. Layouts: intro (small line,
+         * then a big headline along the foot), center (headline at the top, caption at the
+         * foot), left and right (pill, headline, paragraph). Headline lines may be indented
+         * and carry an arrow before (↳) or after (↴) them; *word* is the italic accent.
+         */
+        room: z.array(
           z.object({
-            label: z.string(),
-            lead: z.string().optional(),
-            headline: z.string(),
-            text: z.string(),
-            side: z.enum(['left', 'right', 'center', 'bottom']).default('left'),
-            particleShape: z.string().default('constellation'),
+            layout: z.enum(['intro', 'center', 'left', 'right']),
+            label: z.string().optional(),
+            kicker: z.string().optional(),
+            lines: z.array(
+              z.object({
+                text: z.string(),
+                indent: z.number().default(0),
+                arrow: z.enum(['start', 'end']).optional(),
+              })
+            ),
+            text: z.string().optional(),
+            caption: z.string().optional(),
           })
         ),
         approach: z.object({

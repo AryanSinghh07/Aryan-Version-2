@@ -110,6 +110,8 @@ export const useAppStore = defineStore('app', () => {
   const worldPaused = ref(false)
   /** The new page is still loading something big (the About room): the page portal holds */
   const pageLoading = ref(false)
+  /** The page portal covers the screen (its intro text waits until it has opened) */
+  const revealing = ref(false)
 
   /** Counts a loading task towards the preloader progress. Failures still count as done. */
   function trackLoad<T>(task: Promise<T>): Promise<T> {
@@ -183,6 +185,7 @@ export const useAppStore = defineStore('app', () => {
     webgl,
     worldPaused,
     pageLoading,
+    revealing,
     heroScenes,
     scenesRoute,
     pageShape,

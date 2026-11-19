@@ -49,6 +49,18 @@ interface Look {
   bloomThreshold: number
   lighthouseI: number
   beam: number
+  /** The view through the window: grass, blossom (tint and glow), clouds, fireflies, star */
+  grass: string
+  leaf: string
+  leafGlow: number
+  cloud: string
+  cloudGlow: number
+  particleGlow: number
+  starGlow: number
+  /** The lake: deep water, the sky it mirrors at a glance, and the glints on its ripples */
+  lakeDeep: string
+  lakeShine: string
+  lakeGlint: string
 }
 type ColorKey = { [K in keyof Look]: Look[K] extends string ? K : never }[keyof Look]
 type NumberKey = { [K in keyof Look]: Look[K] extends number ? K : never }[keyof Look]
@@ -73,10 +85,20 @@ export const ABOUT_LOOKS: Record<AboutTheme, Look> = {
     ledI: 1,
     wall: '#3e3260',
     exposure: 1.0,
-    bloomStrength: 0.8,
-    bloomThreshold: 0.55,
+    bloomStrength: 0.45,
+    bloomThreshold: 0.7,
     lighthouseI: 40,
     beam: 0.7,
+    grass: '#3d2a78',
+    leaf: '#7a4ad8',
+    leafGlow: 0.45,
+    cloud: '#5b4794',
+    cloudGlow: 0.18,
+    particleGlow: 4,
+    starGlow: 40,
+    lakeDeep: '#120a2e',
+    lakeShine: '#5a46a6',
+    lakeGlint: '#d9b8ff',
   },
   light: {
     skyHorizon: '#ffc8dc',
@@ -101,6 +123,16 @@ export const ABOUT_LOOKS: Record<AboutTheme, Look> = {
     bloomThreshold: 0.97,
     lighthouseI: 6,
     beam: 0.15,
+    grass: '#c9b6f0',
+    leaf: '#b88af0',
+    leafGlow: 0.08,
+    cloud: '#ffffff',
+    cloudGlow: 0.6,
+    particleGlow: 0.8,
+    starGlow: 6,
+    lakeDeep: '#6f5ac4',
+    lakeShine: '#efe6ff',
+    lakeGlint: '#ffffff',
   },
 }
 
@@ -256,8 +288,12 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
   // ---------------------------------------------------------------- Lake seen through the window
   const lakeU = {
     time: { value: 0 },
-    deep: { value: new THREE.Color('#1a1040') },
-    shine: { value: new THREE.Color('#b8a8ea') },
+    deep: { value: new THREE.Color() },
+    shine: { value: new THREE.Color() },
+    glint: { value: new THREE.Color() },
+    fogColor: { value: new THREE.Color() },
+    fogNear: { value: 40 },
+    fogFar: { value: 260 },
   }
   const lake = new THREE.Mesh(
     new THREE.CircleGeometry(60, 96),
@@ -268,13 +304,22 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
         varying vec3 vW;
         void main() { vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.0); }`,
       fragmentShader: /* glsl */ `
-        uniform float time; uniform vec3 deep; uniform vec3 shine; varying vec3 vW;
+        // Dark water that mirrors a little of the sky at a glance, a few glints moving on its
+        // ripples, melting into the fog far away
+        uniform float time; uniform vec3 deep; uniform vec3 shine; uniform vec3 glint;
+        uniform vec3 fogColor; uniform float fogNear; uniform float fogFar;
+        varying vec3 vW;
         void main() {
           vec2 p = vW.xz;
           float w = sin(p.x * 0.9 + time * 0.8) * 0.5 + sin(p.y * 1.3 - time * 0.6) * 0.5 + sin((p.x + p.y) * 2.1 + time * 1.2) * 0.25;
           vec3 v = normalize(cameraPosition - vW);
-          float fres = pow(1.0 - clamp(v.y, 0.0, 1.0), 3.0);
-          gl_FragColor = vec4(mix(deep, shine, 0.25 + 0.6 * fres + 0.06 * w), 1.0);
+          float fres = pow(1.0 - clamp(v.y, 0.0, 1.0), 4.0);
+          vec3 c = mix(deep, shine, 0.06 + 0.5 * fres + 0.04 * w);
+          float g = smoothstep(0.97, 1.0, sin(p.x * 1.7 + time * 1.2) * sin(p.y * 0.6 - time * 0.7));
+          // Glints: sparse, and only towards the horizon where the water catches the light
+          c += glint * g * fres * 0.35;
+          c = mix(c, fogColor, smoothstep(fogNear, fogFar, length(vW - cameraPosition)));
+          gl_FragColor = vec4(c, 1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }`,
@@ -299,6 +344,11 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
     leds: [] as THREE.MeshStandardMaterial[],
     walls: [] as THREE.MeshStandardMaterial[],
     bulbs: [] as THREE.MeshStandardMaterial[],
+    grass: [] as THREE.MeshStandardMaterial[],
+    leaves: [] as THREE.MeshStandardMaterial[],
+    clouds: [] as THREE.MeshStandardMaterial[],
+    particles: [] as THREE.MeshStandardMaterial[],
+    stars: [] as THREE.MeshStandardMaterial[],
   }
   let heroScreenMat: THREE.MeshStandardMaterial | null = null
   const beamU = { color: { value: new THREE.Color('#ffe9c4') }, strength: { value: 0.5 } }
@@ -359,6 +409,26 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
     bloom.threshold = num('bloomThreshold')
     lighthouseLight.intensity = num('lighthouseI')
     beamU.strength.value = num('beam')
+    // The view through the window
+    mats.grass.forEach((m) => col('grass', m.color))
+    mats.leaves.forEach((m) => {
+      col('leaf', m.color)
+      col('leaf', m.emissive)
+      m.emissiveIntensity = num('leafGlow')
+    })
+    mats.clouds.forEach((m) => {
+      col('cloud', m.color)
+      col('cloud', m.emissive)
+      m.emissiveIntensity = num('cloudGlow')
+    })
+    mats.particles.forEach((m) => (m.emissiveIntensity = num('particleGlow')))
+    mats.stars.forEach((m) => (m.emissiveIntensity = num('starGlow')))
+    col('lakeDeep', lakeU.deep.value)
+    col('lakeShine', lakeU.shine.value)
+    col('lakeGlint', lakeU.glint.value)
+    lakeU.fogColor.value.copy(fog.color)
+    lakeU.fogNear.value = fog.near
+    lakeU.fogFar.value = fog.far
   }
   applyTheme()
   function setTheme(next: AboutTheme, duration = 1.2) {
@@ -420,7 +490,16 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
         else if (m.name === 'CPU_Glass_Mat') {
           m.transparent = true
           m.depthWrite = false
-        } else if (m.name === 'Cloud_Soft_Mat') {
+        } else if (m.name === 'Grass_Mat') {
+          m.side = THREE.DoubleSide
+          add(mats.grass, m)
+        } else if (m.name === 'Tree_Leaf_Mat') {
+          m.side = THREE.DoubleSide
+          add(mats.leaves, m)
+        } else if (m.name === 'Particle_Mat') add(mats.particles, m)
+        else if (m.name === 'Star_Core_Mat') add(mats.stars, m)
+        else if (m.name === 'Cloud_Soft_Mat') {
+          add(mats.clouds, m)
           m.fog = false
           m.transparent = true
           m.depthWrite = false

@@ -1,39 +1,92 @@
 {
-  "scenes": [
+  "room": [
     {
-      "label": "Who",
-      "headline": "Hello — I'm *Aryan*",
-      "text": "==Full-Stack Developer== and ==AI/ML Engineer== based in the Greater Delhi Area, studying BCA with an AI and ML specialization at ==Galgotias University==.",
-      "side": "left",
-      "particleShape": "letter-a"
+      "layout": "intro",
+      "kicker": "Hi. I'm Aryan — full-stack developer and AI/ML engineer, and I care about one thing more than most",
+      "lines": [
+        {
+          "text": "Code that runs"
+        },
+        {
+          "text": "is only the start",
+          "arrow": "end"
+        },
+        {
+          "text": "Code that helps",
+          "indent": 3,
+          "arrow": "start"
+        },
+        {
+          "text": "is the *point*",
+          "indent": 1
+        }
+      ]
     },
     {
-      "label": "Why",
-      "headline": "Problems *first*",
-      "text": "From cattle classification for the ==Rashtriya Gokul Mission== to ==mental-health platforms== for students, I start from a ==real problem==, not a tech demo.",
-      "side": "right",
-      "particleShape": "leaf"
+      "layout": "center",
+      "lines": [
+        {
+          "text": "I design & engineer"
+        },
+        {
+          "text": "AI products for"
+        },
+        {
+          "text": "real problems",
+          "indent": 1,
+          "arrow": "start"
+        }
+      ],
+      "caption": "From farms and classrooms to hackathon stages"
     },
     {
-      "label": "How",
-      "headline": "Built to *ship*",
-      "text": "My work has been presented at ==government missions== and ==industry events==, which shaped how I approach every project: ==build to ship==, not just to demo.",
-      "side": "left",
-      "particleShape": "neural-net"
+      "layout": "left",
+      "label": "The problem",
+      "lines": [
+        {
+          "text": "A good model"
+        },
+        {
+          "text": "gets accuracy"
+        },
+        {
+          "text": "a great one",
+          "indent": 2,
+          "arrow": "start"
+        },
+        {
+          "text": "*Gets used*"
+        }
+      ],
+      "text": "Cattle classification for the Rashtriya Gokul Mission, crop disease detection for farmers, a CBT chatbot for students. Each one started with a person, not a dataset."
     },
     {
-      "label": "Proof",
-      "headline": "On *stage*",
-      "text": "==IEEE Code Astraa 2025== finalist, ==Smart India Hackathon== 2024 and 2025, and a live presentation to ==2,000+ stakeholders== at UP International Trade Show 2024.",
-      "side": "right",
-      "particleShape": "constellation"
+      "layout": "right",
+      "label": "How I think",
+      "lines": [
+        {
+          "text": "It starts"
+        },
+        {
+          "text": "with *Why*"
+        }
+      ],
+      "text": "Before I write a line of code I learn who it is for, what it has to do and what success looks like. The stack comes after. The thinking comes first."
     },
     {
-      "label": "Next",
-      "headline": "What's *next*",
-      "text": "Currently seeking ==internship opportunities== to build ==impactful products== at scale, and open to ==freelance work==.",
-      "side": "center",
-      "particleShape": "chat-bubble"
+      "layout": "left",
+      "label": "What's next",
+      "lines": [
+        {
+          "text": "Built to ship"
+        },
+        {
+          "text": "not to *demo*",
+          "indent": 1,
+          "arrow": "start"
+        }
+      ],
+      "text": "IEEE Code Astraa 2025 finalist, Smart India Hackathon 2024 and 2025, and a live demo for 2,000+ people. Now open to internships, freelance work and collaborations."
     }
   ],
   "approach": {

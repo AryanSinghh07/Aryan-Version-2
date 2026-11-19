@@ -110,6 +110,7 @@ function finish() {
   covering = null
   active.value = false
   busy = false
+  store.revealing = false
 }
 
 const removeBefore = router.beforeEach(async (to, from) => {
@@ -119,6 +120,7 @@ const removeBefore = router.beforeEach(async (to, from) => {
   // Not on the first load, not before the visitor has entered, not with reduced motion
   if (!from.matched.length || !store.entered || prefersReducedMotion()) return true
   busy = true
+  store.revealing = true
   covering = await cover()
   if (!covering) finish()
   return true

@@ -12,9 +12,7 @@ const { data: profile } = await useProfile()
 <template>
   <div v-if="about && profile" class="about-page">
     <!-- A walk through the room, the story's five beats over it, into the monitor -->
-    <AboutRoomStory :scenes="about.scenes" />
-
-    <SectionsBackground />
+    <AboutRoomStory :beats="about.room" />
 
     <section class="section container" aria-labelledby="approach-title">
       <div class="section__head">
