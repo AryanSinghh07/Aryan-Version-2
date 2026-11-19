@@ -163,7 +163,8 @@ onBeforeUnmount(() => {
   margin: 1rem 0 0;
   overflow: hidden;
   border-radius: 1.25rem;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
+  max-width: 34rem;
   background: color-mix(in srgb, var(--foreground) 6%, transparent);
 
   img {
