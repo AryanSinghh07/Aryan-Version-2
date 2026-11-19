@@ -34,6 +34,8 @@ export interface AppStateSource {
   nextPreview: { route: string; progress: number } | null
   /** Home hero outro progress, or null on pages without one */
   outro: number | null
+  /** A page shows its own 3D scene (the About room): the world pauses and hides meanwhile */
+  worldPaused: boolean
   carousel: CarouselState | null
   /** Written back by the Experience: the Work page panel under the pointer (-1: none) */
   carouselHover: number
@@ -326,6 +328,13 @@ export class Experience {
       this.lazyStarted = true
       void this.resources.loadLazy()
     }
+
+    // A page shows its own 3D scene (the About room): stand still and stay out of sight
+    const paused = state.worldPaused
+    if (this.canvas.style.visibility !== (paused ? 'hidden' : '')) {
+      this.canvas.style.visibility = paused ? 'hidden' : ''
+    }
+    if (paused) return
 
     this.pointer.update(this.camera.instance, performance.now())
 

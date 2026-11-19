@@ -11,8 +11,8 @@ const { data: profile } = await useProfile()
 
 <template>
   <div v-if="about && profile" class="about-page">
-    <!-- Five full-screen story scenes, like the home hero (stacked without JS or motion) -->
-    <ScenesSceneStack :scenes="about.scenes" label="About" />
+    <!-- A walk through the room, the story's five beats over it, into the monitor -->
+    <AboutRoomStory :scenes="about.scenes" />
 
     <SectionsBackground />
 

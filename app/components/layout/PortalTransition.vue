@@ -85,6 +85,26 @@ function whenArrived(max = 3000) {
   })
 }
 
+/** Resolves when the new page has loaded what it needs (or after `max` ms) */
+function whenLoaded(max = 8000) {
+  if (!store.pageLoading) return Promise.resolve()
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      stop()
+      resolve()
+    }, max)
+    const stop = watch(
+      () => store.pageLoading,
+      (loading) => {
+        if (loading) return
+        clearTimeout(timer)
+        stop()
+        resolve()
+      }
+    )
+  })
+}
+
 function finish() {
   covering?.stop()
   covering = null
@@ -107,8 +127,10 @@ const removeBefore = router.beforeEach(async (to, from) => {
 const removeAfter = router.afterEach(async () => {
   const running = covering
   if (!running) return
-  // The new page has to arrive (its page change runs under the cover) and settle first
+  // The new page has to arrive (its page change runs under the cover), finish loading its
+  // own 3D scene if it has one, and settle first
   await whenArrived()
+  await whenLoaded()
   await whenSettled()
   // The hole opens in the middle of the screen
   running.state.x = window.innerWidth / 2

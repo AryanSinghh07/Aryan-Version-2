@@ -106,6 +106,10 @@ export const useAppStore = defineStore('app', () => {
   const autoTier = ref<QualityTier>('high')
   /** null until known; false when the browser has no WebGL2 (the 3D layer and quality are off) */
   const webgl = ref<boolean | null>(null)
+  /** A page shows its own 3D scene (the About room): the shared 3D world pauses and hides */
+  const worldPaused = ref(false)
+  /** The new page is still loading something big (the About room): the page portal holds */
+  const pageLoading = ref(false)
 
   /** Counts a loading task towards the preloader progress. Failures still count as done. */
   function trackLoad<T>(task: Promise<T>): Promise<T> {
@@ -177,6 +181,8 @@ export const useAppStore = defineStore('app', () => {
     overlayOpen,
     autoTier,
     webgl,
+    worldPaused,
+    pageLoading,
     heroScenes,
     scenesRoute,
     pageShape,
