@@ -79,6 +79,7 @@ const pageTransition: TransitionProps = {
   </main>
   <LayoutFooter :inert="covered || undefined" :class="{ 'is-navigating': store.navigating }" />
   <LayoutEntryGate />
+  <LayoutPortalTransition />
   <LayoutPreloader />
   <Cursor />
 </template>

@@ -76,26 +76,6 @@ function enter(withSound: boolean) {
   }
 }
 
-/**
- * Resolves once the frames run smoothly again: at least `min` ms, then several smooth frames
- * in a row (or after `max` ms at the latest)
- */
-function whenSettled(min = 350, max = 3000) {
-  return new Promise<void>((resolve) => {
-    const start = performance.now()
-    let last = start
-    let smooth = 0
-    const frame = () => {
-      const now = performance.now()
-      smooth = now - last < 50 ? smooth + 1 : 0
-      last = now
-      if ((smooth >= 8 && now - start > min) || now - start > max) resolve()
-      else requestAnimationFrame(frame)
-    }
-    requestAnimationFrame(frame)
-  })
-}
-
 /** The portal exit; false when it can't run (no WebGL), so the caller fades instead */
 function openPortal(done: () => void) {
   const el = root.value
@@ -130,28 +110,12 @@ function openPortal(done: () => void) {
     els.forEach((e) => e.classList.toggle('is-glitching', on))
   const half = () => window.innerWidth * 0.65
 
-  // The hole opens on its own clock, which never steps more than a frame at a time: if the
-  // starting site stalls the browser, the hole pauses instead of jumping open
-  const openHole = () => {
-    const ease = gsap.parseEase('power3.inOut')
-    const DURATION = 1.3
-    let t = 0
-    let last = performance.now()
-    const step = () => {
-      // The gate went away meanwhile (the visitor left the page)
-      if (!root.value) return gsap.ticker.remove(step)
-      const now = performance.now()
-      t = Math.min(DURATION, t + Math.min((now - last) / 1000, 1 / 30))
-      last = now
-      state.hole = 1.65 * ease(t / DURATION)
-      // A glitch flare as it tears, fading over the first half second
-      state.glitch = t < 0.08 ? (t / 0.08) * 0.8 : Math.max(0, 0.8 * (1 - (t - 0.08) / 0.6))
-      if (t < DURATION) return
-      gsap.ticker.remove(step)
-      stopPortal?.()
-      done()
-    }
-    gsap.ticker.add(step)
+  // The hole opens on a clock that pauses rather than skips if the starting site stalls
+  const openHole = async () => {
+    // The gate went away meanwhile (the visitor left the page)
+    if (!(await openPortalHole(state, () => !!root.value))) return
+    stopPortal?.()
+    done()
   }
 
   timeline = gsap
