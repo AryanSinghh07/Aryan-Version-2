@@ -13,11 +13,11 @@ const store = useAppStore()
 const lenis = useLenis()
 const { data: projects } = await useProjects()
 
-/** Page order: projects are the strongest content, so home leads to Work */
+/** Page order: home leads to About, then Work, then Contact, and back home */
 const PAGES = [
   { to: '/', label: 'Home', hint: 'home' },
-  { to: '/work', label: 'Work', hint: 'selected work' },
   { to: '/about', label: 'About', hint: 'about me' },
+  { to: '/work', label: 'Work', hint: 'selected work' },
   { to: '/contact', label: 'Contact', hint: 'say hello' },
 ]
 const WORDS = ['Keep', 'scrolling', 'to', 'explore']
