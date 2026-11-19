@@ -6,9 +6,8 @@ import { gsap } from 'gsap'
 // Visitors who land on another page skip the gate, with sound as they last left it (off at first).
 //
 // Leaving the gate: the buttons fade, "Aryan" glitches off to the left and "Singh" to the
-// right, the AS mark glides to the centre, and the hero's portal opens from it (dark core,
-// smoky rim, white halo, with glitch bands and a colour split) until it covers the screen.
-// Then a hole tears open in its middle and the site appears through it as the hero begins.
+// right, the AS mark glides to the centre, and the ring portal (the hero's particle ring)
+// opens from it once, the site inside it, until it passes the edges of the screen.
 // With reduced motion, or without WebGL, the gate simply fades.
 const store = useAppStore()
 const route = useRoute()
@@ -86,10 +85,10 @@ function openPortal(done: () => void) {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
     radius: 0,
-    hole: 0,
-    glitch: 0,
+    fade: 0,
   }
-  const reveal = createPortalReveal(canvas, state)
+  // The site shows inside the ring, the gate's own colour outside it
+  const reveal = createPortalReveal(canvas, state, { inside: 'clear', outside: pageColor() })
   if (!reveal) return false
 
   const draw = () => reveal.draw()
@@ -110,10 +109,14 @@ function openPortal(done: () => void) {
     els.forEach((e) => e.classList.toggle('is-glitching', on))
   const half = () => window.innerWidth * 0.65
 
-  // The hole opens on a clock that pauses rather than skips if the starting site stalls
-  const openHole = async () => {
-    // The gate went away meanwhile (the visitor left the page)
-    if (!(await openPortalHole(state, () => !!root.value))) return
+  // The ring opens from the mark, once: the site inside it, the gate's colour outside, until
+  // it passes the edges of the screen. Its clock pauses rather than skips if the page stalls.
+  const open = async () => {
+    if (!root.value) return
+    gsap.to(mark, { scale: 0.2, autoAlpha: 0, duration: 0.45, ease: 'power2.in' })
+    // From here the canvas paints the gate's colour around the ring
+    el.classList.add('is-through')
+    if (!(await openRing(state, { duration: 2.4, alive: () => !!root.value }))) return
     stopPortal?.()
     done()
   }
@@ -143,24 +146,15 @@ function openPortal(done: () => void) {
     // The AS mark glides to the centre
     .call(() => glitching([mark], true), [], 0.3)
     .to(mark, { ...toCentre, scale: 1.5, duration: 0.9, ease: 'power3.inOut' }, 0.3)
-    // The portal opens from it and swallows the mark, the glitch flaring as it starts
-    .to(state, { radius: 1.5, duration: 1.25, ease: 'power2.in' }, 1.15)
-    .to(state, { glitch: 1, duration: 0.12, ease: 'none' }, 1.15)
-    .to(state, { glitch: 0.12, duration: 0.55, ease: 'power2.out' }, 1.27)
-    .to(state, { glitch: 0.9, duration: 0.08, ease: 'none' }, 1.85)
-    .to(state, { glitch: 0, duration: 0.4, ease: 'power2.out' }, 1.93)
-    .to(mark, { scale: 0.4, autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, 1.2)
-    // Covered: the gate behind the portal goes and the site starts underneath. Starting it
-    // is heavy (the hero, the 3D landscape): the portal holds, closed, until the frames run
-    // smoothly again, so the hole then opens without a jump
+    // The site starts behind the gate. Starting it is heavy (the hero, the 3D world): the ring
+    // waits until the frames run smoothly again, so it then opens without a jump
     .call(
       () => {
-        el.classList.add('is-through')
         store.entered = true
-        void whenSettled().then(openHole)
+        void whenSettled().then(open)
       },
       [],
-      2.4
+      1.2
     )
   return true
 }
@@ -221,13 +215,10 @@ function trapFocus(e: KeyboardEvent) {
   place-items: center;
   background: var(--background);
 
-  // Behind the portal: the screen is covered, so the gate itself can go
+  // The ring is opening: the canvas paints the gate's colour around it, so the gate's own
+  // background can go (the site shows inside the ring)
   &.is-through {
     background: transparent;
-
-    .gate__inner {
-      visibility: hidden;
-    }
   }
 }
 

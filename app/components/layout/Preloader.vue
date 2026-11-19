@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
+import { ABOUT_ROOM_MODEL } from '~/webgl/config/models'
 
 // Covers the first paint, counts 0–100% while tracked assets load, then slides away.
 // Assets register through store.trackLoad (fonts and page load now; models, textures and
@@ -13,7 +14,7 @@ const percent = ref(0)
 const visible = ref(!store.loaded)
 
 const MIN_TIME = 1.2 // seconds the counter takes at minimum, so it never flashes
-const MAX_WAIT = 10_000 // give up waiting on slow assets after this long
+const MAX_WAIT = 30_000 // give up waiting on slow assets after this long (the 3D models are big)
 
 let reduced = false
 let startedAt = 0
@@ -61,6 +62,8 @@ onMounted(() => {
   startedAt = performance.now()
 
   store.trackLoad(document.fonts.ready)
+  // Every 3D model loads up front: the About room too (kept in memory, see utils/assetCache)
+  store.trackLoad(preloadAsset(ABOUT_ROOM_MODEL))
   store.trackLoad(
     document.readyState === 'complete'
       ? Promise.resolve()

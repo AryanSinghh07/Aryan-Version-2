@@ -1,71 +1,84 @@
-// The entry portal (drawn over the entry screen with plain WebGL, see utils/portalReveal.ts):
-// the same dark core, ragged smoky rim and white halo as the hero's portal, opening from the
-// AS mark. uRadius grows the core until it covers the screen; then uHole tears a hole in its
-// middle (with a glowing rim of its own) that reveals the site behind. uGlitch shifts thin
-// horizontal bands sideways and splits the colours of the rims while it lasts.
+// The ring portal (drawn over the page with plain WebGL, see utils/portalReveal.ts): the home
+// hero's particle ring, growing from a point until it passes the edges of the screen. It is
+// one opening: inside the ring is the new view (uInside: a colour, or see-through to what is
+// underneath), outside it the old one (uOutside), and the ring itself is a band of small
+// glossy balls in the logo colours, in three layers, that twinkle and drift slowly, with a
+// faint violet glow along it. Colours are sRGB, premultiplied by their alpha.
 precision highp float;
-
-#import ../includes/curl.glsl;
 
 uniform vec2 uResolution;
 uniform vec2 uCenter;     // 0–1 screen coordinates (y up)
-uniform float uRadius;    // core radius, in screen heights
-uniform float uHole;      // hole radius, in screen heights
+uniform float uRadius;    // ring radius, in screen heights
 uniform float uTime;
-uniform float uGlitch;    // 0–1
-uniform vec3 uCore;
-uniform vec3 uHalo;
+uniform float uFade;      // the ring's visibility, 0–1
+uniform vec4 uInside;
+uniform vec4 uOutside;
+uniform vec3 uColorA;     // the three logo colours
+uniform vec3 uColorB;
+uniform vec3 uColorC;
 
 float hash(float n) { return fract(sin(n) * 43758.5453123); }
 
-// Coverage of the portal at p (distance from the centre in screen heights): x = core, y = glow
-vec2 portal(vec2 p) {
-  float d = length(p);
-  vec2 dir = d > 0.0 ? p / d : vec2(1.0, 0.0);
-  float n = snoise(vec3(dir * 2.2, uTime * 0.25)) * 0.6
-          + snoise(vec3(dir * 6.0, uTime * 0.45 + d * 3.0)) * 0.3;
-
-  // Core with a soft smoky rim, and its halo outside
-  float edge = uRadius * (1.0 + 0.07 * n);
-  float soft = 0.06 * uRadius + 0.012;
-  float core = 1.0 - smoothstep(edge - soft, edge + soft * 0.4, d);
-  float outside = max(d - edge, 0.0);
-  float halo = exp(-outside / (0.32 * uRadius + 0.03)) * (1.0 - core) * step(0.0005, uRadius);
-
-  // The hole: the core and its halo give way inside it, with a bright rim along its edge
-  if (uHole > 0.0) {
-    float hEdge = uHole * (1.0 + 0.09 * n);
-    float hSoft = 0.05 * uHole + 0.01;
-    float open = 1.0 - smoothstep(hEdge - hSoft, hEdge + hSoft * 0.5, d);
-    float rim = exp(-max(d - hEdge, 0.0) / (0.12 * uHole + 0.02)) * (1.0 - open);
-    core *= 1.0 - open;
-    halo = max(halo * (1.0 - open), rim * 0.85);
+// One layer of balls: `count` slots around the circle, each holding a small glossy ball
+// somewhere across the band (spread: how far from radius r, as a fraction of it)
+vec4 ring(vec2 p, float r, float count, float seed, float spread, float size) {
+  float angle = atan(p.y, p.x);
+  float slot = floor((angle / 6.2831853 + 0.5) * count);
+  vec3 color = vec3(0.0);
+  float cover = 0.0;
+  for (int k = -1; k <= 1; k++) {
+    float i = mod(slot + float(k), count);
+    float h1 = hash(i * 1.37 + seed);
+    float h2 = hash(i * 7.11 + seed * 3.1);
+    float h3 = hash(i * 3.31 + seed * 5.7);
+    float a = ((i + 0.5 + (h1 - 0.5) * 0.8) / count - 0.5) * 6.2831853
+            + uTime * 0.05 * (seed - 2.0);
+    vec2 c = vec2(cos(a), sin(a)) * r * (1.0 + (h2 - 0.5) * spread);
+    float s = size * (0.6 + h3 * 0.8);
+    vec2 q = (p - c) / s;
+    float d = length(q);
+    // A solid ball with a soft edge, lit from the top left: a bright spot and a darker rim
+    float ball = 1.0 - smoothstep(0.75, 1.0, d);
+    float light = clamp(1.0 - length(q - vec2(-0.35, 0.35)) * 0.9, 0.0, 1.0);
+    vec3 tint = h3 < 0.45 ? uColorA : (h3 < 0.8 ? uColorB : uColorC);
+    float twinkle = 0.85 + 0.15 * sin(uTime * 2.6 + i * 1.9 + seed);
+    vec3 lit = tint * (0.7 + 0.55 * light) * twinkle + vec3(1.0) * pow(light, 8.0) * 0.35;
+    color = mix(color, lit, ball * (1.0 - cover));
+    cover = max(cover, ball);
   }
-  return vec2(core, halo);
+  return vec4(color * cover, cover);
 }
 
 void main() {
   vec2 uv = gl_FragCoord.xy / uResolution;
   float aspect = uResolution.x / uResolution.y;
-
-  // Glitch: thin bands jump sideways for a frame or two
-  float band = floor(uv.y * 34.0);
-  float tick = floor(uTime * 18.0);
-  float jump = step(0.72, hash(band * 1.37 + tick * 7.13)) * (hash(band + tick) - 0.5);
-  uv.x += jump * 0.09 * uGlitch;
-
   vec2 p = (uv - uCenter) * vec2(aspect, 1.0);
-  // Colour split while glitching: the rims drift apart in red and cyan
-  vec2 split = vec2(0.012 * uGlitch, 0.0);
-  vec2 g = portal(p);
-  vec2 r = portal(p + split);
-  vec2 b = portal(p - split);
+  float d = length(p);
+  float r = uRadius;
 
-  vec3 glow = vec3(r.y * uHalo.r, g.y * uHalo.g, b.y * uHalo.b);
-  glow *= 0.9 + 0.1 * snoise(vec3(p * 5.0, uTime * 0.3));
-  float alpha = clamp(g.x + max(max(r.y, g.y), b.y) * 0.95, 0.0, 1.0);
-  vec3 color = mix(glow, uCore, g.x);
-  // A faint scanline flicker in the glitch
-  color *= 1.0 - 0.18 * uGlitch * step(0.5, fract(gl_FragCoord.y * 0.5));
-  gl_FragColor = vec4(color * alpha, alpha);
+  // Inside the ring the new view, outside the old (a soft edge just inside the balls)
+  float edge = 0.003 + r * 0.008;
+  float inside = 1.0 - smoothstep(r - edge * 2.0, r, d);
+  vec4 base = mix(uOutside, uInside, inside);
+
+  // The ring: a band of small glossy balls in three layers, larger as it grows
+  float size = 0.0035 + r * 0.011;
+  vec4 r1 = ring(p, r, 260.0, 1.0, 0.1, size);
+  vec4 r2 = ring(p, r * 1.015, 210.0, 2.0, 0.18, size * 0.9);
+  vec4 r3 = ring(p, r * 0.99, 160.0, 3.0, 0.26, size * 0.8);
+  // Front to back: each layer covers the ones after it
+  vec3 ballColor = r1.rgb + r2.rgb * (1.0 - r1.a);
+  float cover = r1.a + r2.a * (1.0 - r1.a);
+  ballColor += r3.rgb * (1.0 - cover);
+  cover += r3.a * (1.0 - cover);
+  float balls = cover * uFade;
+  ballColor *= uFade;
+
+  // A faint violet glow along the ring
+  float w = 0.015 + r * 0.05;
+  float glow = exp(-((d - r) * (d - r)) / (w * w)) * 0.4 * uFade;
+
+  vec3 color = base.rgb * (1.0 - balls) * (1.0 - glow) + uColorA * glow * (1.0 - balls) + ballColor;
+  float alpha = clamp(base.a + (1.0 - base.a) * max(balls, glow), 0.0, 1.0);
+  gl_FragColor = vec4(min(color, vec3(alpha)), alpha);
 }

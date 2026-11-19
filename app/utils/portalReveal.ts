@@ -1,29 +1,67 @@
 import { gsap } from 'gsap'
 import fragmentSource from '~/webgl/shaders/portal/reveal.glsl'
 
-/** Values the entry timeline animates; the portal reads them every frame */
+// The ring portal used across the site (the entrance, the page change into About, the end of
+// the About room): the home hero's particle ring growing from a point until it passes the
+// edges of the screen, the new view inside it and the old one outside. One opening, no
+// cover-then-hole. Drawn into its own canvas with plain WebGL (shaders/portal/reveal.glsl).
+
+/** Values the caller animates; the portal reads them every frame */
 export interface PortalRevealState {
   /** Centre in CSS pixels from the top left */
   x: number
   y: number
-  /** Core and hole radii, in screen heights */
+  /** Ring radius, in screen heights (about 1.6 passes every corner of any screen) */
   radius: number
-  hole: number
-  /** 0–1 */
-  glitch: number
+  /** The ring's visibility, 0–1 */
+  fade: number
 }
+
+/** A colour inside or outside the ring: a CSS hex colour, or 'clear' to see what's underneath */
+export type PortalFill = string | 'clear'
+
+export interface PortalColors {
+  inside: PortalFill
+  outside: PortalFill
+}
+
+/** The logo colours of the ring's balls, night and day (as webgl/config/theme.ts) */
+const RING = {
+  dark: ['#9b4dff', '#e07bff', '#f5ccff'],
+  light: ['#7a2df0', '#c84fe6', '#a46cff'],
+} as const
+
+/** Radius at which the ring has passed the corners of any screen */
+export const RING_COVER = 1.6
 
 const VERTEX = `
 attribute vec2 position;
 void main() { gl_Position = vec4(position, 0.0, 1.0); }
 `
 
+function rgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '')
+  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h.slice(0, 6)
+  const n = parseInt(full, 16)
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]
+}
+
+/** The page's own background colour right now (theme aware) */
+export function pageColor() {
+  return (
+    getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || '#120a1f'
+  )
+}
+
 /**
- * Draws the entry portal (shaders/portal/reveal.glsl) into a canvas with plain WebGL: no
- * three.js scene for a three-second effect. Returns null when WebGL isn't available, so the
- * caller can fall back to a simple fade.
+ * Draws the ring portal into a canvas. Returns null when WebGL isn't available, so the caller
+ * can fall back to a simple fade.
  */
-export function createPortalReveal(canvas: HTMLCanvasElement, state: PortalRevealState) {
+export function createPortalReveal(
+  canvas: HTMLCanvasElement,
+  state: PortalRevealState,
+  colors: PortalColors
+) {
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false })
   if (!gl) return null
 
@@ -59,12 +97,28 @@ export function createPortalReveal(canvas: HTMLCanvasElement, state: PortalRevea
   const uResolution = u('uResolution')
   const uCenter = u('uCenter')
   const uRadius = u('uRadius')
-  const uHole = u('uHole')
   const uTime = u('uTime')
-  const uGlitch = u('uGlitch')
-  // The hero portal's colours (linear values of #0c0418 and #f4efff)
-  gl.uniform3f(u('uCore'), 0.0037, 0.0012, 0.0091)
-  gl.uniform3f(u('uHalo'), 0.905, 0.863, 1.0)
+  const uFade = u('uFade')
+
+  const fill = (name: string, value: PortalFill) => {
+    if (value === 'clear') gl.uniform4f(u(name), 0, 0, 0, 0)
+    else gl.uniform4f(u(name), ...rgb(value), 1)
+  }
+  /** Inside / outside colours, and the ring's colours for the current theme */
+  function setColors(next: PortalColors) {
+    fill('uInside', next.inside)
+    fill('uOutside', next.outside)
+    const dark = document.documentElement.dataset.theme !== 'light'
+    const [a, b, c] = (dark ? RING.dark : RING.light).map(rgb) as [
+      [number, number, number],
+      [number, number, number],
+      [number, number, number],
+    ]
+    gl!.uniform3f(u('uColorA'), ...a)
+    gl!.uniform3f(u('uColorB'), ...b)
+    gl!.uniform3f(u('uColorC'), ...c)
+  }
+  setColors(colors)
 
   const pixelRatio = Math.min(window.devicePixelRatio, 1.5)
   const start = performance.now()
@@ -72,6 +126,7 @@ export function createPortalReveal(canvas: HTMLCanvasElement, state: PortalRevea
   function draw() {
     const width = Math.round(canvas.clientWidth * pixelRatio)
     const height = Math.round(canvas.clientHeight * pixelRatio)
+    if (!width || !height) return
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
@@ -82,9 +137,8 @@ export function createPortalReveal(canvas: HTMLCanvasElement, state: PortalRevea
     gl!.uniform2f(uResolution, width, height)
     gl!.uniform2f(uCenter, state.x / canvas.clientWidth, 1 - state.y / canvas.clientHeight)
     gl!.uniform1f(uRadius, state.radius)
-    gl!.uniform1f(uHole, state.hole)
     gl!.uniform1f(uTime, (performance.now() - start) / 1000)
-    gl!.uniform1f(uGlitch, state.glitch)
+    gl!.uniform1f(uFade, state.fade)
     gl!.drawArrays(gl!.TRIANGLES, 0, 3)
   }
 
@@ -96,12 +150,12 @@ export function createPortalReveal(canvas: HTMLCanvasElement, state: PortalRevea
     gl!.getExtension('WEBGL_lose_context')?.loseContext()
   }
 
-  return { draw, dispose }
+  return { draw, dispose, setColors }
 }
 
 /**
  * Resolves once the frames run smoothly again: at least `min` ms, then several smooth frames
- * in a row (or after `max` ms at the latest). Used to hold the portal closed while the page
+ * in a row (or after `max` ms at the latest). Used to hold back the portal while the page
  * behind it does its heavy start-up work.
  */
 export function whenSettled(min = 350, max = 3000) {
@@ -121,20 +175,21 @@ export function whenSettled(min = 350, max = 3000) {
 }
 
 /**
- * Tears the hole open in the middle of the portal, with a glitch flare as it starts. It runs
- * on its own clock, which never steps more than a frame at a time: if the page behind stalls
- * the browser, the hole pauses instead of jumping open. Resolves true when fully open, or
- * false if `alive()` turned false on the way (the portal went away).
+ * Opens the ring: it appears and grows from a point until it has passed the edges of the
+ * screen, then fades. It runs on its own clock, which never steps more than a frame at a time:
+ * if the page stalls the browser, the ring pauses instead of jumping. Resolves true when done,
+ * or false if `alive()` turned false on the way (the portal went away).
  */
-export function openPortalHole(
+export function openRing(
   state: PortalRevealState,
-  alive: () => boolean = () => true,
-  duration = 1.3
+  { duration = 2.4, alive = () => true }: { duration?: number; alive?: () => boolean } = {}
 ) {
   return new Promise<boolean>((resolve) => {
     const ease = gsap.parseEase('power3.inOut')
     let t = 0
     let last = performance.now()
+    state.radius = 0
+    state.fade = 0
     const step = () => {
       if (!alive()) {
         gsap.ticker.remove(step)
@@ -143,8 +198,10 @@ export function openPortalHole(
       const now = performance.now()
       t = Math.min(duration, t + Math.min((now - last) / 1000, 1 / 30))
       last = now
-      state.hole = 1.65 * ease(t / duration)
-      state.glitch = t < 0.08 ? (t / 0.08) * 0.8 : Math.max(0, 0.8 * (1 - (t - 0.08) / 0.6))
+      const k = t / duration
+      state.radius = RING_COVER * ease(k)
+      // In quickly, out as it passes the edges
+      state.fade = Math.min(1, k / 0.06) * (1 - Math.max(0, (k - 0.82) / 0.18))
       if (t < duration) return
       gsap.ticker.remove(step)
       resolve(true)

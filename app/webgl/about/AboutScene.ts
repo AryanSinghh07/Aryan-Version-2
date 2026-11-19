@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
@@ -7,6 +8,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { preloadedAsset } from '~/utils/assetCache'
+import { ABOUT_ROOM_MODEL } from '../config/models'
 
 /**
  * The About page room (public/models/about-room.glb, Blender scene "About" in
@@ -196,7 +199,7 @@ const BULB_MATS = ['Desk_LampBulb_Mat', 'Pendant_Bulb_Mat', 'Room_Sconce_Mat']
 
 export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOptions) {
   const o = {
-    modelUrl: '/models/about-room.glb',
+    modelUrl: ABOUT_ROOM_MODEL,
     theme: 'dark' as AboutTheme,
     damping: 2.5,
     ...opts,
@@ -468,110 +471,115 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
   const draco = new DRACOLoader().setDecoderPath('/draco/')
   const loader = new GLTFLoader().setDRACOLoader(draco)
 
-  loader.load(
-    o.modelUrl,
-    (gltf) => {
-      if (disposed) return
-      const root = gltf.scene
-      const add = <T>(arr: T[], v: T) => {
-        if (!arr.includes(v)) arr.push(v)
-      }
-      root.traverse((obj) => {
-        const mesh = obj as THREE.Mesh
-        if (!mesh.isMesh) return
-        const m = mesh.material as THREE.MeshStandardMaterial
-        if (m.name.startsWith('Screen_')) {
-          m.toneMapped = false
-          if (mesh.name.startsWith('Desk_Monitor_R_Screen')) heroScreenMat = m
-          else add(mats.screens, m)
-        } else if (LED_MATS.includes(m.name)) add(mats.leds, m)
-        else if (BULB_MATS.includes(m.name)) add(mats.bulbs, m)
-        else if (m.name === 'Room_Wall_Mat') add(mats.walls, m)
-        else if (m.name === 'CPU_Glass_Mat') {
-          m.transparent = true
-          m.depthWrite = false
-        } else if (m.name === 'Grass_Mat') {
-          m.side = THREE.DoubleSide
-          add(mats.grass, m)
-        } else if (m.name === 'Tree_Leaf_Mat') {
-          m.side = THREE.DoubleSide
-          add(mats.leaves, m)
-        } else if (m.name === 'Particle_Mat') add(mats.particles, m)
-        else if (m.name === 'Star_Core_Mat') add(mats.stars, m)
-        else if (m.name === 'Cloud_Soft_Mat') {
-          add(mats.clouds, m)
-          m.fog = false
-          m.transparent = true
-          m.depthWrite = false
-          m.side = THREE.DoubleSide
-        } else if (m.name === 'LH_Lamp_Mat') m.emissiveIntensity = 20
-      })
+  const onLoad = (gltf: GLTF) => {
+    if (disposed) return
+    const root = gltf.scene
+    const add = <T>(arr: T[], v: T) => {
+      if (!arr.includes(v)) arr.push(v)
+    }
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh
+      if (!mesh.isMesh) return
+      const m = mesh.material as THREE.MeshStandardMaterial
+      if (m.name.startsWith('Screen_')) {
+        m.toneMapped = false
+        if (mesh.name.startsWith('Desk_Monitor_R_Screen')) heroScreenMat = m
+        else add(mats.screens, m)
+      } else if (LED_MATS.includes(m.name)) add(mats.leds, m)
+      else if (BULB_MATS.includes(m.name)) add(mats.bulbs, m)
+      else if (m.name === 'Room_Wall_Mat') add(mats.walls, m)
+      else if (m.name === 'CPU_Glass_Mat') {
+        m.transparent = true
+        m.depthWrite = false
+      } else if (m.name === 'Grass_Mat') {
+        m.side = THREE.DoubleSide
+        add(mats.grass, m)
+      } else if (m.name === 'Tree_Leaf_Mat') {
+        m.side = THREE.DoubleSide
+        add(mats.leaves, m)
+      } else if (m.name === 'Particle_Mat') add(mats.particles, m)
+      else if (m.name === 'Star_Core_Mat') add(mats.stars, m)
+      else if (m.name === 'Cloud_Soft_Mat') {
+        add(mats.clouds, m)
+        m.fog = false
+        m.transparent = true
+        m.depthWrite = false
+        m.side = THREE.DoubleSide
+      } else if (m.name === 'LH_Lamp_Mat') m.emissiveIntensity = 20
+    })
 
-      roomRoot = root.getObjectByName('Room_Root') ?? null
-      if (roomRoot) {
-        for (const [l, x, y, z] of placements) {
-          l.position.set(x, z, -y)
-          roomRoot.add(l)
-        }
+    roomRoot = root.getObjectByName('Room_Root') ?? null
+    if (roomRoot) {
+      for (const [l, x, y, z] of placements) {
+        l.position.set(x, z, -y)
+        roomRoot.add(l)
       }
-      const bulb = root.getObjectByName('Desk_Lamp_Bulb')
-      if (bulb) {
-        bulb.add(deskLampGlow)
-        const t = new THREE.Object3D()
-        t.position.set(0, -1, 0.3)
-        bulb.add(t)
-        bulb.add(deskLamp)
-        deskLamp.target = t
-      }
-      root.getObjectByName('Lighthouse_Beam_Pivot')?.add(lighthouseLight, makeBeam())
-      root.traverse((obj) => {
-        if (
-          !heroScreen &&
-          obj.name.startsWith('Desk_Monitor_R_Screen') &&
-          (obj as THREE.Mesh).isMesh
-        )
-          heroScreen = obj as THREE.Mesh
-      })
-      otherMonitor = root.getObjectByName('Desk_Monitor_L') ?? null
+    }
+    const bulb = root.getObjectByName('Desk_Lamp_Bulb')
+    if (bulb) {
+      bulb.add(deskLampGlow)
+      const t = new THREE.Object3D()
+      t.position.set(0, -1, 0.3)
+      bulb.add(t)
+      bulb.add(deskLamp)
+      deskLamp.target = t
+    }
+    root.getObjectByName('Lighthouse_Beam_Pivot')?.add(lighthouseLight, makeBeam())
+    root.traverse((obj) => {
+      if (!heroScreen && obj.name.startsWith('Desk_Monitor_R_Screen') && (obj as THREE.Mesh).isMesh)
+        heroScreen = obj as THREE.Mesh
+    })
+    otherMonitor = root.getObjectByName('Desk_Monitor_L') ?? null
 
-      scene.add(root)
-      applyTheme()
+    scene.add(root)
+    applyTheme()
 
-      const cam = gltf.cameras.find((c) => c.name.includes('Camera_About')) ?? gltf.cameras[0]
-      if (cam instanceof THREE.PerspectiveCamera) {
-        blenderCam = cam
-        camera = cam
-        renderPass.camera = cam
-        cam.near = 0.02
-        cam.far = 1200
-        resize()
+    const cam = gltf.cameras.find((c) => c.name.includes('Camera_About')) ?? gltf.cameras[0]
+    if (cam instanceof THREE.PerspectiveCamera) {
+      blenderCam = cam
+      camera = cam
+      renderPass.camera = cam
+      cam.near = 0.02
+      cam.far = 1200
+      resize()
+    }
+    for (const clip of gltf.animations) {
+      const action = mixer.clipAction(clip)
+      const scroll = clip.tracks.some(
+        (t) => t.name.startsWith('Camera_About') || t.name.startsWith('Room_Door_Hinge')
+      )
+      if (scroll) {
+        action.setLoop(THREE.LoopOnce, 1)
+        action.clampWhenFinished = true
+        action.play()
+        action.paused = true
+        scrubbed.push(action)
+      } else {
+        action.setLoop(THREE.LoopRepeat, Infinity)
+        action.timeScale = clip.name.startsWith('Lighthouse') ? 0.35 : 0.5
+        action.play()
       }
-      for (const clip of gltf.animations) {
-        const action = mixer.clipAction(clip)
-        const scroll = clip.tracks.some(
-          (t) => t.name.startsWith('Camera_About') || t.name.startsWith('Room_Door_Hinge')
-        )
-        if (scroll) {
-          action.setLoop(THREE.LoopOnce, 1)
-          action.clampWhenFinished = true
-          action.play()
-          action.paused = true
-          scrubbed.push(action)
-        } else {
-          action.setLoop(THREE.LoopRepeat, Infinity)
-          action.timeScale = clip.name.startsWith('Lighthouse') ? 0.35 : 0.5
-          action.play()
-        }
-      }
-      // Compile every shader now, so the first scroll doesn't stutter
-      renderer.compile(scene, camera)
-      o.onLoad?.()
-    },
-    (e) => {
-      if (e.total) o.onProgress?.(e.loaded / e.total)
-    },
-    (err) => o.onError?.(err)
-  )
+    }
+    // Compile every shader now, so the first scroll doesn't stutter
+    renderer.compile(scene, camera)
+    o.onLoad?.()
+  }
+  // Preloaded with everything else at the start (utils/assetCache): parse it from memory
+  const preloaded = o.modelUrl === ABOUT_ROOM_MODEL ? preloadedAsset(o.modelUrl) : null
+  if (preloaded) {
+    preloaded
+      .then((buffer) => loader.parse(buffer, '/models/', onLoad, (err) => o.onError?.(err)))
+      .catch(() => loader.load(o.modelUrl, onLoad, undefined, (err) => o.onError?.(err)))
+  } else {
+    loader.load(
+      o.modelUrl,
+      onLoad,
+      (e) => {
+        if (e.total) o.onProgress?.(e.loaded / e.total)
+      },
+      (err) => o.onError?.(err)
+    )
+  }
 
   // ---------------------------------------------------------------- Scroll
   const st = ScrollTrigger.create({

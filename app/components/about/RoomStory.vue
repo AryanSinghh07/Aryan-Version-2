@@ -57,7 +57,7 @@ const portal = ref<HTMLCanvasElement | null>(null)
 const portalOn = ref(false)
 /** The portal covers the screen: behind it the room gives way to the page */
 const covered = ref(false)
-const portalState: PortalRevealState = { x: 0, y: 0, radius: 0, hole: 0, glitch: 0 }
+const portalState: PortalRevealState = { x: 0, y: 0, radius: 0, fade: 0 }
 let portalReveal: ReturnType<typeof createPortalReveal> = null
 const drawPortal = () => {
   if (portalOn.value) portalReveal?.draw()
@@ -96,45 +96,38 @@ const smooth = (a: number, b: number, x: number) => {
 
 /**
  * The end of the walk. Once the camera has pushed into the monitor and its screen fills the
- * window, the hero's portal plays once, like the entrance: it grows from the middle of the
- * screen with glitch flares until it covers it (the page holds still meanwhile), the room
- * behind gives way to the page, and then a hole slowly tears open onto the page that follows.
- * It sits over the whole screen, so it plays out even if the visitor keeps scrolling. Going
- * back up into the room resets it, to play again on the way down.
+ * window, the ring portal (the hero's particle ring) opens once from the middle of the screen,
+ * the page's own colour inside it, the glowing screen outside, until it passes the edges (the
+ * page holds still meanwhile); the room then gives way to the page. It sits over the whole
+ * screen, so it plays out even if the visitor keeps scrolling. Going back up into the room
+ * resets it, to play again on the way down.
  */
 let portalPlayed = false
 let portalPlaying = false
 let disposed = false
 
+/** The About page's own colour (its --page-bg) */
+function pageBg() {
+  return (
+    (root.value && getComputedStyle(root.value).getPropertyValue('--page-bg').trim()) || pageColor()
+  )
+}
+
 async function playPortal() {
   if (!portalReveal) return
   portalPlayed = true
   portalPlaying = true
-  Object.assign(portalState, {
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
-    radius: 0,
-    hole: 0,
-    glitch: 0,
-  })
+  portalState.x = window.innerWidth / 2
+  portalState.y = window.innerHeight / 2
+  portalReveal.setColors({ inside: pageBg(), outside: 'clear' })
   portalOn.value = true
   lenis?.stop()
-  await new Promise<void>((resolve) => {
-    gsap
-      .timeline({ onComplete: resolve })
-      .to(portalState, { radius: 1.6, duration: 1.6, ease: 'power2.in' }, 0)
-      .to(portalState, { glitch: 1, duration: 0.12, ease: 'none' }, 0)
-      .to(portalState, { glitch: 0.12, duration: 0.6, ease: 'power2.out' }, 0.12)
-      .to(portalState, { glitch: 0.9, duration: 0.08, ease: 'none' }, 1.05)
-      .to(portalState, { glitch: 0, duration: 0.45, ease: 'power2.out' }, 1.13)
-  })
+  await openRing(portalState, { duration: 2.6, alive: () => !disposed })
   if (disposed) return
-  // Covered: behind the portal the room gives way to the page
+  // The ring has passed the edges: the room gives way to the page
   covered.value = true
-  await new Promise((r) => setTimeout(r, 350))
-  lenis?.start()
-  await openPortalHole(portalState, () => !disposed, 2)
   portalOn.value = false
+  lenis?.start()
   portalPlaying = false
 }
 
@@ -291,7 +284,10 @@ onMounted(async () => {
     onScreenFill,
   })
   if (portal.value) {
-    portalReveal = createPortalReveal(portal.value, portalState)
+    portalReveal = createPortalReveal(portal.value, portalState, {
+      inside: pageBg(),
+      outside: 'clear',
+    })
     gsap.ticker.add(drawPortal)
     portalReady.value = !!portalReveal
   }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
-// The portal page change: opening the About page from anywhere in the site plays the hero's
-// portal (dark core, smoky rim, white halo, glitch bands and a colour split). It grows from
-// the "keep scrolling" ring when that is on screen (otherwise from the middle) until it
-// covers the screen; the page changes underneath; then, once the new page has arrived and the
-// frames run smoothly, a hole tears open in the middle and reveals it.
+// The portal page change: opening the About page from anywhere in the site plays the ring
+// portal (the hero's particle ring, utils/portalReveal.ts). It opens once, from the "keep
+// scrolling" ring when that is on screen (otherwise from the middle), the About page's colour
+// inside it, until it passes the edges of the screen; the page changes underneath; then, once
+// About has arrived, loaded and settled, the colour simply fades away onto it.
 //
 // Skipped with reduced motion, before the visitor has entered the site, on the first load of a
 // page, and without WebGL: the normal page change plays instead.
@@ -41,8 +41,9 @@ async function cover(): Promise<Running | null> {
   await nextTick()
   const el = canvas.value
   if (!el) return null
-  const state: PortalRevealState = { ...origin(), radius: 0, hole: 0, glitch: 0 }
-  const reveal = createPortalReveal(el, state)
+  const state: PortalRevealState = { ...origin(), radius: 0, fade: 0 }
+  // The new page's colour inside the ring, the old page outside it
+  const reveal = createPortalReveal(el, state, { inside: aboutColor(), outside: 'clear' })
   if (!reveal) return null
   const draw = () => reveal.draw()
   gsap.ticker.add(draw)
@@ -53,16 +54,13 @@ async function cover(): Promise<Running | null> {
       reveal.dispose()
     },
   }
-  await new Promise<void>((resolve) => {
-    gsap
-      .timeline({ onComplete: resolve })
-      .to(state, { radius: 1.6, duration: 1.1, ease: 'power2.in' }, 0)
-      .to(state, { glitch: 1, duration: 0.1, ease: 'none' }, 0)
-      .to(state, { glitch: 0.12, duration: 0.5, ease: 'power2.out' }, 0.1)
-      .to(state, { glitch: 0.85, duration: 0.06, ease: 'none' }, 0.72)
-      .to(state, { glitch: 0, duration: 0.3, ease: 'power2.out' }, 0.78)
-  })
+  await openRing(state, { duration: 1.9, alive: () => !disposed })
   return running
+}
+
+/** The About page's colour: the home black at night, the page colour by day */
+function aboutColor() {
+  return store.theme === 'dark' ? '#121212' : pageColor()
 }
 
 /** Resolves when the page change has finished (or after `max` ms) */
@@ -106,6 +104,7 @@ function whenLoaded(max = 8000) {
 }
 
 function finish() {
+  if (canvas.value) gsap.set(canvas.value, { clearProps: 'opacity' })
   covering?.stop()
   covering = null
   active.value = false
@@ -134,10 +133,8 @@ const removeAfter = router.afterEach(async () => {
   await whenArrived()
   await whenLoaded()
   await whenSettled()
-  // The hole opens in the middle of the screen
-  running.state.x = window.innerWidth / 2
-  running.state.y = window.innerHeight / 2
-  await openPortalHole(running.state, () => !disposed)
+  // The colour fades away onto the new page
+  if (canvas.value) await gsap.to(canvas.value, { opacity: 0, duration: 0.9, ease: 'power2.out' })
   finish()
 })
 

@@ -68,7 +68,9 @@ void main() {
   vec3 view = normalize(cameraPosition - vWorld);
   float fres = pow(1.0 - max(dot(normal, view), 0.0), 2.5);
 
-  vec3 refl = uFloor;
+  // Without a mirror image (Medium and Low quality): a dim reflection of the sky, close to the
+  // deep water colour, so the lake stays dark rather than turning pale at a glance
+  vec3 refl = mix(uDeep, uFloor, 0.3);
   if (uReflect > 0.5) {
     vec4 uv = vReflectUv;
     uv.xy += n * uRipple * 4.0 * uv.w;

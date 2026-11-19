@@ -15,8 +15,9 @@ export interface Source {
 
 export const sources: Source[] = [
   // The landscape around the logo (Digital Atmosphere, exported from Blender, Draco-compressed).
-  // Lazy: it loads after the visitor enters and fades in, keeping the first load small.
-  { name: 'environment', type: 'gltf', path: '/models/env/environment.glb', priority: 'lazy' },
+  // Eager: the preloader waits for it, so the 3D world is complete from the first moment and
+  // nothing heavy loads later (the About room model is preloaded alongside, see Preloader)
+  { name: 'environment', type: 'gltf', path: '/models/env/environment.glb', priority: 'eager' },
   // A model named shape:<name> replaces that generated particle shape, for example:
   // { name: 'shape:letter-a', type: 'gltf', path: '/models/shapes/letter-a.glb', priority: 'eager' },
 ]
