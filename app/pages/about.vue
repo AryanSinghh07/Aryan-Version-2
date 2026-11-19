@@ -14,6 +14,8 @@ const { data: profile } = await useProfile()
     <!-- A walk through the room, the story's five beats over it, into the monitor -->
     <AboutRoomStory :beats="about.room" />
 
+    <AboutStory :story="about.story" />
+
     <section class="section container" aria-labelledby="approach-title">
       <div class="section__head">
         <UiSectionLabel :index="2" label="Approach" />

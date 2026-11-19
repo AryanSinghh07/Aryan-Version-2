@@ -5,16 +5,13 @@
 // Headlines are the uppercase display serif with an italic accent word (*word*) and ↳ / ↴
 // arrows; lines can be indented. Over the room (`overlay`) the frames stack on screen and take
 // turns (RoomStory); otherwise they are plain sections.
-export interface RoomLine {
-  text: string
-  indent?: number
-  arrow?: 'start' | 'end'
-}
+import type { ArrowLine } from '~/components/ui/ArrowLines.vue'
+
 export interface RoomBeatContent {
   layout: 'intro' | 'center' | 'left' | 'right'
   label?: string
   kicker?: string
-  lines: RoomLine[]
+  lines: ArrowLine[]
   text?: string
   caption?: string
 }
@@ -32,31 +29,30 @@ const spoken = computed(() => props.beat.lines.map((l) => l.text.replace(/\*/g, 
     :aria-label="beat.label ?? spoken"
   >
     <div class="room-beat__copy">
-      <p v-if="beat.kicker" class="room-beat__kicker room-beat__small t-label">
+      <p
+        v-if="beat.kicker"
+        class="room-beat__kicker room-beat__small room-beat__scramble t-label text-glitch"
+      >
         {{ beat.kicker }}
       </p>
       <span v-if="beat.label" class="room-beat__label room-beat__small t-label">
         {{ beat.label }}
       </span>
-      <component :is="first ? 'h1' : 'h2'" class="room-beat__headline t-display">
+      <component :is="first ? 'h1' : 'h2'" class="room-beat__headline t-display text-glitch">
         <span class="sr-only">{{ spoken }}</span>
-        <span
-          v-for="(line, j) in beat.lines"
-          :key="j"
-          class="room-beat__line"
-          :style="{ '--indent': line.indent ?? 0 }"
-          aria-hidden="true"
-        >
-          <span v-if="line.arrow === 'start'" class="room-beat__arrow room-beat__arrow--start"
-            >↳</span
-          >
-          <span class="room-beat__words"><UiAccentText :text="line.text" /></span>
-          <span v-if="line.arrow === 'end'" class="room-beat__arrow room-beat__arrow--end">↴</span>
-        </span>
+        <UiArrowLines :lines="beat.lines" />
       </component>
-      <p v-if="beat.text" class="room-beat__text room-beat__small t-label">{{ beat.text }}</p>
+      <p
+        v-if="beat.text"
+        class="room-beat__text room-beat__small room-beat__scramble t-label text-glitch"
+      >
+        {{ beat.text }}
+      </p>
     </div>
-    <p v-if="beat.caption" class="room-beat__caption room-beat__small t-label">
+    <p
+      v-if="beat.caption"
+      class="room-beat__caption room-beat__small room-beat__scramble t-label text-glitch"
+    >
       {{ beat.caption }}
     </p>
   </section>
@@ -153,50 +149,13 @@ const spoken = computed(() => props.beat.lines.map((l) => l.text.replace(/\*/g, 
   font-size: clamp(2.75rem, 6.6vw, 9.5rem);
 }
 
-.room-beat__line {
-  position: relative;
-  display: block;
-  padding-left: calc(var(--indent, 0) * 0.9em);
-  white-space: nowrap;
-
-  @media (max-width: 640px) {
-    white-space: normal;
-  }
-}
-
-// The arrows: thin, in the body font, beside the words
-.room-beat__arrow {
-  display: inline-block;
-  font-family: var(--font-body);
-  font-size: 0.42em;
-  font-weight: 300;
-  line-height: 1;
-  vertical-align: 0.55em;
-}
-
-.room-beat__arrow--start {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  // Centred with a margin (the text motion animates its transform)
-  margin-top: -0.5em;
-}
-
-.room-beat__arrow--end {
-  margin-left: 0.5em;
-  font-size: 0.5em;
-}
-
-// The words are what the letter motion splits (the arrows stay whole beside them)
-.room-beat__words {
-  display: inline-block;
-}
-
 .room-beat__kicker,
 .room-beat__text,
 .room-beat__caption {
   max-width: 34rem;
   margin: 0;
+  // While it decodes the random letters replace the spaces too: let that string wrap
+  overflow-wrap: anywhere;
   font-size: clamp(0.8rem, 0.95vw, 1rem);
   line-height: 1.45;
   letter-spacing: 0.06em;

@@ -174,6 +174,20 @@ export default defineContentConfig({
             caption: z.string().optional(),
           })
         ),
+        /** "How it began": the story after the room, with a photo (a path under public/) */
+        story: z.object({
+          label: z.string(),
+          lines: z.array(
+            z.object({
+              text: z.string(),
+              indent: z.number().default(0),
+              arrow: z.enum(['start', 'end']).optional(),
+            })
+          ),
+          paragraphs: z.array(z.string()),
+          photo: z.string().default(''),
+          photoAlt: z.string().default(''),
+        }),
         approach: z.object({
           headline: z.string(),
           steps: z.array(z.object({ title: z.string(), text: z.string() })),
