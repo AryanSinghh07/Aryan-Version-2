@@ -96,7 +96,7 @@ onMounted(() => {
 
   entrance = ScrollTrigger.create({
     trigger: el,
-    start: 'top 80%',
+    start: 'top 92%',
     once: true,
     onEnter: () => {
       gsap

@@ -103,7 +103,7 @@ onMounted(() => {
       duration: 1,
       stagger: 0.07,
       ease: 'expo.out',
-      scrollTrigger: { trigger: list.value, start: 'top 80%', once: true },
+      scrollTrigger: { trigger: list.value, start: 'top 95%', once: true },
     })
   }, el)
 })

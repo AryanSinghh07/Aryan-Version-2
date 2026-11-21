@@ -54,7 +54,7 @@ onMounted(async () => {
     if (photo) gsap.set(photo, { clipPath: 'inset(100% 0 0 0 round 1.25rem)' })
 
     gsap
-      .timeline({ scrollTrigger: { trigger: el, start: 'top 70%', once: true } })
+      .timeline({ scrollTrigger: { trigger: el, start: 'top 92%', once: true } })
       .add(textIn(headline, 1, 0.9), 0)
       .add(arrowsIn(headline), 0.2)
 
@@ -69,7 +69,7 @@ onMounted(async () => {
           opacity: 1,
           stagger: 0.12,
           ease: 'none',
-          scrollTrigger: { trigger: para, start: 'top 80%', end: 'bottom 45%', scrub: 0.6 },
+          scrollTrigger: { trigger: para, start: 'top 92%', end: 'bottom 55%', scrub: 0.6 },
         }
       )
     }
@@ -79,7 +79,7 @@ onMounted(async () => {
         clipPath: 'inset(0% 0 0 0 round 1.25rem)',
         duration: 1.4,
         ease: 'expo.inOut',
-        scrollTrigger: { trigger: photo, start: 'top 85%', once: true },
+        scrollTrigger: { trigger: photo, start: 'top 95%', once: true },
       })
     }
   }, el)

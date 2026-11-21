@@ -73,6 +73,13 @@ export class Particles {
   private position: Variable | null = null
   private velocity: Variable | null = null
   private target: DataTexture | null = null
+  /** The current target is ours to dispose (false for the cached shape textures) */
+  private targetOwned = true
+  /** Packed shape textures by name, for the scroll-driven morph (cleared on rebuild) */
+  private cache = new Map<string, DataTexture>()
+  /** The two shapes of the scroll-driven morph ("a|b"), and how far it is from a to b */
+  private blendKey = ''
+  private blendValue = 0
   /** The first shape, waiting for reveal() (the particles hover as a cloud until then) */
   private pendingReveal: DataTexture | null = null
   private morphTime = 10
@@ -160,8 +167,10 @@ export class Particles {
 
   /** Moves every particle to `shape`. Safe to call mid-morph. */
   async morphTo(shape: string, instant = false) {
-    if (shape === this.shape && !this.pendingReveal) return
+    if (shape === this.shape && !this.pendingReveal && !this.blendKey) return
     this.shape = shape
+    this.blendKey = ''
+    this.blendValue = 0
     const request = ++this.request
     const points = await this.library.get(shape, this.count)
     if (request !== this.request) return // a newer request replaced this one
@@ -176,6 +185,40 @@ export class Particles {
     this.startMorph(target, instant, 1)
   }
 
+  /**
+   * Scroll-driven morph (home hero): the particles sit between shape `a` and shape `b`, `t`
+   * of the way (0–1). Call every frame; the springs follow, so stopping mid-scroll leaves the
+   * particles mid-morph.
+   */
+  async blend(a: string, b: string, t: number) {
+    if (this.pendingReveal) return
+    this.blendValue = t
+    this.shape = t < 0.5 ? a : b
+    const key = `${a}|${b}`
+    if (key === this.blendKey) return
+    this.blendKey = key
+    const request = ++this.request
+    this.tweens.forEach((tw) => tw.kill())
+    this.tweens = []
+    this.burst.value = 0
+    const [ta, tb] = await Promise.all([this.shapeTexture(a), this.shapeTexture(b)])
+    if (request !== this.request || !ta || !tb) return
+    this.setTarget(ta, false, tb)
+    this.uniforms.uProgress!.value = 1
+  }
+
+  /** A shape packed for the simulation, made once per shape and particle count */
+  private async shapeTexture(shape: string) {
+    const hit = this.cache.get(shape)
+    if (hit) return hit
+    const count = this.count
+    const points = await this.library.get(shape, count)
+    if (count !== this.count || !this.gpu) return null
+    const texture = this.pack(points)
+    this.cache.set(shape, texture)
+    return texture
+  }
+
   /** Rebuilds with a new particle count (quality change), keeping the current shape */
   async setCount(count: number) {
     const size = Math.round(Math.sqrt(count))
@@ -188,6 +231,7 @@ export class Particles {
     this.pendingCount = 0
     if (request !== this.request) return
     const revealing = !!this.pendingReveal
+    this.blendKey = ''
     this.allocate(size, revealing ? cloud(size * size) : points)
     if (revealing) {
       this.pendingReveal?.dispose()
@@ -235,6 +279,7 @@ export class Particles {
     v.uPulse!.value = ph.pulse
     v.uBurst!.value = this.burst.value * (this.uniforms.uScatter!.value as number)
     v.uMorphTime!.value = this.morphTime
+    v.uBlend!.value = this.blendKey ? this.blendValue : 0
 
     // Pointer in the particles' own space, with its velocity for the drag
     const strength = this.uniforms.uPointerStrength!.value as number
@@ -296,8 +341,10 @@ export class Particles {
     this.geometry.dispose()
     this.material.dispose()
     this.gpu?.dispose()
-    this.target?.dispose()
+    if (this.targetOwned) this.target?.dispose()
     this.pendingReveal?.dispose()
+    this.cache.forEach((t) => t.dispose())
+    this.cache.clear()
   }
 
   // ------------------------------------------------------------------ internals
@@ -328,10 +375,15 @@ export class Particles {
     )
   }
 
-  private setTarget(texture: DataTexture) {
-    this.target?.dispose()
+  /** Sets the shape to head for (and the next one, for the scroll-driven morph) */
+  private setTarget(texture: DataTexture, owned = true, next: DataTexture = texture) {
+    if (this.targetOwned && this.target !== texture) this.target?.dispose()
     this.target = texture
-    if (this.velocity) this.velocity.material.uniforms.uTarget!.value = texture
+    this.targetOwned = owned
+    if (this.velocity) {
+      this.velocity.material.uniforms.uTarget!.value = texture
+      this.velocity.material.uniforms.uTargetB!.value = next
+    }
   }
 
   /** Puts every particle exactly on its target, at rest (reduced motion, instant morphs) */
@@ -347,6 +399,9 @@ export class Particles {
   /** Creates the simulation (size × size particles) starting from `start` positions */
   private allocate(size: number, start: Float32Array) {
     this.gpu?.dispose()
+    // Packed shapes hold the old count and hashes
+    this.cache.forEach((t) => t.dispose())
+    this.cache.clear()
     this.size = size
     this.count = size * size
     this.still = false
@@ -375,6 +430,8 @@ export class Particles {
     gpu.setVariableDependencies(this.position, [this.position, this.velocity])
     Object.assign(this.velocity.material.uniforms, {
       uTarget: { value: this.target },
+      uTargetB: { value: this.target },
+      uBlend: { value: 0 },
       uDelta: { value: 0 },
       uTime: { value: 0 },
       uSpring: { value: PHYSICS.spring },

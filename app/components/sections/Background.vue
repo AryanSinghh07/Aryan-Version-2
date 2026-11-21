@@ -75,14 +75,14 @@ onMounted(() => {
         duration: 1,
         stagger: 0.1,
         ease: 'expo.out',
-        scrollTrigger: { trigger: '.learning__head', start: 'top 70%', once: true },
+        scrollTrigger: { trigger: '.learning__head', start: 'top 92%', once: true },
       }
     )
 
     // Education rows: the rule draws across, then the text rises in
     for (const row of el.querySelectorAll<HTMLElement>('.edu-row')) {
       gsap
-        .timeline({ scrollTrigger: { trigger: row, start: 'top 88%', once: true } })
+        .timeline({ scrollTrigger: { trigger: row, start: 'top 95%', once: true } })
         .fromTo(
           row.querySelector('.edu-row__line'),
           { scaleX: 0 },
@@ -107,7 +107,7 @@ onMounted(() => {
         stagger: 0.08,
         ease: 'expo.out',
         clearProps: 'transform',
-        scrollTrigger: { trigger: '.certs', start: 'top 85%', once: true },
+        scrollTrigger: { trigger: '.certs', start: 'top 95%', once: true },
       }
     )
   }, el)
@@ -189,6 +189,8 @@ onBeforeUnmount(() => ctx?.revert())
 .learning {
   display: grid;
   gap: clamp(4rem, 8vw, 7rem);
+  // The heading's words slide in from beyond the sides: keep them from widening the page
+  overflow-x: clip;
 }
 
 // ---------------------------------------------------------------- Heading

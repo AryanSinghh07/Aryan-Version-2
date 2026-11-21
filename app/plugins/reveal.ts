@@ -25,7 +25,7 @@ export default defineNuxtPlugin({
         // same progress
         el._reveal = splitText(el, () =>
           gsap
-            .timeline({ scrollTrigger: { trigger: el, start: 'top 88%', once: true } })
+            .timeline({ scrollTrigger: { trigger: el, start: 'top 96%', once: true } })
             .add(textIn(el))
         )
       },

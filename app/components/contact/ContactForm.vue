@@ -92,7 +92,7 @@ onMounted(() => {
       duration: 1,
       stagger: 0.09,
       ease: 'expo.out',
-      scrollTrigger: { trigger: el, start: 'top 80%', once: true },
+      scrollTrigger: { trigger: el, start: 'top 95%', once: true },
     })
     gsap.from(el.querySelectorAll('.chip'), {
       scale: 0.6,
@@ -100,7 +100,7 @@ onMounted(() => {
       duration: 0.7,
       stagger: 0.035,
       ease: 'back.out(2)',
-      scrollTrigger: { trigger: el, start: 'top 75%', once: true },
+      scrollTrigger: { trigger: el, start: 'top 95%', once: true },
     })
   }, el)
 })

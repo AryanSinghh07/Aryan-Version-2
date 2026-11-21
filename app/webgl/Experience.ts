@@ -25,6 +25,8 @@ import { World } from './world/World'
 export interface AppStateSource {
   theme: Theme
   scene: number
+  /** Home hero position between its scenes (0 → scenes - 1), following the scroll */
+  sceneProgress: number
   quality: Quality
   route: string
   entered: boolean
@@ -48,6 +50,7 @@ export interface AppStateSource {
 export interface FrameState {
   theme: Theme
   scene: number
+  sceneProgress: number
   route: string
   entered: boolean
   heroScenes: HeroSceneInfo[]
@@ -153,6 +156,7 @@ export class Experience {
     this.frame = {
       theme: state.theme,
       scene: 0,
+      sceneProgress: 0,
       route: state.route,
       entered: false,
       heroScenes: state.heroScenes,
@@ -340,6 +344,7 @@ export class Experience {
 
     frame.theme = state.theme
     frame.scene = state.scene
+    frame.sceneProgress = state.sceneProgress
     frame.route = state.route
     frame.entered = state.entered
     frame.heroScenes = state.heroScenes

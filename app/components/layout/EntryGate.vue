@@ -37,11 +37,14 @@ watch(
     // can't take focus
     root.value?.querySelector<HTMLButtonElement>('button')?.focus()
     if (!prefersReducedMotion() && root.value) {
+      // Rises in as the loading cover lifts away above it
       gsap.from(root.value.querySelectorAll('.gate__inner > *'), {
         y: 24,
         autoAlpha: 0,
-        duration: 0.8,
+        duration: 0.9,
         stagger: 0.08,
+        delay: 0.45,
+        ease: 'power3.out',
       })
     }
   },

@@ -29,6 +29,9 @@ import { Sky } from './Sky'
 import { Sparkles } from './Sparkles'
 
 const blend = (a: number, b: number, t: number) => a + (b - a) * t
+/** The balls' size in world units (the shader's starting value) */
+const BALL_SIZE = 0.03
+
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(Math.max((x - a) / (b - a), 0), 1)
   return t * t * (3 - 2 * t)
@@ -70,6 +73,8 @@ export class World {
   private shards = true
   /** 0 → 1: how fully the shape faces the camera (the bottom-layout ring reads as a circle) */
   private faceMix = 0
+  /** 1 on the home hero, where the shapes lie flat facing the screen; 0 elsewhere */
+  private flat = 0
   private turned = new Quaternion()
   /**
    * On the scene pages the particles draw last, after the portal, on a fresh depth buffer: the
@@ -200,13 +205,27 @@ export class World {
     // Quality tier changed the particle count
     if (state.particleCount !== particles.count) void particles.setCount(state.particleCount)
 
-    // Shape: form the first one when the visitor enters, then follow scenes and pages
+    // Where the hero is between its scenes: scene i, eased `blend` of the way to scene i + 1.
+    // Each scene holds its shape for a stretch of scroll at either end of the step.
+    const inScenes = World.inScenes(state)
+    const count = state.heroScenes.length
+    const scrubbed = inScenes && !reduced && count > 1
+    const at = MathUtils.clamp(state.sceneProgress, 0, Math.max(count - 1, 0))
+    const step = Math.min(Math.floor(at), Math.max(count - 2, 0))
+    const blendT = scrubbed ? smooth(0.2, 0.8, at - step) : 0
+    const from = state.heroScenes[scrubbed ? step : state.scene]
+    const to = state.heroScenes[scrubbed ? step + 1 : state.scene] ?? from
+
+    // Shape: form the first one when the visitor enters; then on the hero the particles morph
+    // with the scroll (stopping mid-scroll leaves them mid-morph), and pages swap shapes
     const shape = World.shapeFor(state, (name) => this.shapes.has(name))
     if (state.entered) {
       if (!this.revealed) {
         this.revealed = true
         if (shape !== particles.shape) void particles.morphTo(shape, reduced)
         else particles.reveal(reduced)
+      } else if (scrubbed && from && to) {
+        void particles.blend(from.shape, to.shape, blendT)
       } else if (shape !== particles.shape) {
         void particles.morphTo(shape, reduced)
       }
@@ -214,11 +233,14 @@ export class World {
 
     // Placement: beside the scene text, fading and rising as the visitor scrolls past the
     // scenes; on other pages, where that page's view puts it
-    const inScenes = World.inScenes(state)
     const side = state.heroScenes[state.scene]?.side ?? 'center'
     const view = pageView(state.route)
     const target = inScenes
-      ? layoutFor(side, state.portrait)
+      ? mixLayout(
+          layoutFor(from?.side ?? side, state.portrait),
+          layoutFor(to?.side ?? side, state.portrait),
+          blendT
+        )
       : state.portrait
         ? PAGE_LAYOUT_PORTRAIT
         : view.layout
@@ -240,7 +262,13 @@ export class World {
       (onCarousel ? 0.35 : 1)
     // Scrolled down, the logo stays as a faint presence; past the hero's portal it is gone
     const keep = outro >= 0 ? 0 : 0.1
-    l.opacity = MathUtils.lerp(l.opacity, target.opacity * (1 - fade * (1 - keep)) * visible, ease)
+    // Mid-morph the loose cloud crosses behind the words: it dims a little on the way
+    const crossing = 1 - Math.sin(blendT * Math.PI) * 0.45
+    l.opacity = MathUtils.lerp(
+      l.opacity,
+      target.opacity * (1 - fade * (1 - keep)) * visible * crossing,
+      ease
+    )
 
     // Orbiting (scene pages): the logo stays at the centre of the stage and the view is shifted
     // so it sits beside the text. Fixed views: the logo itself moves aside.
@@ -258,7 +286,11 @@ export class World {
       points.renderOrder = 1000
     }
     points.position.set(this.logoX, l.y, 0)
-    points.scale.setScalar(l.scale)
+    // On the hero the shapes lie flat, facing the screen (a 2D picture made of lit balls)
+    this.flat = MathUtils.lerp(this.flat, inScenes && !reduced ? 1 : 0, ease)
+    points.scale.set(l.scale, l.scale, l.scale * (1 - this.flat * 0.8))
+    // ... with slightly larger balls, so each one reads as a glossy bead
+    particles.uniforms.uSize!.value = BALL_SIZE * (1 + this.flat * 0.25)
     // Outro: the ring glides to the very centre of the screen (where the camera looks), then
     // grows and rushes at the camera, so its balls swell and fly past. The portal opens in
     // its middle.
@@ -277,8 +309,16 @@ export class World {
     this.landscape.hidden = ended
     this.fragments.group.visible = this.shards && !ended
 
-    // Orbit for the current scene (no orbit and no drift with reduced motion)
-    const goal = SCENE_ORBITS[state.scene % SCENE_ORBITS.length]!
+    // Orbit for the current scene, or between two while scrolling (no orbit and no drift with
+    // reduced motion)
+    const orbitAt = (i: number) => SCENE_ORBITS[i % SCENE_ORBITS.length]!
+    const g0 = orbitAt(scrubbed ? step : state.scene)
+    const g1 = orbitAt(scrubbed ? step + 1 : state.scene)
+    const goal = {
+      angle: MathUtils.lerp(g0.angle, g1.angle, blendT),
+      height: MathUtils.lerp(g0.height, g1.height, blendT),
+      distance: MathUtils.lerp(g0.distance, g1.distance, blendT),
+    }
     const orbitEase = reduced ? 1 : 1 - Math.exp(-delta * 1.8)
     const angle = reduced ? 0 : goal.angle + Math.sin(state.elapsed * 0.05) * IDLE_SWAY
     this.orbit.angle = MathUtils.lerp(this.orbit.angle, angle, orbitEase)
@@ -300,9 +340,10 @@ export class World {
     }
     // The bottom-layout ring turns to face the camera exactly (no sway), so it reads as a true
     // circle rather than a tilted ellipse; blended in and out as the scene changes
+    // On the hero every shape faces the camera exactly, flat like a picture
     this.faceMix = MathUtils.lerp(
       this.faceMix,
-      inScenes && side === 'bottom' ? 1 : 0,
+      inScenes ? 1 : 0,
       reduced ? 1 : 1 - Math.exp(-delta * 3)
     )
     if (this.faceMix > 0.001) {
@@ -394,5 +435,15 @@ export class World {
     this.floor.dispose()
     this.sparkles.dispose()
     this.particles.dispose()
+  }
+}
+
+/** A layout between two others (the hero, between scenes) */
+function mixLayout(a: Layout, b: Layout, t: number): Layout {
+  return {
+    x: MathUtils.lerp(a.x, b.x, t),
+    y: MathUtils.lerp(a.y, b.y, t),
+    scale: MathUtils.lerp(a.scale, b.scale, t),
+    opacity: MathUtils.lerp(a.opacity, b.opacity, t),
   }
 }

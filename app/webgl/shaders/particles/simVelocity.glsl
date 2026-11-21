@@ -4,6 +4,8 @@
 #import ../includes/curl.glsl;
 
 uniform sampler2D uTarget;   // home position on the current shape
+uniform sampler2D uTargetB;  // home position on the next shape (the hero morphs as it scrolls)
+uniform float uBlend;        // 0: the current shape, 1: the next one
 uniform float uDelta;        // seconds since the last step
 uniform float uTime;
 uniform float uSpring;
@@ -23,8 +25,15 @@ void main() {
   vec2 uv = gl_FragCoord.xy / resolution.xy;
   vec4 pos = texture2D(texturePosition, uv);
   vec3 vel = texture2D(textureVelocity, uv).xyz;
-  vec3 target = texture2D(uTarget, uv).xyz;
   float hash = pos.w;
+  // Scroll-driven morph: each particle leaves at its own moment, and mid-way the particles
+  // loosen into a swirling cloud between the two shapes
+  vec3 targetA = texture2D(uTarget, uv).xyz;
+  vec3 targetB = texture2D(uTargetB, uv).xyz;
+  float m = smoothstep(hash * 0.4, hash * 0.4 + 0.6, uBlend);
+  vec3 target = mix(targetA, targetB, m);
+  float loose = sin(m * 3.14159);
+  target += curlNoise(target * 0.6 + vec3(hash * 4.0)) * loose * 0.55;
   // Steps are tuned per frame at 60 fps; scale them so any frame rate behaves the same
   float k = clamp(uDelta * 60.0, 0.0, 3.0);
 

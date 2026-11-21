@@ -207,10 +207,12 @@ function animate(el: HTMLElement) {
       // The small lines follow the headline in; the paragraphs among them decode
       const small = [...frame.querySelectorAll<HTMLElement>('.room-beat__small')]
       const scrambled = [...frame.querySelectorAll<HTMLElement>('.room-beat__scramble')]
+      const marks = [...frame.querySelectorAll<HTMLElement>('.room-beat__mark')]
       hideText(headline)
       arrowsHide(headline)
       gsap.set(small, { autoAlpha: 0, y: 18 })
-      return { headline, small, scrambled, played: null as gsap.core.Timeline | null }
+      if (marks.length) gsap.set(marks, { '--mark': '0%' })
+      return { headline, small, scrambled, marks, played: null as gsap.core.Timeline | null }
     })
 
     const show = (i: number) => {
@@ -223,6 +225,9 @@ function animate(el: HTMLElement) {
         .add(arrowsIn(p.headline), 0.2)
         .to(p.small, { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.1, ease: 'expo.out' }, 0.35)
         .add(decodeText(p.scrambled, { upper: true }), 0.35)
+      // The highlighted line: the marker sweeps across behind it
+      if (p.marks.length)
+        p.played.to(p.marks, { '--mark': '100%', duration: 1.2, ease: 'expo.inOut' }, 0.45)
     }
     const hide = (i: number) => {
       const p = parts[i]
@@ -233,6 +238,7 @@ function animate(el: HTMLElement) {
       arrowsHide(p.headline)
       decodeReset(p.scrambled)
       gsap.set(p.small, { autoAlpha: 0, y: 18 })
+      if (p.marks.length) gsap.set(p.marks, { '--mark': '0%' })
     }
 
     let active = -2

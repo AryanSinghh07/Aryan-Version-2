@@ -13,7 +13,8 @@ export default defineNuxtPlugin({
 
     const lenis = new Lenis({
       autoRaf: false,
-      lerp: 0.1,
+      // A soft glide: each frame closes 8% of the gap to the target scroll
+      lerp: 0.08,
       smoothWheel: !reducedMotion,
     })
 

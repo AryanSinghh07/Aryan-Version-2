@@ -1,10 +1,10 @@
 import { gsap } from 'gsap'
 import fragmentSource from '~/webgl/shaders/portal/reveal.glsl'
 
-// The ring portal used across the site (the entrance, the page change into About, the end of
-// the About room): the home hero's particle ring growing from a point until it passes the
-// edges of the screen, the new view inside it and the old one outside. One opening, no
-// cover-then-hole. Drawn into its own canvas with plain WebGL (shaders/portal/reveal.glsl).
+// The smoke portal used across the site (the entrance, the page change into About, the end of
+// the About room): an opening ringed with white and dark smoke, growing from a point until it
+// passes the edges of the screen, the new view inside it and the old one outside. One opening,
+// no cover-then-hole. Drawn into its own canvas with plain WebGL (shaders/portal/reveal.glsl).
 
 /** Values the caller animates; the portal reads them every frame */
 export interface PortalRevealState {
@@ -24,12 +24,6 @@ export interface PortalColors {
   inside: PortalFill
   outside: PortalFill
 }
-
-/** The logo colours of the ring's balls, night and day (as webgl/config/theme.ts) */
-const RING = {
-  dark: ['#9b4dff', '#e07bff', '#f5ccff'],
-  light: ['#7a2df0', '#c84fe6', '#a46cff'],
-} as const
 
 /** Radius at which the ring has passed the corners of any screen */
 export const RING_COVER = 1.6
@@ -104,19 +98,10 @@ export function createPortalReveal(
     if (value === 'clear') gl.uniform4f(u(name), 0, 0, 0, 0)
     else gl.uniform4f(u(name), ...rgb(value), 1)
   }
-  /** Inside / outside colours, and the ring's colours for the current theme */
+  /** Inside and outside colours */
   function setColors(next: PortalColors) {
     fill('uInside', next.inside)
     fill('uOutside', next.outside)
-    const dark = document.documentElement.dataset.theme !== 'light'
-    const [a, b, c] = (dark ? RING.dark : RING.light).map(rgb) as [
-      [number, number, number],
-      [number, number, number],
-      [number, number, number],
-    ]
-    gl!.uniform3f(u('uColorA'), ...a)
-    gl!.uniform3f(u('uColorB'), ...b)
-    gl!.uniform3f(u('uColorC'), ...c)
   }
   setColors(colors)
 

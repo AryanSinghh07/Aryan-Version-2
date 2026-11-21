@@ -53,6 +53,11 @@ function finish() {
       stagger: 0.05,
       ease: 'power3.in',
     })
+    // Loading is over before the cover lifts: the entry gate (or, off the home page, the page
+    // itself) is already in place underneath, so the home page never flashes in between
+    .call(() => {
+      store.loaded = true
+    })
     .to(root.value, { yPercent: -100, duration: 0.9, ease: 'power4.inOut' }, '-=0.1')
 }
 

@@ -86,6 +86,11 @@ export const useAppStore = defineStore('app', () => {
    */
   const outro = ref<number | null>(null)
   /**
+   * Home hero position between its scenes while scrolling, 0 → scenes - 1 (2.5 is halfway
+   * from the third scene to the fourth): the particles morph and the camera moves with it
+   */
+  const sceneProgress = ref(0)
+  /**
    * Particle shape and text side for each full-screen scene (home hero, about story), from
    * content, read by the WebGL world. Only applies on scenesRoute, the page that set them.
    */
@@ -180,6 +185,7 @@ export const useAppStore = defineStore('app', () => {
     entered,
     heroLocked,
     outro,
+    sceneProgress,
     overlayOpen,
     autoTier,
     webgl,

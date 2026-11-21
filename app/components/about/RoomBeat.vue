@@ -29,11 +29,9 @@ const spoken = computed(() => props.beat.lines.map((l) => l.text.replace(/\*/g, 
     :aria-label="beat.label ?? spoken"
   >
     <div class="room-beat__copy">
-      <p
-        v-if="beat.kicker"
-        class="room-beat__kicker room-beat__small room-beat__scramble t-label text-glitch"
-      >
-        {{ beat.kicker }}
+      <!-- The opening line, highlighted like a marker stroke (it sweeps in, see RoomStory) -->
+      <p v-if="beat.kicker" class="room-beat__kicker room-beat__small t-label text-glitch">
+        <span class="room-beat__mark room-beat__scramble">{{ beat.kicker }}</span>
       </p>
       <span v-if="beat.label" class="room-beat__label room-beat__small t-label">
         {{ beat.label }}
@@ -160,6 +158,32 @@ const spoken = computed(() => props.beat.lines.map((l) => l.text.replace(/\*/g, 
   line-height: 1.45;
   letter-spacing: 0.06em;
   color: var(--foreground);
+}
+
+.room-beat__kicker {
+  max-width: 40rem;
+  font-size: clamp(0.95rem, 1.35vw, 1.4rem);
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+}
+
+// A violet-to-pink marker behind the words, wrapping line by line; --mark sweeps it across
+.room-beat__mark {
+  --mark: 100%;
+
+  padding: 0.18em 0.45em;
+  border-radius: 0.3em;
+  background-image: linear-gradient(
+    90deg,
+    rgba(var(--primary-rgb), 0.92),
+    rgba(255, 111, 208, 0.8)
+  );
+  background-repeat: no-repeat;
+  background-size: var(--mark) 100%;
+  color: #fff;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  box-shadow: none;
 }
 
 .room-beat__label {

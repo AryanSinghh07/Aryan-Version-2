@@ -16,8 +16,9 @@ export interface SceneContent {
   particleShape?: string
 }
 
-// Full-screen scenes (home hero, about story), switched by wheel, swipe or arrow keys while
-// page scroll is locked. Past the last scene the page scrolls normally.
+// Full-screen scenes (the home hero) that follow the page scroll: HeroScenes keeps the hero on
+// screen while the visitor scrolls and sets store.scene to the nearest scene, so the words
+// change half-way between two scenes (the particles morph with the scroll meanwhile).
 // Without JavaScript, or with reduced motion, the scenes stay stacked and scroll like a page.
 const props = defineProps<{
   scenes: SceneContent[]
@@ -25,14 +26,8 @@ const props = defineProps<{
   intro?: string
   /** Names the scene set for screen readers ("Hero", "About") */
   label: string
-  /**
-   * Past the last scene, glide this far down (in screen heights) instead of to the end of
-   * the scenes: the home hero continues into its scroll-driven outro (HeroScenes)
-   */
-  releaseDistance?: number
 }>()
 const store = useAppStore()
-const lenis = useLenis()
 const route = useRoute()
 
 const scenes = computed(() =>
@@ -102,16 +97,25 @@ function transition(from: number, to: number, direction: 1 | -1) {
     .set(outMeta, { clearProps: 'transform,opacity,visibility' }, 0.9)
 }
 
-const { current, start } = useScenes({
-  count: total.value,
-  transition,
-  // Past the last scene: glide down to the content below the hero
-  onRelease: () => {
-    if (props.releaseDistance != null) {
-      lenis?.scrollTo(window.innerHeight * props.releaseDistance, { duration: 1.6 })
-    } else if (root.value) lenis?.scrollTo(root.value.offsetHeight, { duration: 1.2 })
-  },
-})
+// The scene on screen: follows store.scene, each change played as one hand-over. A newer change
+// finishes the running hand-over at once, so fast scrolling never leaves two scenes showing.
+const current = ref(0)
+store.setScene(0)
+let handover: gsap.core.Timeline | null = null
+let live = false
+const stopSceneWatch = watch(
+  () => store.scene,
+  (to) => {
+    if (!live || to === current.value || !sceneEls.value[to]) return
+    const from = current.value
+    current.value = to
+    if (handover) {
+      handover.progress(1)
+      handover.kill()
+    }
+    handover = transition(from, to, to > from ? 1 : -1)
+  }
+)
 
 function playIntro() {
   const first = sceneEls.value[0]
@@ -136,25 +140,19 @@ function landsBelowHero() {
 
 function begin() {
   if (disposed) return
-  // Landing below the hero: show the last scene, ready for when the visitor scrolls back up
-  if (landsBelowHero()) {
-    const last = total.value - 1
+  live = true
+  // Landing part-way down (browser reload, or Back to a saved spot): show that scene straight
+  // away, ready for when the visitor scrolls back up
+  const at = Math.min(store.scene, total.value - 1)
+  if (at > 0 || landsBelowHero()) {
     gsap.set(sceneEls.value, { autoAlpha: 0 })
-    gsap.set(sceneEls.value[last] ?? [], { autoAlpha: 1 })
+    gsap.set(sceneEls.value[at] ?? [], { autoAlpha: 1 })
     if (sceneEls.value[0]) resetText(sceneEls.value[0])
     gsap.set(metas(sceneEls.value[0]), { autoAlpha: 1 })
-    goToWithoutAnimation(last)
-    start(false)
+    current.value = at
     return
   }
   playIntro()
-  start(true)
-}
-
-// Jump straight to a scene (used when the page loads below the hero)
-function goToWithoutAnimation(index: number) {
-  current.value = index
-  store.setScene(index)
 }
 
 onMounted(async () => {
@@ -196,6 +194,8 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   disposed = true
   stopEnteredWatch?.()
+  stopSceneWatch()
+  handover?.kill()
   introTimeline?.kill()
   splits.forEach((s) => s.revert())
 })

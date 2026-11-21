@@ -32,7 +32,7 @@ onMounted(() => {
       opacity: 1,
       stagger: 0.12,
       ease: 'none',
-      scrollTrigger: { trigger: body.value, start: 'top 80%', end: 'bottom 45%', scrub: 0.6 },
+      scrollTrigger: { trigger: body.value, start: 'top 92%', end: 'bottom 55%', scrub: 0.6 },
     }
   )
 })

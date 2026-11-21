@@ -61,7 +61,7 @@ onMounted(async () => {
 
     // The first card's title rises as the stage comes into view
     gsap
-      .timeline({ scrollTrigger: { trigger: el, start: 'top 65%', once: true } })
+      .timeline({ scrollTrigger: { trigger: el, start: 'top 95%', once: true } })
       .from(chars[0]!, {
         yPercent: 110,
         duration: 1.1,
@@ -126,7 +126,7 @@ onMounted(async () => {
   mm.add('(max-width: 899px), (max-height: 619px)', () => {
     cards.forEach((card, k) => {
       gsap
-        .timeline({ scrollTrigger: { trigger: card, start: 'top 80%', once: true } })
+        .timeline({ scrollTrigger: { trigger: card, start: 'top 95%', once: true } })
         .from(images[k]!, { scale: 1.3, duration: 1.4, ease: 'expo.out' }, 0)
         .from(chars[k]!, { yPercent: 110, duration: 1, stagger: 0.015, ease: 'expo.out' }, 0.1)
         .from(
