@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { gsap } from 'gsap'
+
 // Sentence-style contact form, delivered by Netlify Forms.
 // With JavaScript: inline validation, sending without leaving the page, and a success or
 // error state on the page. Without JavaScript: the browser's own validation and a normal
@@ -73,15 +75,45 @@ function reset() {
   form.value?.reset()
 }
 
-// The browser's own validation stays on without JavaScript; with it, ours takes over
+// The browser's own validation stays on without JavaScript; with it, ours takes over.
+// Motion: the form's lines rise one after another as it scrolls in.
+let ctx: gsap.Context | null = null
 onMounted(() => {
-  if (form.value) form.value.noValidate = true
+  const el = form.value
+  if (!el) return
+  el.noValidate = true
+  if (prefersReducedMotion()) return
+  ctx = gsap.context(() => {
+    const parts = el.querySelectorAll('.form__group, .form__line, .form__send')
+    gsap.set(parts, { autoAlpha: 0, y: 30 })
+    gsap.to(parts, {
+      autoAlpha: 1,
+      y: 0,
+      duration: 1,
+      stagger: 0.09,
+      ease: 'expo.out',
+      scrollTrigger: { trigger: el, start: 'top 80%', once: true },
+    })
+    gsap.from(el.querySelectorAll('.chip'), {
+      scale: 0.6,
+      autoAlpha: 0,
+      duration: 0.7,
+      stagger: 0.035,
+      ease: 'back.out(2)',
+      scrollTrigger: { trigger: el, start: 'top 75%', once: true },
+    })
+  }, el)
 })
+onBeforeUnmount(() => ctx?.revert())
 </script>
 
 <template>
   <div class="contact-form">
     <div v-if="status === 'sent'" class="form__done" role="status">
+      <svg class="form__tick" viewBox="0 0 52 52" aria-hidden="true">
+        <circle cx="26" cy="26" r="24" />
+        <path d="M15 27 l7 7 l15 -16" />
+      </svg>
       <p class="t-label form__done-label">Message sent</p>
       <h2 ref="successHeading" v-reveal tabindex="-1" class="t-h2">
         <UiAccentText text="Thank *you*" />
@@ -188,14 +220,17 @@ onMounted(() => {
         >.
       </p>
 
-      <UiGlassButton
+      <button
         type="submit"
-        variant="primary"
-        class="form__submit"
+        class="form__send"
+        :class="{ 'is-sending': status === 'sending' }"
         :disabled="status === 'sending'"
       >
-        {{ status === 'sending' ? 'Sending…' : 'Send message' }}
-      </UiGlassButton>
+        <span class="form__send-text">
+          {{ status === 'sending' ? 'Sending…' : 'Send message' }}
+        </span>
+        <span class="form__send-icon" aria-hidden="true">→</span>
+      </button>
     </form>
   </div>
 </template>
@@ -257,7 +292,9 @@ onMounted(() => {
   input:checked + span {
     background: var(--primary);
     border-color: var(--primary);
-    color: var(--on-primary);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(var(--primary-rgb), 0.45);
+    animation: chip-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   input:focus-visible + span {
@@ -287,10 +324,13 @@ onMounted(() => {
   min-height: 44px;
   padding: 0.4rem 0;
   border: 0;
-  border-bottom: 2px solid var(--border);
-  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  // A violet-to-pink line draws in under the field while it has focus
+  background: linear-gradient(90deg, var(--primary), #ff6fd0) no-repeat 0 100% / 0% 2px;
   font-size: 1.25rem;
-  transition: border-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-size 0.7s cubic-bezier(0.77, 0, 0.18, 1);
 
   &::placeholder {
     color: var(--foreground-muted);
@@ -298,7 +338,7 @@ onMounted(() => {
 
   &:focus {
     outline: none;
-    border-bottom-color: var(--primary);
+    background-size: 100% 2px;
   }
 
   &:focus-visible {
@@ -311,8 +351,111 @@ onMounted(() => {
   font-size: 1.125rem;
 }
 
-.form__submit {
+.form__send {
+  position: relative;
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.6rem 0.6rem 1.75rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 500;
+  isolation: isolate;
+  box-shadow: 0 0 40px rgba(var(--primary-rgb), 0.35);
+
+  // A lighter fill rises from below on hover
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #ff6fd0, var(--primary));
+    transform: translateY(101%);
+    transition: transform 0.6s cubic-bezier(0.77, 0, 0.18, 1);
+  }
+
+  &:hover::before,
+  &:focus-visible::before {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
+  }
+
+  &:disabled {
+    cursor: progress;
+  }
+}
+
+.form__send-icon {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--primary);
+  font-size: 1.15rem;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+  .form__send:hover & {
+    transform: rotate(-45deg);
+  }
+
+  .form__send.is-sending & {
+    animation: send-fly 0.9s ease-in-out infinite;
+  }
+}
+
+@keyframes send-fly {
+  50% {
+    transform: translateX(4px) rotate(-45deg);
+  }
+}
+
+@keyframes chip-pop {
+  0% {
+    transform: scale(0.88);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// The tick draws itself: the circle first, then the check
+.form__tick {
+  width: 4.5rem;
+  height: 4.5rem;
+  fill: none;
+  stroke: var(--success, #3ddc84);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  circle {
+    stroke-dasharray: 151;
+    stroke-dashoffset: 151;
+    animation: tick-draw 0.8s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+  }
+
+  path {
+    stroke-dasharray: 36;
+    stroke-dashoffset: 36;
+    animation: tick-draw 0.45s cubic-bezier(0.65, 0, 0.45, 1) 0.7s forwards;
+  }
+}
+
+@keyframes tick-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .form__error {

@@ -6,94 +6,138 @@ usePageSeo({
 })
 
 const { data: profile } = await useProfile()
+
+// The Contact page, in the same style as About and Work: a plain near-black page (the 3D
+// world rests behind it). A big "Let's talk" with the email and the time in India, then the
+// sentence-style form in a card with a glow that follows the pointer, beside the other ways
+// to get in touch.
+const store = useAppStore()
+onMounted(() => (store.worldPaused = true))
+onBeforeUnmount(() => (store.worldPaused = false))
+
+const card = ref<HTMLElement | null>(null)
+function spotlight(e: PointerEvent) {
+  const el = card.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  el.style.setProperty('--mx', `${e.clientX - r.left}px`)
+  el.style.setProperty('--my', `${e.clientY - r.top}px`)
+}
 </script>
 
 <template>
-  <div v-if="profile" class="contact page-top container">
-    <header class="section__head">
-      <UiSectionLabel :index="3" label="Contact" />
-      <h1 v-reveal class="t-hero"><UiAccentText :text="profile.contact.headline" /></h1>
-      <p class="contact__body">{{ profile.contact.body }}</p>
-    </header>
+  <div v-if="profile" class="contact-page">
+    <ContactHero
+      :email="profile.email"
+      :body="profile.contact.body"
+      :location="profile.location"
+      :timezone="profile.timezone"
+    />
 
-    <div class="contact__layout">
-      <ContactForm
-        :looking-for="profile.contact.lookingFor"
-        :budgets="profile.contact.budgets"
-        :email="profile.email"
+    <section class="contact-main section container" aria-labelledby="form-title">
+      <div id="contact-form" ref="card" class="contact-main__card" @pointermove="spotlight">
+        <header class="contact-main__head">
+          <p class="t-label t-muted">(01) Start something</p>
+          <h2 id="form-title" v-reveal class="t-h2">
+            <UiAccentText text="Tell me *about it*" />
+          </h2>
+        </header>
+        <ContactForm
+          :looking-for="profile.contact.lookingFor"
+          :budgets="profile.contact.budgets"
+          :email="profile.email"
+        />
+      </div>
+
+      <ContactChannels
+        :phone="profile.phone"
+        :socials="profile.socials"
+        :availability="profile.contact.availability"
+        :resume="profile.resume"
       />
-
-      <aside class="contact__aside" aria-label="Direct contact">
-        <div class="contact__block">
-          <p class="t-label t-muted">Email</p>
-          <UiCopyEmail :email="profile.email" />
-        </div>
-        <div class="contact__block">
-          <p class="t-label t-muted">Phone</p>
-          <a :href="`tel:${profile.phone.replace(/\s/g, '')}`" class="text-link">{{
-            profile.phone
-          }}</a>
-        </div>
-        <div class="contact__block">
-          <p class="t-label t-muted">Elsewhere</p>
-          <ul role="list" class="contact__socials">
-            <li v-for="s in profile.socials" :key="s.url">
-              <a :href="s.url" target="_blank" rel="noopener noreferrer">
-                {{ s.label }} <span class="t-muted">{{ s.handle }}</span> ↗
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div class="contact__block">
-          <p class="t-label t-muted">Availability</p>
-          <p><UiTag>Open to work</UiTag></p>
-          <p>{{ profile.contact.availability }}</p>
-          <p class="t-muted">{{ profile.location }} · {{ profile.timezone }}</p>
-        </div>
-        <a :href="profile.resume" class="text-link" download>Download resume (PDF)</a>
-      </aside>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped lang="scss">
-.contact {
-  padding-bottom: clamp(5rem, 12vw, 10rem);
+.contact-page {
+  --page-bg: var(--background);
+
+  position: relative;
+  background-color: var(--page-bg);
+  overflow-x: clip;
 }
 
-.contact__body {
-  max-width: 36rem;
-  font-size: 1.125rem;
+:global([data-theme='dark'] .contact-page) {
+  --page-bg: #121212;
 }
 
-.contact__layout {
+.contact-main {
   display: grid;
-  gap: 5rem;
+  gap: 4rem;
+  padding-top: clamp(3rem, 6vw, 5rem);
 
-  @media (min-width: 1024px) {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    gap: 6rem;
+  @media (min-width: 1100px) {
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(3rem, 5vw, 5rem);
   }
 }
 
-.contact__aside {
+// The form's card: a soft violet light follows the pointer across it
+.contact-main__card {
+  --mx: 70%;
+  --my: 0%;
+
+  position: relative;
   display: grid;
   gap: 2.5rem;
-  align-content: start;
-}
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  border-radius: clamp(1.25rem, 2.5vw, 2rem);
+  background: color-mix(in srgb, var(--foreground) 3.5%, var(--page-bg));
+  isolation: isolate;
 
-.contact__block {
-  display: grid;
-  gap: 0.6rem;
-  justify-items: start;
-}
-
-.contact__socials {
-  display: grid;
-  gap: 0.5rem;
-
-  a:hover {
-    color: var(--primary);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(
+      32rem circle at var(--mx) var(--my),
+      rgba(var(--primary-rgb), 0.16),
+      transparent 60%
+    );
+    transition: opacity 0.4s ease;
   }
+
+  // A thin violet line along the top
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 12% auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  }
+
+  @media (max-width: 640px) {
+    margin-inline: calc(-1 * max(1rem, 4vw) + 0.5rem);
+  }
+}
+
+.contact-main__head {
+  display: grid;
+  gap: 1rem;
+
+  p,
+  h2 {
+    margin: 0;
+  }
+}
+
+// The form card scrolls into view: sit just below the header when jumping to it
+#contact-form {
+  scroll-margin-top: 7rem;
 }
 </style>
