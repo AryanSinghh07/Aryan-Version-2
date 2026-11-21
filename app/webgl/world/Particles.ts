@@ -276,7 +276,7 @@ export class Particles {
     v.uFlowStrength!.value = ph.flowStrength * (this.uniforms.uDrift!.value as number)
     v.uFlowScale!.value = ph.flowScale
     v.uFlowSpeed!.value = ph.flowSpeed
-    v.uPulse!.value = ph.pulse
+    v.uPulse!.value = ph.pulse * (this.uniforms.uDrift!.value as number)
     v.uBurst!.value = this.burst.value * (this.uniforms.uScatter!.value as number)
     v.uMorphTime!.value = this.morphTime
     v.uBlend!.value = this.blendKey ? this.blendValue : 0
@@ -328,7 +328,8 @@ export class Particles {
       colors.logoA.g + (0.93 - colors.logoA.g) * d,
       colors.logoA.b + (1 - colors.logoA.b) * d
     )
-    uSparkRatio!.value = 0.035 + palette.darkness * 0.015
+    // About one disc in twelve is near-white (a little fewer on the pale day sky)
+    uSparkRatio!.value = 0.06 + palette.darkness * 0.025
     uIntensity!.value = values.intensity
     // A brighter core and glint on dark backgrounds, where bloom picks them up
     uGlow!.value = 0.25 + palette.darkness * 0.35

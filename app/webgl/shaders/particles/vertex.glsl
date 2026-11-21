@@ -14,6 +14,7 @@ varying float vColorMix;
 varying float vSpark;
 varying float vCenter;   // 1 at the middle of the shape, 0 far out
 varying float vDepthFade;
+varying float vShade;     // per-disc lightness
 
 void main() {
   vec3 pos = texture2D(uPositions, aRef).xyz;
@@ -22,6 +23,7 @@ void main() {
   gl_PointSize = uSize * aParams.y * uResolutionY * projectionMatrix[1][1] * 0.5 / -view.z;
 
   vColorMix = aParams.z;
+  vShade = fract(aParams.x * 13.37);
   vSpark = step(1.0 - uSparkRatio, fract(aParams.x * 7.31));
   vCenter = exp(-dot(pos, pos) * 0.45);
   vDepthFade = clamp(1.0 - (-view.z - 6.0) * 0.1, 0.5, 1.0);

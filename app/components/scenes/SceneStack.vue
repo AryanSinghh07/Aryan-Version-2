@@ -63,57 +63,185 @@ const metas = (el?: HTMLElement) =>
 const labels = (el?: HTMLElement) =>
   el ? [...el.querySelectorAll<HTMLElement>('.scene__meta .tag')] : []
 
-// One timeline per scene change. The outgoing text folds away letter by letter while the
-// incoming headline flips up out of its masks (the accent word springs in after it, then the
-// paragraph rises word by word and the keyword underlines draw). The timeline only covers the
-// hand-over, about 0.9 s, so the next scroll is never held up by the finishing touches.
-function transition(from: number, to: number, direction: 1 | -1) {
-  const outgoing = sceneEls.value[from]
-  const incoming = sceneEls.value[to]
-  if (!outgoing || !incoming) return null
-  const outMeta = metas(outgoing)
+// The hand-over between scenes is tied to the scroll, not the clock: one timeline for the
+// whole hero, one unit per step between two scenes, whose progress is the hero's scroll
+// position. Within a step the outgoing text folds away (letters tip over and out, words sink,
+// underlines retract), the scenes swap half-way, and the incoming headline flips up out of
+// its masks with the accent word springing in after it and the paragraph rising word by word.
+// Stop scrolling anywhere and the words stop exactly there; scroll back and they play backwards.
+// Every tween states both ends (fromTo, nothing applied until reached), so jumping to any point
+// gives the same picture.
+const OUT_AT = 0.3
+const IN_AT = 0.52
+const SWAP_AT = 0.5
 
-  return gsap
-    .timeline()
-    .add(textOut(outgoing, direction), 0)
-    .to(outMeta, { autoAlpha: 0, y: -16 * direction, duration: 0.35, ease: 'power2.in' }, 0)
-    .set(incoming, { autoAlpha: 1 }, 0.4)
-    .call(
-      () => {
-        textIn(incoming, direction, 1.25)
-        scrambleIn(labels(incoming), 0.1)
+function scrubIn(el: HTMLElement) {
+  const { plain, accent } = textLetters(el)
+  const words = textWords(el)
+  const kws = textKeywords(el)
+  const tl = gsap.timeline()
+  const vars = { immediateRender: false }
+  if (plain.length)
+    tl.fromTo(
+      plain,
+      {
+        yPercent: 110,
+        rotateX: -85,
+        autoAlpha: 0,
+        transformPerspective: 600,
+        transformOrigin: '50% 100% -0.2em',
       },
-      [],
-      0.4
+      {
+        yPercent: 0,
+        rotateX: 0,
+        autoAlpha: 1,
+        duration: 0.12,
+        stagger: { amount: 0.06 },
+        ease: 'power3.out',
+        ...vars,
+      },
+      0
     )
-    .fromTo(
-      metas(incoming),
-      { autoAlpha: 0, y: 16 * direction },
-      { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' },
-      0.5
+  if (accent.length)
+    tl.fromTo(
+      accent,
+      { yPercent: 110, rotate: -10, scale: 1.15, autoAlpha: 0 },
+      {
+        yPercent: 0,
+        rotate: 0,
+        scale: 1,
+        autoAlpha: 1,
+        duration: 0.12,
+        stagger: { amount: 0.03 },
+        ease: 'back.out(1.7)',
+        ...vars,
+      },
+      0.04
     )
-    .set(outgoing, { autoAlpha: 0 }, 0.9)
-    .call(() => resetText(outgoing), [], 0.9)
-    .set(outMeta, { clearProps: 'transform,opacity,visibility' }, 0.9)
+  if (words.length)
+    tl.fromTo(
+      words,
+      { yPercent: 105, autoAlpha: 0 },
+      {
+        yPercent: 0,
+        autoAlpha: 1,
+        duration: 0.1,
+        stagger: { amount: 0.05 },
+        ease: 'power3.out',
+        ...vars,
+      },
+      0.06
+    )
+  if (kws.length)
+    tl.fromTo(kws, { '--kw-line': '0%' }, { '--kw-line': '100%', duration: 0.07, ...vars }, 0.16)
+  const meta = metas(el)
+  if (meta.length)
+    tl.fromTo(
+      meta,
+      { autoAlpha: 0, y: 16 },
+      { autoAlpha: 1, y: 0, duration: 0.1, ease: 'power3.out', ...vars },
+      0.02
+    )
+  return tl
 }
 
-// The scene on screen: follows store.scene, each change played as one hand-over. A newer change
-// finishes the running hand-over at once, so fast scrolling never leaves two scenes showing.
+function scrubOut(el: HTMLElement) {
+  const { plain, accent } = textLetters(el)
+  const chars = [...plain, ...accent]
+  const words = textWords(el)
+  const kws = textKeywords(el)
+  const tl = gsap.timeline()
+  const vars = { immediateRender: false }
+  if (chars.length)
+    tl.fromTo(
+      chars,
+      { yPercent: 0, rotateX: 0, rotate: 0, scale: 1, autoAlpha: 1, transformPerspective: 600 },
+      {
+        yPercent: -105,
+        rotateX: 80,
+        autoAlpha: 0,
+        duration: 0.1,
+        stagger: { amount: 0.06 },
+        ease: 'power3.in',
+        ...vars,
+      },
+      0
+    )
+  if (words.length)
+    tl.fromTo(
+      words,
+      { yPercent: 0, autoAlpha: 1 },
+      {
+        yPercent: -80,
+        autoAlpha: 0,
+        duration: 0.08,
+        stagger: { amount: 0.04 },
+        ease: 'power2.in',
+        ...vars,
+      },
+      0
+    )
+  if (kws.length)
+    tl.fromTo(kws, { '--kw-line': '100%' }, { '--kw-line': '0%', duration: 0.06, ...vars }, 0)
+  const meta = metas(el)
+  if (meta.length)
+    tl.fromTo(
+      meta,
+      { autoAlpha: 1, y: 0 },
+      { autoAlpha: 0, y: -16, duration: 0.1, ease: 'power2.in', ...vars },
+      0
+    )
+  return tl
+}
+
+/** The whole hero's scene hand-overs, scrubbed by the scroll (see above) */
+function buildScrub() {
+  const els = sceneEls.value
+  const tl = gsap.timeline({ paused: true })
+  for (let i = 0; i < els.length - 1; i++) {
+    const outgoing = els[i]!
+    const incoming = els[i + 1]!
+    tl.add(scrubOut(outgoing), i + OUT_AT)
+    tl.set(outgoing, { autoAlpha: 0 }, i + SWAP_AT)
+    tl.set(incoming, { autoAlpha: 1 }, i + SWAP_AT)
+    tl.add(scrubIn(incoming), i + IN_AT)
+  }
+  // Exactly one unit per step, whatever the last tween's length
+  tl.set({}, {}, Math.max(els.length - 1, 0))
+  return tl
+}
+
+/** The scrim behind the words: each side's layer fades with the scroll as the scenes swap */
+function updateScrim(progress: number) {
+  const layers = root.value?.querySelectorAll<HTMLElement>('.hero__scrim-layer')
+  if (!layers?.length) return
+  const last = scenes.value.length - 1
+  const step = Math.min(Math.floor(progress), Math.max(last - 1, 0))
+  const f = Math.min(Math.max(progress - step, 0), 1)
+  const t = f <= 0.4 ? 0 : f >= 0.6 ? 1 : (f - 0.4) / 0.2
+  const from = scenes.value[step]?.side
+  const to = scenes.value[Math.min(step + 1, last)]?.side
+  for (const layer of layers) {
+    const side = layer.dataset.side
+    const o = (side === from ? 1 - t : 0) + (side === to ? t : 0)
+    layer.style.opacity = String(Math.min(o, 1))
+  }
+}
+
+// The scene that is showing (for screen readers and the active class)
 const current = ref(0)
 store.setScene(0)
-let handover: gsap.core.Timeline | null = null
-let live = false
+let scrub: gsap.core.Timeline | null = null
 const stopSceneWatch = watch(
   () => store.scene,
-  (to) => {
-    if (!live || to === current.value || !sceneEls.value[to]) return
-    const from = current.value
-    current.value = to
-    if (handover) {
-      handover.progress(1)
-      handover.kill()
-    }
-    handover = transition(from, to, to > from ? 1 : -1)
+  (to) => (current.value = to)
+)
+const stopProgressWatch = watch(
+  () => store.sceneProgress,
+  (progress) => {
+    if (!scrub) return
+    scrub.progress(total.value > 1 ? progress / (total.value - 1) : 0)
+    updateScrim(progress)
   }
 )
 
@@ -140,19 +268,18 @@ function landsBelowHero() {
 
 function begin() {
   if (disposed) return
-  live = true
-  // Landing part-way down (browser reload, or Back to a saved spot): show that scene straight
-  // away, ready for when the visitor scrolls back up
-  const at = Math.min(store.scene, total.value - 1)
-  if (at > 0 || landsBelowHero()) {
-    gsap.set(sceneEls.value, { autoAlpha: 0 })
-    gsap.set(sceneEls.value[at] ?? [], { autoAlpha: 1 })
-    if (sceneEls.value[0]) resetText(sceneEls.value[0])
+  // Landing part-way down (browser reload, or Back to a saved spot): show that point of the
+  // hand-overs straight away
+  const landing = store.sceneProgress > 0.01 || landsBelowHero()
+  if (landing && sceneEls.value[0]) {
+    resetText(sceneEls.value[0])
     gsap.set(metas(sceneEls.value[0]), { autoAlpha: 1 })
-    current.value = at
-    return
+  } else {
+    playIntro()
   }
-  playIntro()
+  scrub = buildScrub()
+  scrub.progress(total.value > 1 ? store.sceneProgress / (total.value - 1) : 0)
+  updateScrim(store.sceneProgress)
 }
 
 onMounted(async () => {
@@ -172,11 +299,14 @@ onMounted(async () => {
     [...el.querySelectorAll('.scene__split')].map((part) => splitText(part))
   )
 
-  // Only the first scene is visible; its text waits below the masks for the intro
+  // Only the first scene is visible; its text waits below the masks for the intro, and every
+  // other scene's text waits below its masks for its hand-over
   gsap.set(sceneEls.value, { autoAlpha: 0 })
   gsap.set(sceneEls.value[0] ?? [], { autoAlpha: 1 })
-  if (sceneEls.value[0]) hideText(sceneEls.value[0])
-  gsap.set(metas(sceneEls.value[0]), { autoAlpha: 0 })
+  sceneEls.value.forEach((el) => {
+    hideText(el)
+    gsap.set(metas(el), { autoAlpha: 0 })
+  })
 
   if (store.entered) begin()
   else {
@@ -195,7 +325,8 @@ onBeforeUnmount(() => {
   disposed = true
   stopEnteredWatch?.()
   stopSceneWatch()
-  handover?.kill()
+  stopProgressWatch()
+  scrub?.kill()
   introTimeline?.kill()
   splits.forEach((s) => s.revert())
 })
@@ -210,10 +341,10 @@ onBeforeUnmount(() => {
       :data-side="scenes[current]?.side ?? 'left'"
       aria-hidden="true"
     >
-      <span class="hero__scrim-layer hero__scrim-layer--left" />
-      <span class="hero__scrim-layer hero__scrim-layer--right" />
-      <span class="hero__scrim-layer hero__scrim-layer--center" />
-      <span class="hero__scrim-layer hero__scrim-layer--bottom" />
+      <span class="hero__scrim-layer hero__scrim-layer--left" data-side="left" />
+      <span class="hero__scrim-layer hero__scrim-layer--right" data-side="right" />
+      <span class="hero__scrim-layer hero__scrim-layer--center" data-side="center" />
+      <span class="hero__scrim-layer hero__scrim-layer--bottom" data-side="bottom" />
     </div>
     <section
       v-for="(scene, i) in scenes"
@@ -290,7 +421,6 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 1.2s var(--ease-out);
 }
 
 .hero__scrim-layer--left {

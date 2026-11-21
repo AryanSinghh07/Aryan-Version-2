@@ -289,8 +289,10 @@ export class World {
     // On the hero the shapes lie flat, facing the screen (a 2D picture made of lit balls)
     this.flat = MathUtils.lerp(this.flat, inScenes && !reduced ? 1 : 0, ease)
     points.scale.set(l.scale, l.scale, l.scale * (1 - this.flat * 0.8))
-    // ... with slightly larger balls, so each one reads as a glossy bead
-    particles.uniforms.uSize!.value = BALL_SIZE * (1 + this.flat * 0.25)
+    // ... and still: no drifting or breathing of their own, so a stopped scroll is a still picture
+    particles.uniforms.uDrift!.value = 1 - this.flat
+    // ... with larger discs, packed close like confetti
+    particles.uniforms.uSize!.value = BALL_SIZE * (1 + this.flat * 0.7)
     // Outro: the ring glides to the very centre of the screen (where the camera looks), then
     // grows and rushes at the camera, so its balls swell and fly past. The portal opens in
     // its middle.
@@ -319,8 +321,12 @@ export class World {
       height: MathUtils.lerp(g0.height, g1.height, blendT),
       distance: MathUtils.lerp(g0.distance, g1.distance, blendT),
     }
-    const orbitEase = reduced ? 1 : 1 - Math.exp(-delta * 1.8)
-    const angle = reduced ? 0 : goal.angle + Math.sin(state.elapsed * 0.05) * IDLE_SWAY
+    // On the hero the camera follows the scroll closely and has no drift of its own, so when
+    // the visitor stops scrolling it comes to rest right there (the scroll itself is smoothed)
+    const follow = inScenes ? 7 : 1.8
+    const orbitEase = reduced ? 1 : 1 - Math.exp(-delta * follow)
+    const sway = inScenes ? 0 : Math.sin(state.elapsed * 0.05) * IDLE_SWAY
+    const angle = reduced ? 0 : goal.angle + sway
     this.orbit.angle = MathUtils.lerp(this.orbit.angle, angle, orbitEase)
     this.orbit.height = MathUtils.lerp(this.orbit.height, goal.height, orbitEase)
     this.orbit.distance = MathUtils.lerp(this.orbit.distance, goal.distance, orbitEase)
@@ -380,10 +386,11 @@ export class World {
     this.cameraTarget
       .set(cam[0], cam[1] + this.parallax.y, cam[2])
       .addScaledVector(this.right, this.parallax.x)
-    this.camera.position.lerp(this.cameraTarget, reduced ? 1 : 1 - Math.exp(-delta * 2.4))
+    const glide = inScenes ? 7 : 2.4
+    this.camera.position.lerp(this.cameraTarget, reduced ? 1 : 1 - Math.exp(-delta * glide))
     // Look past the logo, so it sits beside the text (the shift is along the camera's right)
     this.lookTarget.set(0, 0, 0).addScaledVector(this.right, -this.shift)
-    this.look.lerp(this.lookTarget, reduced ? 1 : 1 - Math.exp(-delta * 2.4))
+    this.look.lerp(this.lookTarget, reduced ? 1 : 1 - Math.exp(-delta * glide))
     this.camera.lookAt(this.look)
 
     this.carousel.update(
