@@ -7,87 +7,43 @@ usePageSeo({
 
 const { data: projects } = await useProjects()
 
-const filters = computed(() => ['All', ...new Set((projects.value ?? []).map((p) => p.type))])
-const active = ref('All')
-
-// With WebGL and motion, the page becomes the 3D carousel; otherwise (and in the server
-// HTML, so it works without JavaScript) it is the filterable grid below. Visitors can also
-// choose the grid themselves (?view=grid).
+// The Work page, in the same style as About: a plain near-black page (the 3D world rests
+// behind it). The headline, a band of the tools used, the projects as full-screen cards that
+// stack up as you scroll, then an index of every project with a preview under the pointer.
 const store = useAppStore()
-const route = useRoute()
-const canCarousel = ref(false)
-onMounted(() => {
-  canCarousel.value = store.webgl === true && !prefersReducedMotion()
+onMounted(() => (store.worldPaused = true))
+onBeforeUnmount(() => (store.worldPaused = false))
+
+/** Every technology used, the most used first */
+const tools = computed(() => {
+  const counts = new Map<string, number>()
+  for (const p of projects.value ?? [])
+    for (const s of p.stack) counts.set(s, (counts.get(s) ?? 0) + 1)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([s]) => s)
 })
-const interactive = computed(() => canCarousel.value && route.query.view !== 'grid')
-const visible = computed(() =>
-  (projects.value ?? []).filter((p) => active.value === 'All' || p.type === active.value)
-)
 </script>
 
 <template>
-  <div class="work-page" :class="{ 'is-carousel': interactive }">
-    <WorkCarousel v-if="interactive && projects" :projects="projects" />
-    <div v-else class="work-page__grid-view page-top container">
-      <header class="section__head">
-        <UiSectionLabel :index="2" label="Work" />
-        <h1 v-reveal class="t-hero"><UiAccentText text="All *work*" /></h1>
-        <p class="work-page__count t-label t-muted">
-          {{ projectNumber(projects?.length ?? 0) }} projects · 2023–2026
-          <template v-if="canCarousel">
-            · <NuxtLink to="/work" class="text-link">Carousel view</NuxtLink>
-          </template>
-        </p>
-      </header>
-
-      <div class="work-page__filters" role="group" aria-label="Filter projects">
-        <button
-          v-for="f in filters"
-          :key="f"
-          type="button"
-          class="work-page__filter t-label"
-          :aria-pressed="active === f"
-          @click="active = f"
-        >
-          {{ f }}
-        </button>
-      </div>
-      <p class="sr-only" aria-live="polite">Showing {{ visible.length }} projects</p>
-
-      <WorkProjectGrid :projects="visible" heading-level="h2" class="work-page__grid" />
-    </div>
+  <div v-if="projects" class="work-page">
+    <WorkIntro :projects="projects" />
+    <WorkMarquee :words="tools" />
+    <WorkStack :projects="projects" />
+    <WorkProjectIndex :projects="projects" />
   </div>
 </template>
 
 <style scoped lang="scss">
-.work-page__grid-view {
-  padding-bottom: clamp(5rem, 12vw, 10rem);
+// The same plain near-black as the home page past its portal and the About page; by day,
+// the page colour
+.work-page {
+  --page-bg: var(--background);
+
+  position: relative;
+  background-color: var(--page-bg);
+  overflow-x: clip;
 }
 
-.work-page__filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 4rem;
-}
-
-.work-page__filter {
-  min-height: 40px;
-  padding: 0.5em 1.1em;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
-
-  &:hover {
-    border-color: var(--primary);
-  }
-
-  &[aria-pressed='true'] {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--on-primary);
-  }
+:global([data-theme='dark'] .work-page) {
+  --page-bg: #121212;
 }
 </style>
