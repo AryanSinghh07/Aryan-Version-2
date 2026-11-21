@@ -10,7 +10,7 @@ import type { ArrowLine } from '~/components/ui/ArrowLines.vue'
 // Motion: as the section scrolls in, the headline rises letter by letter and its indented
 // words slide right the way the arrow points, the arrow coming in and then swaying gently;
 // the paragraphs' words light up from grey as they scroll by, like "Behind the build"
-// (scrubbed, so scrolling back dims them again); the photo opens upwards.
+// (scrubbed: scrolling back dims them again); the photo opens upwards.
 // Words glitch lightly under the pointer (.text-glitch). Without JavaScript or with reduced
 // motion everything is simply shown.
 const props = defineProps<{
