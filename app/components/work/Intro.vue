@@ -111,13 +111,20 @@ onMounted(async () => {
       )
     })
 
-    // Scrolling on: the headline drifts up and fades away
-    gsap.to(headline, {
-      yPercent: -18,
-      autoAlpha: 0.15,
-      ease: 'none',
-      scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
-    })
+    // Scrolling on: the headline drifts up and fades away. Both ends are stated: the start is
+    // always the headline fully shown, whatever state it is in when this is set up (after an
+    // in-site page change it can be caught mid page-transition, and would then rest invisible)
+    gsap.fromTo(
+      headline,
+      { yPercent: 0, autoAlpha: 1 },
+      {
+        yPercent: -18,
+        autoAlpha: 0.15,
+        ease: 'none',
+        immediateRender: false,
+        scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
+      }
+    )
 
     // The glow leans towards the pointer
     const glow = el.querySelector<HTMLElement>('.intro__glow')

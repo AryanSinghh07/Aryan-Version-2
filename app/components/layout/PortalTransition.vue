@@ -63,6 +63,26 @@ function aboutColor() {
   return store.theme === 'dark' ? '#121212' : pageColor()
 }
 
+const nuxtApp = useNuxtApp()
+
+/**
+ * Resolves once the new page has mounted (or after `max` ms). Until then it hasn't said whether
+ * it is still loading (About flags its room as it mounts), so the checks below would pass too early
+ * and the portal would fade onto the room's loading screen.
+ */
+function whenMounted(max = 5000) {
+  return new Promise<void>((resolve) => {
+    // (both run later, once timer and off exist)
+    const done = () => {
+      clearTimeout(timer)
+      off()
+      resolve()
+    }
+    const timer = setTimeout(done, max)
+    const off = nuxtApp.hooks.hookOnce('page:finish', () => void nextTick(done))
+  })
+}
+
 /** Resolves when the page change has finished (or after `max` ms) */
 function whenArrived(max = 3000) {
   if (!store.navigating) return Promise.resolve()
@@ -130,6 +150,7 @@ const removeAfter = router.afterEach(async () => {
   if (!running) return
   // The new page has to arrive (its page change runs under the cover), finish loading its
   // own 3D scene if it has one, and settle first
+  await whenMounted()
   await whenArrived()
   await whenLoaded()
   await whenSettled()

@@ -282,6 +282,33 @@ function begin() {
   updateScrim(store.sceneProgress)
 }
 
+// The text re-splits into new letters when the window width changes (SplitText's autoSplit):
+// the hand-overs must then be rebuilt on the new letters, or they would animate letters that
+// are gone. Every scene goes back to its waiting state, the first one shown, and the rebuilt
+// hand-overs jump to the current scroll position.
+let rebuildFrame = 0
+function rebuildScrub() {
+  if (!scrub || disposed) return
+  cancelAnimationFrame(rebuildFrame)
+  rebuildFrame = requestAnimationFrame(() => {
+    if (!scrub || disposed) return
+    scrub.kill()
+    introTimeline?.kill()
+    sceneEls.value.forEach((el, i) => {
+      gsap.set(el, { autoAlpha: i === 0 ? 1 : 0 })
+      hideText(el)
+      gsap.set(metas(el), { autoAlpha: 0 })
+    })
+    const first = sceneEls.value[0]
+    if (first) {
+      resetText(first)
+      gsap.set(metas(first), { autoAlpha: 1, y: 0 })
+    }
+    scrub = buildScrub()
+    scrub.progress(total.value > 1 ? store.sceneProgress / (total.value - 1) : 0)
+  })
+}
+
 onMounted(async () => {
   if (prefersReducedMotion() || !total.value) return
   interactive.value = true
@@ -295,8 +322,16 @@ onMounted(async () => {
   ScrollTrigger.refresh()
 
   // Headlines into lines, words and letters; paragraphs into lines and words (textMotion.ts)
+  // (each later re-split, on a width change, rebuilds the hand-overs)
   splits = sceneEls.value.flatMap((el) =>
-    [...el.querySelectorAll('.scene__split')].map((part) => splitText(part))
+    [...el.querySelectorAll('.scene__split')].map((part) => {
+      let first = true
+      return splitText(part, () => {
+        if (!first) rebuildScrub()
+        first = false
+        return gsap.timeline()
+      })
+    })
   )
 
   // Only the first scene is visible; its text waits below the masks for the intro, and every
@@ -323,6 +358,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   disposed = true
+  cancelAnimationFrame(rebuildFrame)
   stopEnteredWatch?.()
   stopSceneWatch()
   stopProgressWatch()

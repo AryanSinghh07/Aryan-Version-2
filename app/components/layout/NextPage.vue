@@ -95,6 +95,10 @@ function update() {
 
 const onInput = () => {
   lastInput = performance.now()
+  // Already at the very end (reached with the scrollbar or the End key), a wheel or swipe
+  // doesn't move the page, so no scroll event follows: check here too, or the ring would never
+  // fire
+  update()
 }
 
 onMounted(() => {

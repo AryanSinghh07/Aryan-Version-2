@@ -36,8 +36,27 @@ onMounted(async () => {
 
   const cards = [...el.querySelectorAll<HTMLElement>('.card')]
   const titles = [...el.querySelectorAll<HTMLElement>('.card__title')]
-  splits = titles.map((t) => splitText(t))
-  const chars = titles.map((t) => [...t.querySelectorAll<HTMLElement>(`.${textClasses.char}`)])
+  // The titles re-split into new letters when the window width changes (SplitText's autoSplit):
+  // the motion is then set up again on the new letters, so it never moves letters that are gone
+  let rebuildFrame = 0
+  const rebuild = () => {
+    cancelAnimationFrame(rebuildFrame)
+    rebuildFrame = requestAnimationFrame(() => {
+      if (!root.value || !mm) return
+      mm.revert()
+      setup()
+      ScrollTrigger.refresh()
+    })
+  }
+  splits = titles.map((t) => {
+    let first = true
+    return splitText(t, () => {
+      if (!first) rebuild()
+      first = false
+      return gsap.timeline()
+    })
+  })
+  let chars: HTMLElement[][] = []
   const details = cards.map((c) => [...c.querySelectorAll<HTMLElement>('.card__reveal')])
   const images = cards.map(
     (c) =>
@@ -47,95 +66,103 @@ onMounted(async () => {
   const track = el.querySelector<HTMLElement>('.stack__count-track')
   const bar = el.querySelector<HTMLElement>('.stack__bar-fill')
 
-  mm = gsap.matchMedia()
+  const setup = () => {
+    chars = titles.map((t) => [...t.querySelectorAll<HTMLElement>(`.${textClasses.char}`)])
+    mm = gsap.matchMedia()
 
-  // Big screens: the stage holds and the cards stack
-  mm.add('(min-width: 900px) and (min-height: 620px)', () => {
-    stacked.value = true
-    el.style.setProperty('--steps', String((cards.length - 1) * STEP + HOLD))
+    // Big screens: the stage holds and the cards stack
+    mm.add('(min-width: 900px) and (min-height: 620px)', () => {
+      stacked.value = true
+      el.style.setProperty('--steps', String((cards.length - 1) * STEP + HOLD))
 
-    gsap.set(cards.slice(1), { yPercent: 118 })
-    gsap.set(chars.slice(1).flat(), { yPercent: 110 })
-    gsap.set(details.slice(1).flat(), { autoAlpha: 0, y: 28 })
-    gsap.set(images.slice(1), { scale: 1.3 })
+      gsap.set(cards.slice(1), { yPercent: 118 })
+      gsap.set(chars.slice(1).flat(), { yPercent: 110 })
+      gsap.set(details.slice(1).flat(), { autoAlpha: 0, y: 28 })
+      gsap.set(images.slice(1), { scale: 1.3 })
 
-    // The first card's title rises as the stage comes into view
-    gsap
-      .timeline({ scrollTrigger: { trigger: el, start: 'top 95%', once: true } })
-      .from(chars[0]!, {
-        yPercent: 110,
-        duration: 1.1,
-        stagger: 0.018,
-        ease: 'expo.out',
+      // The first card's title rises as the stage comes into view
+      gsap
+        .timeline({ scrollTrigger: { trigger: el, start: 'top 95%', once: true } })
+        .from(chars[0]!, {
+          yPercent: 110,
+          duration: 1.1,
+          stagger: 0.018,
+          ease: 'expo.out',
+        })
+        .from(
+          details[0]!,
+          { autoAlpha: 0, y: 28, duration: 0.9, stagger: 0.06, ease: 'expo.out' },
+          0.2
+        )
+        .from(images[0]!, { scale: 1.3, duration: 1.6, ease: 'expo.out' }, 0)
+
+      const tl = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: el, start: 'top top', end: 'bottom bottom', scrub: 0.8 },
       })
-      .from(
-        details[0]!,
-        { autoAlpha: 0, y: 28, duration: 0.9, stagger: 0.06, ease: 'expo.out' },
-        0.2
-      )
-      .from(images[0]!, { scale: 1.3, duration: 1.6, ease: 'expo.out' }, 0)
-
-    const tl = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: { trigger: el, start: 'top top', end: 'bottom bottom', scrub: 0.8 },
-    })
-    cards.forEach((card, k) => {
-      if (k === 0) return
-      const at = (k - 1) * STEP
-      tl.to(card, { yPercent: 0, duration: STEP, ease: 'power2.inOut' }, at)
-      tl.to(images[k]!, { scale: 1.06, duration: STEP, ease: 'power2.out' }, at)
-      // The cards underneath shrink back and dim, the furthest the most
-      for (let j = 0; j < k; j++) {
-        const depth = k - j
-        tl.to(cards[j]!, { scale: 1 - depth * 0.045, duration: STEP, ease: 'power2.inOut' }, at)
-        tl.to(shades[j]!, { opacity: Math.min(0.35 + (depth - 1) * 0.2, 0.85), duration: STEP }, at)
-      }
-      tl.to(
-        chars[k]!,
-        { yPercent: 0, duration: STEP * 0.5, stagger: 0.012, ease: 'power3.out' },
-        at + STEP * 0.4
-      )
-      tl.to(
-        details[k]!,
-        { autoAlpha: 1, y: 0, duration: STEP * 0.4, stagger: 0.04, ease: 'power2.out' },
-        at + STEP * 0.55
-      )
-      if (track)
+      cards.forEach((card, k) => {
+        if (k === 0) return
+        const at = (k - 1) * STEP
+        tl.to(card, { yPercent: 0, duration: STEP, ease: 'power2.inOut' }, at)
+        tl.to(images[k]!, { scale: 1.06, duration: STEP, ease: 'power2.out' }, at)
+        // The cards underneath shrink back and dim, the furthest the most
+        for (let j = 0; j < k; j++) {
+          const depth = k - j
+          tl.to(cards[j]!, { scale: 1 - depth * 0.045, duration: STEP, ease: 'power2.inOut' }, at)
+          tl.to(
+            shades[j]!,
+            { opacity: Math.min(0.35 + (depth - 1) * 0.2, 0.85), duration: STEP },
+            at
+          )
+        }
         tl.to(
-          track,
-          { yPercent: (-100 * k) / cards.length, duration: STEP * 0.35, ease: 'power2.inOut' },
+          chars[k]!,
+          { yPercent: 0, duration: STEP * 0.5, stagger: 0.012, ease: 'power3.out' },
           at + STEP * 0.4
         )
-    })
-    if (bar)
-      tl.fromTo(
-        bar,
-        { scaleX: 1 / cards.length },
-        { scaleX: 1, duration: (cards.length - 1) * STEP },
-        0
-      )
-    tl.to({}, { duration: HOLD })
-
-    return () => {
-      stacked.value = false
-      el.style.removeProperty('--steps')
-    }
-  })
-
-  // Small screens: each card reveals as it scrolls in
-  mm.add('(max-width: 899px), (max-height: 619px)', () => {
-    cards.forEach((card, k) => {
-      gsap
-        .timeline({ scrollTrigger: { trigger: card, start: 'top 95%', once: true } })
-        .from(images[k]!, { scale: 1.3, duration: 1.4, ease: 'expo.out' }, 0)
-        .from(chars[k]!, { yPercent: 110, duration: 1, stagger: 0.015, ease: 'expo.out' }, 0.1)
-        .from(
+        tl.to(
           details[k]!,
-          { autoAlpha: 0, y: 24, duration: 0.8, stagger: 0.06, ease: 'expo.out' },
-          0.25
+          { autoAlpha: 1, y: 0, duration: STEP * 0.4, stagger: 0.04, ease: 'power2.out' },
+          at + STEP * 0.55
         )
+        if (track)
+          tl.to(
+            track,
+            { yPercent: (-100 * k) / cards.length, duration: STEP * 0.35, ease: 'power2.inOut' },
+            at + STEP * 0.4
+          )
+      })
+      if (bar)
+        tl.fromTo(
+          bar,
+          { scaleX: 1 / cards.length },
+          { scaleX: 1, duration: (cards.length - 1) * STEP },
+          0
+        )
+      tl.to({}, { duration: HOLD })
+
+      return () => {
+        stacked.value = false
+        el.style.removeProperty('--steps')
+      }
     })
-  })
+
+    // Small screens: each card reveals as it scrolls in
+    mm.add('(max-width: 899px), (max-height: 619px)', () => {
+      cards.forEach((card, k) => {
+        gsap
+          .timeline({ scrollTrigger: { trigger: card, start: 'top 95%', once: true } })
+          .from(images[k]!, { scale: 1.3, duration: 1.4, ease: 'expo.out' }, 0)
+          .from(chars[k]!, { yPercent: 110, duration: 1, stagger: 0.015, ease: 'expo.out' }, 0.1)
+          .from(
+            details[k]!,
+            { autoAlpha: 0, y: 24, duration: 0.8, stagger: 0.06, ease: 'expo.out' },
+            0.25
+          )
+      })
+    })
+  }
+  setup()
 
   // The layout changed: everything below measures again
   requestAnimationFrame(() => ScrollTrigger.refresh())
@@ -300,7 +327,7 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-// The counter rolls from one number to the next
+// The counter rolls on from one number to the next
 .stack__count-window {
   display: inline-block;
   height: 1.2em;

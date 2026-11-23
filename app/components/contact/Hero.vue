@@ -156,13 +156,20 @@ onMounted(async () => {
       .to(chars, { yPercent: 0, duration: 1, stagger: 0.022, ease: 'expo.out' }, 0.8)
       .to(badge.value, { scale: 1, rotate: 0, duration: 1.4, ease: 'elastic.out(1, 0.55)' }, 1)
 
-    // Scrolling on: the headline drifts up and fades away
-    gsap.to(headline, {
-      yPercent: -16,
-      autoAlpha: 0.2,
-      ease: 'none',
-      scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
-    })
+    // Scrolling on: the headline drifts up and fades away. Both ends are stated: the start is
+    // always the headline fully shown, whatever state it is in when this is set up (after an
+    // in-site page change it can be caught mid page-transition, and would then rest invisible)
+    gsap.fromTo(
+      headline,
+      { yPercent: 0, autoAlpha: 1 },
+      {
+        yPercent: -16,
+        autoAlpha: 0.2,
+        ease: 'none',
+        immediateRender: false,
+        scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
+      }
+    )
 
     if (badge.value && window.matchMedia('(pointer: fine)').matches) magnetic(badge.value)
   })

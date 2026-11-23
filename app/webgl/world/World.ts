@@ -178,7 +178,11 @@ export class World {
 
   update(state: FrameState, palette: Palette, delta: number) {
     const reduced = state.reducedMotion
-    const ease = reduced ? 1 : 1 - Math.exp(-delta * 3)
+    // Until the visitor enters (behind the loading screen and the entry gate) everything takes
+    // its place at once, so the shape forms already in position, flat and facing the screen,
+    // instead of turning and sliding into place as the site opens
+    const settle = reduced || !state.entered
+    const ease = settle ? 1 : 1 - Math.exp(-delta * 3)
 
     // Theme colours (tweened by the palette)
     this.fog.color.copy(palette.colors.fog)
@@ -275,7 +279,7 @@ export class World {
     this.orbitMix = MathUtils.lerp(
       this.orbitMix,
       inScenes ? 1 : 0,
-      reduced ? 1 : 1 - Math.exp(-delta * 2)
+      settle ? 1 : 1 - Math.exp(-delta * 2)
     )
     this.logoX = MathUtils.lerp(this.logoX, inScenes ? 0 : l.x, ease)
     this.shift = MathUtils.lerp(this.shift, inScenes ? l.x : 0, ease)
@@ -324,7 +328,7 @@ export class World {
     // On the hero the camera follows the scroll closely and has no drift of its own, so when
     // the visitor stops scrolling it comes to rest right there (the scroll itself is smoothed)
     const follow = inScenes ? 7 : 1.8
-    const orbitEase = reduced ? 1 : 1 - Math.exp(-delta * follow)
+    const orbitEase = settle ? 1 : 1 - Math.exp(-delta * follow)
     const sway = inScenes ? 0 : Math.sin(state.elapsed * 0.05) * IDLE_SWAY
     const angle = reduced ? 0 : goal.angle + sway
     this.orbit.angle = MathUtils.lerp(this.orbit.angle, angle, orbitEase)
@@ -344,14 +348,9 @@ export class World {
     } else {
       points.rotation.set(0, 0, 0)
     }
-    // The bottom-layout ring turns to face the camera exactly (no sway), so it reads as a true
-    // circle rather than a tilted ellipse; blended in and out as the scene changes
-    // On the hero every shape faces the camera exactly, flat like a picture
-    this.faceMix = MathUtils.lerp(
-      this.faceMix,
-      inScenes ? 1 : 0,
-      reduced ? 1 : 1 - Math.exp(-delta * 3)
-    )
+    // On the hero every shape faces the camera exactly, flat like a picture; blended in and out
+    // on the way to and from other pages
+    this.faceMix = MathUtils.lerp(this.faceMix, inScenes ? 1 : 0, ease)
     if (this.faceMix > 0.001) {
       this.turned.copy(points.quaternion)
       points.quaternion.copy(this.turned).slerp(this.camera.quaternion, this.faceMix)
@@ -387,10 +386,10 @@ export class World {
       .set(cam[0], cam[1] + this.parallax.y, cam[2])
       .addScaledVector(this.right, this.parallax.x)
     const glide = inScenes ? 7 : 2.4
-    this.camera.position.lerp(this.cameraTarget, reduced ? 1 : 1 - Math.exp(-delta * glide))
+    this.camera.position.lerp(this.cameraTarget, settle ? 1 : 1 - Math.exp(-delta * glide))
     // Look past the logo, so it sits beside the text (the shift is along the camera's right)
     this.lookTarget.set(0, 0, 0).addScaledVector(this.right, -this.shift)
-    this.look.lerp(this.lookTarget, reduced ? 1 : 1 - Math.exp(-delta * glide))
+    this.look.lerp(this.lookTarget, settle ? 1 : 1 - Math.exp(-delta * glide))
     this.camera.lookAt(this.look)
 
     this.carousel.update(
