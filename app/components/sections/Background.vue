@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { siCisco, siHp } from 'simple-icons'
 
 // "Always learning": education and certifications, in the language of the sections above it
-// (a violet pill, the display serif, mono numbers on the plain page) but laid out differently,
-// and without a pin.
+// (a violet pill, the display serif, mono numbers on the plain page) but laid out differently.
 //
 // An editorial heading: "Always" on the left and "learning" on the line below at the right,
 // drifting together as the section scrolls in, with a short intro beside them. Education is a
-// ruled index: each row's line draws across and its text rises in. Certifications are clean
-// tiles with the issuer's mark in its brand colour; they rise in one after another and glow in
-// that colour under the pointer. Without JavaScript or with reduced motion everything is
-// simply shown.
+// ruled index: each row's line draws across and its text rises in. Certifications are a
+// horizontal showcase of the certificates themselves (image, issuer's mark in its brand colour,
+// credential ID), each card opening its verification page: on big screens the row holds the
+// screen and slides sideways as the page scrolls; on phones, with reduced motion or without
+// JavaScript it is a row to swipe.
 
 const { data: education } = await useEducation()
 
@@ -41,6 +42,8 @@ const ISSUERS: Record<string, Mark> = {
     color: '#7B61FF',
   },
   'HP LIFE': { path: siHp.path, color: `#${siHp.hex}` },
+  'NPTEL · IIT Madras': { word: 'NPTEL', color: '#C0392B' },
+  'Smart India Hackathon': { word: 'SIH', color: '#2E6BD9' },
 }
 const fallback: Mark = { word: '✦', color: 'var(--primary)' }
 const mark = (issuer: string) => ISSUERS[issuer] ?? fallback
@@ -49,10 +52,99 @@ const count = (n: number) => `(${String(n).padStart(2, '0')})`
 const number = (i: number) => `(${String(i + 1).padStart(3, '0')})`
 
 let ctx: gsap.Context | null = null
+let mm: gsap.MatchMedia | null = null
+
+const showcase = ref<HTMLElement | null>(null)
+const track = ref<HTMLElement | null>(null)
+const bar = ref<HTMLElement | null>(null)
+/** Big screens with motion: the row is pinned and slides sideways with the page scroll */
+const pinned = ref(false)
+
+/** The progress line under the row (swipe mode: how far the row has been swiped) */
+function onSwipe() {
+  const row = track.value
+  if (!row || !bar.value || pinned.value) return
+  const max = row.scrollWidth - row.clientWidth
+  bar.value.style.transform = `scaleX(${max > 0 ? row.scrollLeft / max : 1})`
+}
+
+/**
+ * The horizontal showcase: the stage sticks to the screen while the section's extra height
+ * (exactly the row's overflow) scrolls past, and the row slides left by the same amount. Cards
+ * sharpen and grow a little as they slide in from the right.
+ */
+function setupShowcase() {
+  mm = gsap.matchMedia()
+  mm.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
+    const wrap = showcase.value
+    const row = track.value
+    if (!wrap || !row) return
+    pinned.value = true
+    // Set straight away (not on the next render): the measurements below depend on it
+    wrap.classList.add('is-pinned')
+    // How far the row has to slide for its last card to end at the right gutter (measured from
+    // the layout, so the slide's own transform never affects it)
+    const distance = () => {
+      const last = row.lastElementChild as HTMLElement | null
+      if (!last) return 0
+      const gutter = parseFloat(getComputedStyle(row).paddingRight) || 0
+      return Math.max(last.offsetLeft + last.offsetWidth + gutter - row.clientWidth, 0)
+    }
+    const setHeight = () => {
+      wrap.style.height = `${window.innerHeight + distance()}px`
+    }
+    setHeight()
+    ScrollTrigger.addEventListener('refreshInit', setHeight)
+
+    const slide = gsap.to(row, {
+      x: () => -distance(),
+      ease: 'none',
+      scrollTrigger: {
+        trigger: wrap,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.7,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => gsap.set(bar.value, { scaleX: self.progress }),
+      },
+    })
+    for (const card of row.querySelectorAll<HTMLElement>('.cert')) {
+      gsap.fromTo(
+        card,
+        { autoAlpha: 0.35, scale: 0.92 },
+        {
+          autoAlpha: 1,
+          scale: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: card,
+            containerAnimation: slide,
+            start: 'left 100%',
+            end: 'left 65%',
+            scrub: true,
+          },
+        }
+      )
+    }
+
+    return () => {
+      ScrollTrigger.removeEventListener('refreshInit', setHeight)
+      wrap.style.height = ''
+      wrap.classList.remove('is-pinned')
+      pinned.value = false
+      gsap.set(row, { clearProps: 'transform' })
+    }
+  })
+  // The page below just moved: measure everything again
+  ScrollTrigger.refresh()
+}
 
 onMounted(() => {
+  track.value?.addEventListener('scroll', onSwipe, { passive: true })
+  onSwipe()
   const el = root.value
   if (!el || prefersReducedMotion()) return
+  setupShowcase()
   ctx = gsap.context(() => {
     // The two words of the heading drift together as the section scrolls in
     const head = { trigger: '.learning__head', start: 'top 95%', end: 'top 25%', scrub: 0.8 }
@@ -96,24 +188,30 @@ onMounted(() => {
         )
     }
 
-    // Certification tiles rise in one after another
-    gsap.fromTo(
-      '.cert',
-      { y: 48, autoAlpha: 0 },
-      {
-        y: 0,
-        autoAlpha: 1,
-        duration: 1,
-        stagger: 0.08,
-        ease: 'expo.out',
-        clearProps: 'transform',
-        scrollTrigger: { trigger: '.certs', start: 'top 95%', once: true },
-      }
-    )
+    // Swipe mode: the certificate cards rise in one after another
+    if (!pinned.value) {
+      gsap.fromTo(
+        '.cert',
+        { y: 48, autoAlpha: 0 },
+        {
+          y: 0,
+          autoAlpha: 1,
+          duration: 1,
+          stagger: 0.08,
+          ease: 'expo.out',
+          clearProps: 'transform',
+          scrollTrigger: { trigger: '.certs', start: 'top 95%', once: true },
+        }
+      )
+    }
   }, el)
 })
 
-onBeforeUnmount(() => ctx?.revert())
+onBeforeUnmount(() => {
+  track.value?.removeEventListener('scroll', onSwipe)
+  mm?.revert()
+  ctx?.revert()
+})
 </script>
 
 <template>
@@ -150,54 +248,76 @@ onBeforeUnmount(() => ctx?.revert())
       </ol>
     </div>
 
-    <!-- Certifications: tiles with the issuer's mark -->
-    <div class="learning__group">
-      <h3 class="learning__label t-label">
-        Certifications
-        <span class="learning__count">{{ count(education.certifications.length) }}</span>
-      </h3>
-      <ul role="list" class="certs">
-        <li
-          v-for="(c, i) in education.certifications"
-          :key="c.title"
-          class="cert"
-          :style="{ '--issuer': mark(c.issuer).color }"
-        >
-          <div class="cert__top">
-            <span class="cert__mark" aria-hidden="true">
-              <svg
-                v-if="mark(c.issuer).path"
-                viewBox="0 0 24 24"
-                focusable="false"
-                :class="{ 'is-outline': mark(c.issuer).outline }"
+    <!-- Certifications: a horizontal showcase of the certificates themselves. On big screens
+         the row is pinned and slides sideways as the page scrolls; elsewhere it swipes. -->
+    <div ref="showcase" class="certs-showcase" :class="{ 'is-pinned': pinned }">
+      <div class="certs-stage">
+        <div class="certs-head">
+          <h3 class="learning__label t-label">
+            Certifications
+            <span class="learning__count">{{ count(education.certifications.length) }}</span>
+          </h3>
+          <span class="certs-hint t-label" aria-hidden="true">
+            {{ pinned ? 'Scroll' : 'Swipe' }} <span class="certs-hint__arrow">→</span>
+          </span>
+        </div>
+        <ul ref="track" role="list" class="certs" tabindex="0" aria-label="Certifications">
+          <li
+            v-for="(c, i) in education.certifications"
+            :key="c.title"
+            class="cert"
+            :style="{ '--issuer': mark(c.issuer).color }"
+          >
+            <div v-if="c.image" class="cert__media">
+              <img
+                :src="c.image.replace(/\.webp$/, '-card.webp')"
+                :alt="`${c.title} certificate`"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="cert__top">
+              <span class="cert__mark" aria-hidden="true">
+                <svg
+                  v-if="mark(c.issuer).path"
+                  viewBox="0 0 24 24"
+                  focusable="false"
+                  :class="{ 'is-outline': mark(c.issuer).outline }"
+                >
+                  <path :d="mark(c.issuer).path" />
+                </svg>
+                <span v-else class="cert__word">{{ mark(c.issuer).word }}</span>
+              </span>
+              <span class="cert__index t-label" aria-hidden="true">
+                {{ number(i) }}<span v-if="c.url || c.image" class="cert__arrow">↗</span>
+              </span>
+            </div>
+            <p class="cert__title">
+              <!-- The whole card opens the certificate: its verification page, or the image -->
+              <a
+                v-if="c.url || c.image"
+                :href="c.url ?? c.image"
+                class="cert__link"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ c.title
+                }}<span class="sr-only"> (view certificate, opens in a new tab)</span></a
               >
-                <path :d="mark(c.issuer).path" />
-              </svg>
-              <span v-else class="cert__word">{{ mark(c.issuer).word }}</span>
-            </span>
-            <span class="cert__index t-label" aria-hidden="true">
-              {{ number(i) }}<span v-if="c.url" class="cert__arrow">↗</span>
-            </span>
-          </div>
-          <p class="cert__title">
-            <!-- The whole tile opens the certificate (the link's area covers it) -->
-            <a
-              v-if="c.url"
-              :href="c.url"
-              class="cert__link"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ c.title }}<span class="sr-only"> (view certificate, opens in a new tab)</span></a
-            >
-            <template v-else>{{ c.title }}</template>
-          </p>
-          <p class="cert__issuer t-label">{{ c.issuer }}</p>
-          <p v-if="c.credentialId" class="cert__id">
-            <span class="cert__id-label t-label">Credential ID</span>
-            <span class="cert__id-value">{{ c.credentialId }}</span>
-          </p>
-        </li>
-      </ul>
+              <template v-else>{{ c.title }}</template>
+            </p>
+            <p class="cert__issuer t-label">
+              {{ c.issuer }}<template v-if="c.date"> · {{ c.date }}</template>
+            </p>
+            <p v-if="c.credentialId" class="cert__id">
+              <span class="cert__id-label t-label">Credential ID</span>
+              <span class="cert__id-value">{{ c.credentialId }}</span>
+            </p>
+          </li>
+        </ul>
+        <div class="certs-progress" aria-hidden="true">
+          <span ref="bar" class="certs-progress__bar" />
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -206,14 +326,14 @@ onBeforeUnmount(() => ctx?.revert())
 .learning {
   display: grid;
   gap: clamp(4rem, 8vw, 7rem);
-  // The heading's words slide in from beyond the sides: keep them from widening the page
-  overflow-x: clip;
 }
 
 // ---------------------------------------------------------------- Heading
 .learning__head {
   display: grid;
   gap: 1.5rem;
+  // The heading's words slide in from beyond the sides: keep them from widening the page
+  overflow-x: clip;
 
   @media (min-width: 1024px) {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -382,44 +502,158 @@ onBeforeUnmount(() => ctx?.revert())
   }
 }
 
-// ---------------------------------------------------------------- Certification tiles
-.certs {
+// ---------------------------------------------------------------- Certification showcase
+// Full bleed: the row runs past the container's side gutters to the edges of the screen
+.certs-showcase {
+  --gutter: max(1rem, 4vw);
+  margin-inline: calc(-1 * var(--gutter));
+}
+
+.certs-stage {
   display: grid;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  // One column, the screen's width: the row inside overflows it rather than stretching it
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
 
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.certs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-inline: var(--gutter);
+}
 
-  @media (min-width: 1100px) {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+.certs-hint {
+  color: var(--foreground-muted);
+}
+
+.certs-hint__arrow {
+  display: inline-block;
+  color: var(--primary);
+  animation: certs-nudge 1.8s ease-in-out infinite;
+}
+
+@keyframes certs-nudge {
+  50% {
+    transform: translateX(5px);
   }
 }
 
-.cert {
+// Swipe mode (phones, reduced motion, no JavaScript): a row that scrolls sideways and snaps
+.certs {
+  // (positioned: the cards' offsets are measured from the row)
+  position: relative;
   display: flex;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  margin: 0;
+  padding: 0.5rem var(--gutter) 1rem;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+}
+
+// Pinned mode (big screens): the stage holds the screen and the row slides with the scroll
+.certs-showcase.is-pinned {
+  .certs-stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    align-content: center;
+    // Clear of the fixed header
+    padding-top: 4rem;
+    // The row runs on past the right edge: keep it from widening the page
+    overflow-x: clip;
+  }
+
+  .certs {
+    overflow: visible;
+    scroll-snap-type: none;
+    will-change: transform;
+  }
+}
+
+.certs-progress {
+  height: 2px;
+  margin-inline: var(--gutter);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  overflow: hidden;
+}
+
+.certs-progress__bar {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.cert {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 0.5rem;
-  min-height: 13rem;
-  padding: 1.25rem;
+  width: min(82vw, 380px);
+  padding: 0.75rem 0.75rem 1.25rem;
   border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
   border-radius: 1.25rem;
   background: color-mix(in srgb, var(--foreground) 3%, transparent);
+  scroll-snap-align: start;
   transition:
-    transform 0.5s var(--ease-out),
+    translate 0.5s var(--ease-out),
     border-color 0.4s var(--ease-out),
     background-color 0.4s var(--ease-out),
     box-shadow 0.5s var(--ease-out);
 
+  // Sized by the screen's height too, so a whole card always fits the pinned stage
+  @media (min-width: 900px) {
+    width: clamp(300px, min(30vw, 56svh), 460px);
+  }
+
+  // (translate, not transform: the slide-in motion owns the transform)
   &:hover {
-    transform: translateY(-4px);
+    translate: 0 -4px;
     border-color: color-mix(in srgb, var(--issuer) 60%, transparent);
     background-color: color-mix(in srgb, var(--issuer) 8%, transparent);
     box-shadow: 0 18px 40px -20px color-mix(in srgb, var(--issuer) 55%, transparent);
+  }
+}
+
+// The certificate itself, whole (portrait or landscape) on a soft panel
+.cert__media {
+  position: relative;
+  aspect-ratio: 1.414;
+  margin-bottom: 0.5rem;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+
+  // Fills the frame exactly, so a portrait certificate shows whole instead of cropped
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.7s var(--ease-out);
+  }
+
+  .cert:hover & img {
+    transform: scale(1.04);
   }
 }
 
@@ -427,8 +661,12 @@ onBeforeUnmount(() => ctx?.revert())
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: auto;
-  padding-bottom: 1.5rem;
+  padding: 0.25rem 0.5rem 0.5rem;
+}
+
+.cert__title,
+.cert__issuer {
+  padding-inline: 0.5rem;
 }
 
 .cert__mark {
@@ -519,7 +757,7 @@ onBeforeUnmount(() => ctx?.revert())
 .cert__id {
   display: grid;
   gap: 0.2rem;
-  margin: 0.35rem 0 0;
+  margin: 0.35rem 0.5rem 0;
   padding-top: 0.6rem;
   border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
 }
@@ -541,10 +779,16 @@ onBeforeUnmount(() => ctx?.revert())
 
 @media (prefers-reduced-motion: reduce) {
   .cert,
+  .cert__media img,
+  .certs-hint__arrow,
   .cert__arrow,
   .edu-row__title,
   .edu-row__years {
     transition: none;
+  }
+
+  .certs-hint__arrow {
+    animation: none;
   }
 }
 </style>

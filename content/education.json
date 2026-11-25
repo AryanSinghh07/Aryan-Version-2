@@ -19,30 +19,56 @@
     {
       "title": "AWS Academy Graduate — Cloud Foundations",
       "issuer": "Amazon Web Services",
-      "url": "https://www.credly.com/badges/6a1fb398-2b8f-450d-b090-61ac66bde294"
+      "url": "https://www.credly.com/badges/6a1fb398-2b8f-450d-b090-61ac66bde294",
+      "credentialId": "6a1fb398-2b8f-450d-b090-61ac66bde294",
+      "image": "/certificates/6a1fb398-2b8f-450d-b090-61ac66bde294.webp",
+      "date": "2025"
     },
     {
-      "title": "CCNA Cyber Ops",
+      "title": "CCNA: Introduction to Networks",
       "issuer": "Cisco",
-      "url": "https://www.credly.com/badges/b049d137-4f8d-435e-b312-c8fdd1867797"
+      "url": "https://www.credly.com/badges/b049d137-4f8d-435e-b312-c8fdd1867797",
+      "credentialId": "b049d137-4f8d-435e-b312-c8fdd1867797",
+      "image": "/certificates/b049d137-4f8d-435e-b312-c8fdd1867797.webp",
+      "date": "Jun 2025"
     },
     {
       "title": "Machine Learning with Python",
       "issuer": "IBM",
       "url": "https://courses.skillsbuild.skillsnetwork.site/certificates/ca516d15e2e24f62bacb50c915d05e89",
-      "credentialId": "ca516d15e2e24f62bacb50c915d05e89"
+      "credentialId": "ca516d15e2e24f62bacb50c915d05e89",
+      "image": "/certificates/ca516d15e2e24f62bacb50c915d05e89.webp",
+      "date": "Jan 2025"
     },
     {
       "title": "Web Development",
       "issuer": "EduSkills by AICTE",
       "url": "https://lmsapi.eduskillsfoundation.org/certificates/certificate_735067_785425.html",
-      "credentialId": "61f3abad08dc46d0496dOOcec399272f"
+      "credentialId": "61f3abad08dc46d0496d00cec399272f",
+      "image": "/certificates/61f3abad08dc46d0496d00cec399272f.webp",
+      "date": "Aug 2025"
     },
     {
       "title": "AI for Beginners",
       "issuer": "HP LIFE",
       "url": "https://www.life-global.org/certificate/45eba017-a5f3-4698-b22a-f64bb2c39284",
-      "credentialId": "45eba017-a5f3-4698-b22a-f64bb2c39284"
+      "credentialId": "45eba017-a5f3-4698-b22a-f64bb2c39284",
+      "image": "/certificates/45eba017-a5f3-4698-b22a-f64bb2c39284.webp",
+      "date": "Dec 2024"
+    },
+    {
+      "title": "Entrepreneurship (Elite)",
+      "issuer": "NPTEL · IIT Madras",
+      "url": "https://nptel.ac.in/noc/E_Certificate/NPTEL24MG93S55130089403941187",
+      "credentialId": "NPTEL24MG93S55130089403941187",
+      "image": "/certificates/NPTEL24MG93S55130089403941187.webp",
+      "date": "Jul–Oct 2024"
+    },
+    {
+      "title": "Smart India Hackathon 2025 — Pre-Qualifier",
+      "issuer": "Smart India Hackathon",
+      "image": "/certificates/sih-2025.webp",
+      "date": "Sep 2025"
     }
   ]
 }

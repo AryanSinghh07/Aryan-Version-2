@@ -151,6 +151,10 @@ export default defineContentConfig({
             /** Where the certificate can be checked (opens in a new tab) */
             url: z.string().url().optional(),
             credentialId: z.string().optional(),
+            /** The certificate image, /certificates/<id>.webp (a <id>-card.webp copy sits beside it) */
+            image: z.string().optional(),
+            /** When it was earned, as printed on the certificate */
+            date: z.string().optional(),
           })
         ),
       }),
