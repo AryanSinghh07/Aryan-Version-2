@@ -105,7 +105,16 @@ export default defineNuxtConfig({
   sourcemap: { client: false, server: false },
   $production: {
     vite: {
+      // The site's own code, as it is compiled
       esbuild: { drop: ['console', 'debugger'], legalComments: 'none' },
+      // Every bundled file (the libraries too), as the final code is minified
+      build: {
+        rolldownOptions: {
+          output: {
+            minify: { compress: { dropConsole: true, dropDebugger: true }, mangle: true },
+          },
+        },
+      },
     },
     hooks: {
       'pages:extend'(pages) {
