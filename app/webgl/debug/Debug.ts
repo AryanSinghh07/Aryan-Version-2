@@ -1,8 +1,9 @@
 import type GUI from 'lil-gui'
 import type Stats from 'stats.js'
 
-// Tuning panel (lil-gui) and FPS meter (stats.js), only loaded when the URL ends in #debug.
-// Both are separate chunks, so normal visitors never download them.
+// Tuning panel (lil-gui) and FPS meter (stats.js), only loaded when the URL ends in #debug, and
+// only while developing: the published site leaves them out entirely (import.meta.dev is false
+// there, so the bundler drops this code and both libraries).
 export class Debug {
   active = false
   gui: GUI | null = null
@@ -11,6 +12,7 @@ export class Debug {
   private loading = false
 
   async init() {
+    if (!import.meta.dev) return
     if (window.location.hash !== '#debug' || this.active || this.loading) return
     this.loading = true
     const [{ default: GUIClass }, { default: StatsClass }] = await Promise.all([

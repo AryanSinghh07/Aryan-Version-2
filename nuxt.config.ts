@@ -99,6 +99,22 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
+  // The published site keeps its internals out of the browser's developer tools: no source
+  // maps (only the minified code ships, never the original files), no console messages, no
+  // debugger statements, and no internal pages (the style guide stays a development tool)
+  sourcemap: { client: false, server: false },
+  $production: {
+    vite: {
+      esbuild: { drop: ['console', 'debugger'], legalComments: 'none' },
+    },
+    hooks: {
+      'pages:extend'(pages) {
+        const internal = pages.findIndex((page) => page.path === '/styleguide')
+        if (internal >= 0) pages.splice(internal, 1)
+      },
+    },
+  },
+
   modules: [
     '@pinia/nuxt',
     '@nuxt/content',
