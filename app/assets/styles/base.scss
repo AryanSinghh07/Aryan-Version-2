@@ -251,7 +251,8 @@ ol[role='list'] {
 
 // While WebGL draws the project media (webgl/effects/MediaPlanes.ts), the HTML copies are
 // made transparent but keep their place, links and accessible text
-html.webgl-media [data-webgl-media] {
+// (not while the 3D world is hidden, on pages with their own backdrop: the image shows itself)
+html.webgl-media:not(.world-hidden) [data-webgl-media] {
   opacity: 0;
 }
 

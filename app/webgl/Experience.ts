@@ -338,6 +338,8 @@ export class Experience {
     // (it fades out with the leaving page and back in with the arriving one: base.scss)
     if (this.canvas.classList.contains('is-hidden') !== paused) {
       this.canvas.classList.toggle('is-hidden', paused)
+      // Images the 3D layer draws (data-webgl-media) show as plain images meanwhile (base.scss)
+      document.documentElement.classList.toggle('world-hidden', paused)
     }
     if (paused) return
 

@@ -39,11 +39,7 @@ function spotlight(e: PointerEvent) {
             <UiAccentText text="Tell me *about it*" />
           </h2>
         </header>
-        <ContactForm
-          :looking-for="profile.contact.lookingFor"
-          :budgets="profile.contact.budgets"
-          :email="profile.email"
-        />
+        <ContactForm :looking-for="profile.contact.lookingFor" :email="profile.email" />
       </div>
 
       <ContactChannels

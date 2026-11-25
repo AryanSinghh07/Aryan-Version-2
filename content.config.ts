@@ -77,7 +77,6 @@ export default defineContentConfig({
           body: z.string(),
           availability: z.string(),
           lookingFor: z.array(z.string()),
-          budgets: z.array(z.string()),
         }),
       }),
     }),

@@ -5,7 +5,7 @@ import { gsap } from 'gsap'
 // With JavaScript: inline validation, sending without leaving the page, and a success or
 // error state on the page. Without JavaScript: the browser's own validation and a normal
 // post to Netlify, which then shows /thanks. Netlify finds the form in the prerendered HTML.
-const props = defineProps<{ lookingFor: string[]; budgets: string[]; email: string }>()
+const props = defineProps<{ lookingFor: string[]; email: string }>()
 
 type Field = 'name' | 'email'
 type Status = 'idle' | 'sending' | 'sent' | 'error'
@@ -147,16 +147,6 @@ onBeforeUnmount(() => ctx?.revert())
         <div class="form__chips">
           <label v-for="(option, i) in props.lookingFor" :key="option" class="chip">
             <input type="radio" name="looking-for" :value="option" :checked="i === 0" required />
-            <span>{{ option }}</span>
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset class="form__group">
-        <legend class="form__sentence">My budget is</legend>
-        <div class="form__chips">
-          <label v-for="(option, i) in props.budgets" :key="option" class="chip">
-            <input type="radio" name="budget" :value="option" :checked="i === 0" />
             <span>{{ option }}</span>
           </label>
         </div>
