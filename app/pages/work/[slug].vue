@@ -15,7 +15,8 @@ if (!project.value) {
   throw createError({ statusCode: 404, statusMessage: 'Project not found', fatal: true })
 }
 
-// The 3D world shows this project's particle shape (when one exists for it).
+// The project's particle shape (when one exists for it): the 3D world itself stays hidden on
+// project pages (hidesWorld), but its shape is ready if that ever changes.
 // The next page is set up while this one is still leaving, so only clear our own shape.
 const store = useAppStore()
 let ownShape: string | null = null
@@ -124,6 +125,18 @@ usePageSeo({
 </template>
 
 <style scoped lang="scss">
+// A plain page, like Work and Contact: near-white by day, near-black at night (the 3D world
+// stays hidden behind it, see hidesWorld)
+.case {
+  --page-bg: var(--background);
+
+  background-color: var(--page-bg);
+}
+
+:global([data-theme='dark'] .case) {
+  --page-bg: #121212;
+}
+
 .case__hero {
   display: grid;
   gap: 1.25rem;
