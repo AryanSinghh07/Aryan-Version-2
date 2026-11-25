@@ -191,6 +191,9 @@ export default defineNuxtConfig({
   ssr: true,
   nitro: {
     prerender: {
+      // Pages as about.html rather than about/index.html: Netlify then serves each at its own
+      // address (/about) instead of redirecting to /about/, matching the canonical links
+      autoSubfolderIndex: false,
       crawlLinks: true,
       // /thanks is only reached by posting the contact form without JavaScript
       routes: ['/', '/thanks'],
