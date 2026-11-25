@@ -169,51 +169,6 @@ export function textIn(root: Element | Element[], direction: 1 | -1 = 1, speed =
   return tl
 }
 
-/** Sends split text away: letters fold over and out, words sink, underlines retract */
-export function textOut(root: Element | Element[], direction: 1 | -1 = 1) {
-  const { plain, accent } = textLetters(root)
-  const chars = [...plain, ...accent]
-  const ws = textWords(root)
-  const kws = textKeywords(root)
-  const tl = gsap.timeline()
-  if (chars.length) {
-    tl.to(
-      chars,
-      {
-        yPercent: -105 * direction,
-        rotateX: 80 * direction,
-        autoAlpha: 0,
-        filter: 'blur(5px)',
-        transformPerspective: 600,
-        duration: 0.45,
-        stagger: { each: 0.01, from: 'start' },
-        ease: 'power3.in',
-        overwrite: 'auto',
-      },
-      0
-    )
-  }
-  if (ws.length) {
-    tl.to(
-      ws,
-      {
-        yPercent: -80 * direction,
-        autoAlpha: 0,
-        filter: 'blur(4px)',
-        duration: 0.35,
-        stagger: { each: 0.006 },
-        ease: 'power2.in',
-        overwrite: 'auto',
-      },
-      0
-    )
-  }
-  if (kws.length) {
-    tl.to(kws, { '--kw-line': '0%', duration: 0.25, ease: 'power2.in', overwrite: 'auto' }, 0)
-  }
-  return tl
-}
-
 const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/[]'
 
 /** Decodes short labels (tags, counters) from random characters */

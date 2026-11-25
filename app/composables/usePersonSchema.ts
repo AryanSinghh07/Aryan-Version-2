@@ -44,6 +44,15 @@ export async function usePersonSchema() {
                   alumniOf: { '@type': 'CollegeOrUniversity', name: university.institution },
                 }),
                 knowsAbout: p.marquee,
+                // The certificates on the page, each with its issuer and where to verify it
+                hasCredential: (education.value?.certifications ?? []).map((c) => ({
+                  '@type': 'EducationalOccupationalCredential',
+                  name: c.title,
+                  credentialCategory: 'certificate',
+                  recognizedBy: { '@type': 'Organization', name: c.issuer },
+                  ...(c.url && { url: c.url }),
+                  ...(c.credentialId && { identifier: c.credentialId }),
+                })),
               },
               {
                 '@type': 'WebSite',

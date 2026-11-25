@@ -164,6 +164,7 @@ onBeforeUnmount(() => ctx?.revert())
           autocomplete="name"
           required
           minlength="2"
+          maxlength="100"
           :aria-invalid="errors.name ? 'true' : undefined"
           :aria-describedby="errors.name ? 'contact-name-error' : undefined"
           @input="onInput('name')"
@@ -183,6 +184,7 @@ onBeforeUnmount(() => ctx?.revert())
           placeholder="you@email.com"
           autocomplete="email"
           required
+          maxlength="254"
           :aria-invalid="errors.email ? 'true' : undefined"
           :aria-describedby="errors.email ? 'contact-email-error' : undefined"
           @input="onInput('email')"
@@ -199,6 +201,7 @@ onBeforeUnmount(() => ctx?.revert())
           id="contact-message"
           name="message"
           rows="4"
+          maxlength="4000"
           class="form__input form__textarea"
           placeholder="optional"
         />

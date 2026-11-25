@@ -35,6 +35,52 @@ onBeforeUnmount(() => {
 usePageSeo({
   title: () => project.value?.title ?? 'Project',
   description: () => project.value?.summary,
+  image: () => project.value?.cover,
+  imageAlt: () => (project.value ? `${project.value.title}, ${project.value.subtitle}` : undefined),
+})
+
+// For search engines: what the project is, who made it, and where it sits in the site
+const { siteUrl } = useRuntimeConfig().public
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      key: 'project-schema',
+      innerHTML: () => {
+        const p = project.value
+        if (!p) return ''
+        const url = `${siteUrl}/work/${p.slug}`
+        return JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'CreativeWork',
+              '@id': `${url}#project`,
+              name: p.title,
+              alternativeHeadline: p.subtitle,
+              description: p.summary,
+              url,
+              dateCreated: String(p.year),
+              genre: p.domain,
+              keywords: p.stack.join(', '),
+              ...(p.cover && { image: `${siteUrl}${p.cover}` }),
+              ...(p.github && { codeRepository: p.github }),
+              ...(p.awards?.length && { award: p.awards }),
+              creator: { '@type': 'Person', '@id': `${siteUrl}/#person`, name: 'Aryan Singh' },
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}/` },
+                { '@type': 'ListItem', position: 2, name: 'Work', item: `${siteUrl}/work` },
+                { '@type': 'ListItem', position: 3, name: p.title, item: url },
+              ],
+            },
+          ],
+        })
+      },
+    },
+  ],
 })
 </script>
 

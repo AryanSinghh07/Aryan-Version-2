@@ -1,6 +1,6 @@
 import { Scene, Vector2 } from 'three'
 import type { Vector3 } from 'three'
-import type { CarouselState, Quality, Theme } from '~/stores/app'
+import type { Quality, Theme } from '~/stores/app'
 import { QUALITY, resolveQuality } from './config/quality'
 import type { QualityTier } from './config/quality'
 import type { HeroSceneInfo } from './config/scenes'
@@ -38,9 +38,6 @@ export interface AppStateSource {
   outro: number | null
   /** A page shows its own 3D scene (the About room): the world pauses and hides meanwhile */
   worldPaused: boolean
-  carousel: CarouselState | null
-  /** Written back by the Experience: the Work page panel under the pointer (-1: none) */
-  carouselHover: number
   /** Written back by the Experience, so the settings panel can say what "Auto" means */
   autoTier: QualityTier
   trackLoad: <T>(task: Promise<T>) => Promise<T>
@@ -62,8 +59,6 @@ export interface FrameState {
   nextPreview: { route: string; progress: number } | null
   /** How much of the screen the footer's text currently covers, 0..1 (particles dim) */
   footerCover: number
-  /** Work page carousel, or null */
-  carousel: CarouselState | null
   reducedMotion: boolean
   particleCount: number
   /** Seconds since start */
@@ -164,7 +159,6 @@ export class Experience {
       pageShape: state.pageShape,
       nextPreview: null,
       footerCover: 0,
-      carousel: null,
       reducedMotion: this.reducedMotionQuery.matches,
       particleCount: this.particleCount(),
       elapsed: 0,
@@ -355,7 +349,6 @@ export class Experience {
     frame.pageShape = state.pageShape
     frame.nextPreview = state.nextPreview
     frame.footerCover = this.footerCover()
-    frame.carousel = state.carousel
     frame.reducedMotion = this.reducedMotionQuery.matches
     if (state.theme !== this.palette.theme) this.palette.setTheme(state.theme, frame.reducedMotion)
     frame.elapsed = elapsed
@@ -367,9 +360,6 @@ export class Experience {
     frame.pointerActive = this.pointer.active
 
     this.world.update(frame, this.palette, delta)
-    if (this.world.carousel.hovered !== state.carouselHover) {
-      state.carouselHover = this.world.carousel.hovered
-    }
     // Pointer smoke: only once the visitor is in, and never with reduced motion
     this.fluidPointer.set((this.pointer.ndc.x + 1) / 2, (this.pointer.ndc.y + 1) / 2)
     this.fluid.update(

@@ -80,7 +80,8 @@ const PAGE_VIEWS: { match: (route: string) => boolean; view: PageView }[] = [
     view: { camera: [0, 0.9, 9.6], layout: { x: 2.4, y: 0.7, scale: 0.62, opacity: 0.4 } },
   },
   {
-    // Work: straight on at the carousel ring; the constellation floats above as a soft void
+    // Work: straight on; the constellation floats above as a soft void (the camera glides here
+    // from the end-of-page reveal; the page itself hides the world)
     match: (r) => r === '/work',
     view: { camera: [0, 0.3, 9], layout: { x: 0, y: 2.4, scale: 1.3, opacity: 0.3 } },
   },

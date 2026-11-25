@@ -17,7 +17,6 @@ import type { Resources } from '../core/Resources'
 import type { FrameState } from '../Experience'
 
 import { FALLBACK_SHAPE, ShapeLibrary } from '../shapes/ShapeLibrary'
-import { Carousel } from './Carousel'
 import { Environment } from './Environment'
 import { lookNumber } from '../config/landscape'
 import { Floor } from './Floor'
@@ -64,7 +63,6 @@ export class World {
   blank = 0
   landscape: Landscape
   fragments: Fragments
-  carousel: Carousel
   portal: Portal
   ready = false
 
@@ -78,8 +76,8 @@ export class World {
   private turned = new Quaternion()
   /**
    * On the scene pages the particles draw last, after the portal, on a fresh depth buffer: the
-   * shape is never cut by the landscape (the lighthouse, the tree) around it. Elsewhere (the
-   * Work carousel) and in the lake's mirror image they are depth-tested as usual. Attached in
+   * shape is never cut by the landscape (the lighthouse, the tree) around it. Elsewhere, and in
+   * the lake's mirror image, they are depth-tested as usual. Attached in
    * update(): the particle system builds a new points object when it (re)builds.
    */
   private drawOnTop = (r: WebGLRenderer, _s: Scene, cam: Camera) => {
@@ -122,11 +120,9 @@ export class World {
     this.particles = new Particles(scene, this.shapes, renderer)
     this.fragments = new Fragments(scene, renderer, this.particles.points)
     this.sparkles = new Sparkles(scene)
-    this.carousel = new Carousel(scene)
     this.portal = new Portal(scene)
     this.floor = new Floor(scene, () => [
       this.fragments.group,
-      this.carousel.group,
       this.portal.mesh,
       ...this.landscape.hiddenInReflection,
     ])
@@ -167,7 +163,6 @@ export class World {
     const q = QUALITY[tier]
     this.fragments.setQuality(tier)
     this.shards = q.shards
-    this.carousel.setQuality(tier)
     this.sparkles.setQuality(q.sparkles, q.fireflies)
     this.floor.setQuality(q.floor, width, height, pixelRatio)
   }
@@ -259,13 +254,8 @@ export class World {
     l.x = MathUtils.lerp(l.x, target.x, ease)
     l.y = MathUtils.lerp(l.y, target.y + lift * 2.2, ease)
     l.scale = MathUtils.lerp(l.scale, target.scale, ease)
-    // Footer text on screen: dim the particles so links and the email stay easy to read.
-    // On the Work page carousel they become a soft void behind the panels.
-    const onCarousel = state.route === '/work' && !!state.carousel
-    const visible =
-      (state.entered ? 1 : 0.6) *
-      (1 - Math.min(state.footerCover * 1.4, 1) * 0.65) *
-      (onCarousel ? 0.35 : 1)
+    // Footer text on screen: dim the particles so links and the email stay easy to read
+    const visible = (state.entered ? 1 : 0.6) * (1 - Math.min(state.footerCover * 1.4, 1) * 0.65)
     // Scrolled down, the logo stays as a faint presence; past the hero's portal it is gone
     const keep = outro >= 0 ? 0 : 0.1
     // Mid-morph the loose cloud crosses behind the words: it dims a little on the way
@@ -394,20 +384,11 @@ export class World {
     this.look.lerp(this.lookTarget, settle ? 1 : 1 - Math.exp(-delta * glide))
     this.camera.lookAt(this.look)
 
-    this.carousel.update(
-      state.carousel,
-      onCarousel && state.entered,
-      this.camera,
-      state.pointerActive ? state.pointerNdc : null,
-      state.elapsed,
-      delta,
-      reduced
-    )
     // Past the portal: a flat backdrop and no stars, the new page begins
     this.blank = outro >= 0 ? smooth(0.62, 0.74, outro) : 0
     this.sparkles.points.visible = this.blank < 0.99
     this.sky.update(palette, this.camera.position, this.logo, state.elapsed, reduced, this.blank)
-    this.floor.update(palette, this.logo, state.elapsed, !onCarousel && !ended, delta)
+    this.floor.update(palette, this.logo, state.elapsed, !ended, delta)
     this.portal.update(outro, this.logo, this.camera, state.aspect, state.elapsed)
 
     // Pointer on a plane through the logo, facing the camera, for the particle physics
@@ -432,7 +413,6 @@ export class World {
   }
 
   dispose() {
-    this.carousel.dispose()
     this.portal.dispose()
     this.parallaxX.tween.kill()
     this.parallaxY.tween.kill()

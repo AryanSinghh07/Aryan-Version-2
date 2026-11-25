@@ -66,7 +66,7 @@ export class Floor {
       const material = reflector.material as ShaderMaterial
       material.transparent = true
       material.depthWrite = false
-      // Keep refracting glass and the Work carousel out of the mirror image
+      // Keep refracting glass and the portal out of the mirror image
       const render = reflector.onBeforeRender.bind(reflector)
       reflector.onBeforeRender = (...args: Parameters<typeof render>) => {
         const hidden = this.hideInReflection().filter((o) => o.visible)

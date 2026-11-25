@@ -19,8 +19,3 @@ export function preloadAsset(url: string) {
   }
   return task
 }
-
-/** The download of a file preloaded earlier, or null */
-export function preloadedAsset(url: string) {
-  return cache.get(url) ?? null
-}
