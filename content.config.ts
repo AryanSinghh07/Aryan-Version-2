@@ -123,7 +123,8 @@ export default defineContentConfig({
             year: z.number().optional(),
             /** Slug of the related project, linked from the card */
             project: z.string().optional(),
-            images: z.array(z.string()).default([]),
+            /** Photos from the event: /proof/<name>.webp, with a <name>-thumb.webp beside it */
+            images: z.array(z.object({ src: z.string(), alt: z.string() })).default([]),
           })
         ),
       }),

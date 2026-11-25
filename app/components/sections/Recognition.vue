@@ -2,7 +2,7 @@
 // "Proof of work", in the same design as "Behind the build": the section's statement
 // (UiStatement), then a numbered list of the awards (UiStepList) beside a panel for the one on
 // display: its type and year, the headline stat ("34th", "2,000+") and what it means, a line
-// about it and a link to the project. Once the statement has gone by, the panel and the list
+// about it, photos from the event and a link to the project. Once the statement has gone by, the panel and the list
 // pin mid-screen and the scroll steps through the awards (usePinnedSteps); after the last one
 // the page scrolls on. Hovering or focusing a row shows that award.
 const { data: recognition } = await useRecognition()
@@ -50,6 +50,21 @@ usePinnedSteps(
           <p class="proof__detail">
             <span class="sr-only">{{ item.title }}: </span>{{ item.detail }}
           </p>
+          <!-- Photos from the event, like prints pinned to a board; each opens full size -->
+          <ul v-if="item.images?.length" role="list" class="proof__photos">
+            <li v-for="(photo, p) in item.images" :key="photo.src" class="proof__photo">
+              <a :href="photo.src" target="_blank" rel="noopener">
+                <img
+                  :src="photo.src.replace(/\.webp$/, '-thumb.webp')"
+                  :alt="photo.alt"
+                  :style="{ '--tilt': p % 2 ? '2.5deg' : '-2deg' }"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span class="sr-only"> (opens the full photo in a new tab)</span>
+              </a>
+            </li>
+          </ul>
           <UiGlassButton v-if="item.project" :to="`/work/${item.project}`" variant="secondary">
             View project <span class="proof__arrow" aria-hidden="true">↳</span>
           </UiGlassButton>
@@ -132,7 +147,7 @@ usePinnedSteps(
       filter: none;
     }
 
-    @for $i from 1 through 5 {
+    @for $i from 1 through 6 {
       > :nth-child(#{$i}) {
         transition-delay: #{($i - 1) * 0.06}s;
       }
@@ -182,6 +197,52 @@ usePinnedSteps(
   margin-left: 0.35em;
 }
 
+// Event photos: small tilted prints at their own shape (no cropping), straightening and
+// lifting under the pointer
+.proof__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0 0 0.75rem;
+  padding: 0.35rem 0 0;
+  list-style: none;
+}
+
+.proof__photo {
+  a {
+    display: block;
+    border-radius: 0.75rem;
+
+    &:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 4px;
+    }
+  }
+
+  img {
+    display: block;
+    width: auto;
+    max-width: min(100%, 22rem);
+    height: clamp(6rem, 13svh, 9rem);
+    object-fit: cover;
+    border: 4px solid color-mix(in srgb, var(--foreground) 92%, transparent);
+    border-radius: 0.75rem;
+    box-shadow: 0 14px 30px -14px rgb(0 0 0 / 0.55);
+    rotate: var(--tilt, 0deg);
+    transition:
+      rotate 0.5s var(--ease-out),
+      translate 0.5s var(--ease-out),
+      box-shadow 0.5s var(--ease-out);
+  }
+
+  a:hover img,
+  a:focus-visible img {
+    rotate: 0deg;
+    translate: 0 -4px;
+    box-shadow: 0 22px 40px -16px rgb(0 0 0 / 0.6);
+  }
+}
+
 @media (max-width: 640px) {
   .proof__stat {
     font-size: 3.5rem;
@@ -193,6 +254,10 @@ usePinnedSteps(
     transform: none;
     filter: none;
     transition: opacity 0.2s linear;
+  }
+
+  .proof__photo img {
+    transition: none;
   }
 }
 </style>
