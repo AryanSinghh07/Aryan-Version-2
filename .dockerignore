@@ -1,0 +1,15 @@
+node_modules
+.output
+.nuxt
+.data
+.nitro
+.cache
+dist
+.git
+.github
+public/draco
+public/basis
+public/benchmarks
+*.log
+.env
+.env.*

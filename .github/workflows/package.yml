@@ -1,0 +1,59 @@
+# Builds the portfolio's container image, checks that it serves the site with its security
+# headers, and publishes it to GitHub Packages (ghcr.io/aryansinghh07/aryan-version-2).
+# Runs for every published release (tagged with the release version and "latest"), or by hand
+# from the Actions tab (tagged with the latest release version).
+name: Publish package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/aryansinghh07/aryan-version-2
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Work out the version
+        id: version
+        run: echo "version=$(git describe --tags --abbrev=0 | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+      - name: Build the image
+        run: docker build -t portfolio:test .
+
+      - name: Check that it serves the site
+        run: |
+          docker run -d --name portfolio -p 8080:8080 portfolio:test
+          for i in $(seq 1 20); do curl -fs http://localhost:8080/ >/dev/null && break; sleep 1; done
+          for page in / /about /work /contact /work/paws /sitemap.xml /robots.txt; do
+            curl -fsS -o /dev/null -w "$page %{http_code}\n" "http://localhost:8080$page"
+          done
+          curl -fsSI http://localhost:8080/ | grep -i '^content-security-policy'
+          curl -fsSI http://localhost:8080/about | grep -i '^x-frame-options: DENY'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/no-such-page)" = 404
+          docker rm -f portfolio
+
+      - name: Sign in to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish
+        run: |
+          docker tag portfolio:test "$IMAGE:${{ steps.version.outputs.version }}"
+          docker tag portfolio:test "$IMAGE:latest"
+          docker push "$IMAGE:${{ steps.version.outputs.version }}"
+          docker push "$IMAGE:latest"
