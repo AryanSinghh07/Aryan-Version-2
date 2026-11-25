@@ -213,6 +213,8 @@ export class World {
     // Each scene holds its shape for a stretch of scroll at either end of the step.
     const inScenes = World.inScenes(state)
     const count = state.heroScenes.length
+    // Every scene's shape is packed ahead (behind the entry gate), so the scroll never waits
+    if (inScenes) particles.warm(state.heroScenes.map((s) => s.shape))
     const scrubbed = inScenes && !reduced && count > 1
     const at = MathUtils.clamp(state.sceneProgress, 0, Math.max(count - 1, 0))
     const step = Math.min(Math.floor(at), Math.max(count - 2, 0))

@@ -6,10 +6,46 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { clone as cloneModel } from 'three/addons/utils/SkeletonUtils.js'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { preloadedAsset } from '~/utils/assetCache'
+import { preloadAsset } from '~/utils/assetCache'
 import { ABOUT_ROOM_MODEL } from '../config/models'
+
+let roomTask: Promise<GLTF> | null = null
+
+/**
+ * Downloads and unpacks the About room once, during the site's first loading screen (see the
+ * Preloader), so every visit to About builds the room straight from memory instead of decoding
+ * the model on arrival.
+ */
+export function preloadAboutRoom() {
+  if (!roomTask) {
+    const draco = new DRACOLoader().setDecoderPath('/draco/')
+    const loader = new GLTFLoader().setDRACOLoader(draco)
+    const task = preloadAsset(ABOUT_ROOM_MODEL)
+      .then((buffer) => loader.parseAsync(buffer, '/models/'))
+      .finally(() => draco.dispose())
+    // A failure is forgotten, so the next visit can try again
+    task.catch(() => {
+      if (roomTask === task) roomTask = null
+    })
+    roomTask = task
+  }
+  return roomTask
+}
+
+/**
+ * A fresh copy of the unpacked room for one visit (the lights added to it stay with this
+ * visit); meshes, materials and textures are shared, so nothing is decoded again
+ */
+function copyRoom(gltf: GLTF): GLTF {
+  const scene = cloneModel(gltf.scene) as THREE.Group
+  const cameras = gltf.cameras.map(
+    (c) => (scene.getObjectByName(c.name) as THREE.Camera | undefined) ?? c
+  )
+  return { ...gltf, scene, scenes: [scene], cameras }
+}
 
 /**
  * The About page room (public/models/about-room.glb, Blender scene "About" in
@@ -559,12 +595,13 @@ export function createAboutScene(canvas: HTMLCanvasElement, opts: AboutSceneOpti
     renderer.compile(scene, camera)
     o.onLoad?.()
   }
-  // Preloaded with everything else at the start (utils/assetCache): parse it from memory
-  const preloaded = o.modelUrl === ABOUT_ROOM_MODEL ? preloadedAsset(o.modelUrl) : null
-  if (preloaded) {
-    preloaded
-      .then((buffer) => loader.parse(buffer, '/models/', onLoad, (err) => o.onError?.(err)))
-      .catch(() => loader.load(o.modelUrl, onLoad, undefined, (err) => o.onError?.(err)))
+  // Downloaded and unpacked with everything else at the start (preloadAboutRoom): built from
+  // memory
+  if (o.modelUrl === ABOUT_ROOM_MODEL) {
+    preloadAboutRoom().then(
+      (gltf) => onLoad(copyRoom(gltf)),
+      (err) => o.onError?.(err)
+    )
   } else {
     loader.load(
       o.modelUrl,

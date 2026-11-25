@@ -8,12 +8,9 @@ usePageSeo({
 const { data: profile } = await useProfile()
 
 // The Contact page, in the same style as About and Work: a plain near-black page (the 3D
-// world rests behind it). A big "Let's talk" with the email and the time in India, then the
-// sentence-style form in a card with a glow that follows the pointer, beside the other ways
-// to get in touch.
-const store = useAppStore()
-onMounted(() => (store.worldPaused = true))
-onBeforeUnmount(() => (store.worldPaused = false))
+// world rests, hidden, behind it: see hidesWorld). A big "Let's talk" with the email and the
+// time in India, then the sentence-style form in a card with a glow that follows the pointer,
+// beside the other ways to get in touch.
 
 const card = ref<HTMLElement | null>(null)
 function spotlight(e: PointerEvent) {

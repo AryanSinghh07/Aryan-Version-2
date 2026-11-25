@@ -292,7 +292,7 @@ function stop() {
   stopTheme = null
   room?.dispose()
   room = null
-  store.worldPaused = false
+  // (the shared 3D world stays hidden on About either way: app.vue decides, see hidesWorld)
   store.pageLoading = false
 }
 
@@ -371,7 +371,7 @@ onBeforeUnmount(stop)
 </template>
 
 <style scoped lang="scss">
-// With the 3D room: one stretch of scrolling per beat, plus the push into the screen
+// With the 3D room: one stretch of scrolling per beat, plus the final push into the screen
 .room.is-3d {
   position: relative;
   height: calc(var(--stretches) * var(--stretch));

@@ -77,6 +77,10 @@ export class Particles {
   private targetOwned = true
   /** Packed shape textures by name, for the scroll-driven morph (cleared on rebuild) */
   private cache = new Map<string, DataTexture>()
+  /** Shapes being packed right now, by "name:count" */
+  private packing = new Map<string, Promise<DataTexture | null>>()
+  /** The shapes (and particle count) warm() last packed */
+  private warmed = ''
   /** The two shapes of the scroll-driven morph ("a|b"), and how far it is from a to b */
   private blendKey = ''
   private blendValue = 0
@@ -192,31 +196,56 @@ export class Particles {
    */
   async blend(a: string, b: string, t: number) {
     if (this.pendingReveal) return
-    this.blendValue = t
-    this.shape = t < 0.5 ? a : b
     const key = `${a}|${b}`
-    if (key === this.blendKey) return
-    this.blendKey = key
+    if (key === this.blendKey) {
+      this.blendValue = t
+      this.shape = t < 0.5 ? a : b
+      return
+    }
     const request = ++this.request
     this.tweens.forEach((tw) => tw.kill())
     this.tweens = []
     this.burst.value = 0
-    const [ta, tb] = await Promise.all([this.shapeTexture(a), this.shapeTexture(b)])
+    // Ready (see warm): switch this very frame. Otherwise keep heading where the particles
+    // already are until both shapes are packed, so they never swing back to an older shape
+    const ready = [this.cache.get(a), this.cache.get(b)]
+    const [ta, tb] =
+      ready[0] && ready[1] ? ready : await Promise.all([this.shapeTexture(a), this.shapeTexture(b)])
     if (request !== this.request || !ta || !tb) return
+    this.blendKey = key
+    this.blendValue = t
+    this.shape = t < 0.5 ? a : b
     this.setTarget(ta, false, tb)
     this.uniforms.uProgress!.value = 1
   }
 
+  /** Packs these shapes ahead of time (the hero's scenes), so scrolling never waits on one */
+  warm(shapes: string[]) {
+    const key = `${this.count}:${shapes.join(',')}`
+    if (key === this.warmed || !this.gpu) return
+    this.warmed = key
+    for (const shape of shapes) void this.shapeTexture(shape)
+  }
+
   /** A shape packed for the simulation, made once per shape and particle count */
-  private async shapeTexture(shape: string) {
+  private shapeTexture(shape: string): Promise<DataTexture | null> {
     const hit = this.cache.get(shape)
-    if (hit) return hit
-    const count = this.count
-    const points = await this.library.get(shape, count)
-    if (count !== this.count || !this.gpu) return null
-    const texture = this.pack(points)
-    this.cache.set(shape, texture)
-    return texture
+    if (hit) return Promise.resolve(hit)
+    // Asked for every frame while it is on its way: one packing per shape
+    const key = `${shape}:${this.count}`
+    let task = this.packing.get(key)
+    if (!task) {
+      const count = this.count
+      task = this.library.get(shape, count).then((points) => {
+        this.packing.delete(key)
+        if (count !== this.count || !this.gpu) return null
+        const texture = this.cache.get(shape) ?? this.pack(points)
+        this.cache.set(shape, texture)
+        return texture
+      })
+      this.packing.set(key, task)
+    }
+    return task
   }
 
   /** Rebuilds with a new particle count (quality change), keeping the current shape */
@@ -268,8 +297,13 @@ export class Particles {
     const v = this.velocity.material.uniforms
     const p = this.position.material.uniforms
     const ph = this.physics
-    v.uDelta!.value = delta
-    p.uDelta!.value = delta
+    // A slow frame (a busy or big screen) runs the physics in several small steps: one step
+    // is capped at 3 frames' worth, so at a low frame rate the particles would trail far
+    // behind the scroll and sit as a loose cloud instead of the shape
+    const steps = Math.min(Math.max(Math.ceil((delta * 60) / 2), 1), 5)
+    const sub = delta / steps
+    v.uDelta!.value = sub
+    p.uDelta!.value = sub
     v.uTime!.value = elapsed
     v.uSpring!.value = ph.spring
     v.uDamping!.value = ph.damping
@@ -307,7 +341,7 @@ export class Particles {
       ;(v.uPointerVelocity!.value as Vector3).set(0, 0, 0)
     }
 
-    gpu.compute()
+    for (let i = 0; i < steps; i++) gpu.compute()
     this.uniforms.uPositions!.value = gpu.getCurrentRenderTarget(this.position).texture
   }
 

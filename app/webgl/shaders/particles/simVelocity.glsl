@@ -26,14 +26,15 @@ void main() {
   vec4 pos = texture2D(texturePosition, uv);
   vec3 vel = texture2D(textureVelocity, uv).xyz;
   float hash = pos.w;
-  // Scroll-driven morph: each particle leaves at its own moment, and mid-way the particles
-  // loosen into a swirling cloud between the two shapes
+  // Scroll-driven morph: each particle leaves at its own moment and loosens a little on the
+  // way, so one shape flows into the next (kept light: a heavier swirl reads as a shapeless
+  // blob for most of the hand-over)
   vec3 targetA = texture2D(uTarget, uv).xyz;
   vec3 targetB = texture2D(uTargetB, uv).xyz;
   float m = smoothstep(hash * 0.4, hash * 0.4 + 0.6, uBlend);
   vec3 target = mix(targetA, targetB, m);
   float loose = sin(m * 3.14159);
-  target += curlNoise(target * 0.6 + vec3(hash * 4.0)) * loose * 0.55;
+  target += curlNoise(target * 0.6 + vec3(hash * 4.0)) * loose * 0.25;
   // Steps are tuned per frame at 60 fps; scale them so any frame rate behaves the same
   float k = clamp(uDelta * 60.0, 0.0, 3.0);
 

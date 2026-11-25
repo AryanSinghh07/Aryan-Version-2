@@ -20,6 +20,13 @@ const covered = computed(() => mounted.value && !store.entered)
 // meanwhile (webgl/config/scenes.ts). Instant with reduced motion.
 const finish = () => (store.navigating = false)
 
+// The 3D world hides on pages with their own backdrop. Decided here, by the page change itself,
+// so it never shows for a moment in between: it fades out with the old page when the new one
+// hides it, and comes back as a page that shows it enters.
+const router = useRouter()
+const worldHiddenHere = () => hidesWorld(router.currentRoute.value.path)
+onMounted(() => (store.worldPaused = worldHiddenHere()))
+
 /**
  * Runs `done` once: when the animation completes, or after a time limit if animation frames
  * stall (a background tab, a very busy device), so a page change can never get stuck.
@@ -43,13 +50,17 @@ const pageTransition: TransitionProps = {
   name: 'page',
   mode: 'out-in',
   css: false,
-  onBeforeLeave: () => (store.navigating = true),
+  onBeforeLeave: () => {
+    store.navigating = true
+    if (worldHiddenHere()) store.worldPaused = true
+  },
   onLeave(el, done) {
     if (prefersReducedMotion()) return done()
     const complete = settle(el, done, 1200)
     gsap.to(el, { autoAlpha: 0, y: -32, duration: 0.45, ease: 'power2.in', onComplete: complete })
   },
   onEnter(el, done) {
+    store.worldPaused = worldHiddenHere()
     const complete = settle(
       el,
       () => {

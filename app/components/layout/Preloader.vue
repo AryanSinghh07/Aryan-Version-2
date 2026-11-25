@@ -67,8 +67,15 @@ onMounted(() => {
   startedAt = performance.now()
 
   store.trackLoad(document.fonts.ready)
-  // Every 3D model loads up front: the About room too (kept in memory, see utils/assetCache)
-  store.trackLoad(preloadAsset(ABOUT_ROOM_MODEL))
+  // Every 3D model loads up front, the About room too: downloaded and unpacked now and kept in
+  // memory, so About opens straight onto it (webgl/about/AboutScene). With reduced motion the
+  // room isn't shown, so the download alone.
+  store.trackLoad(
+    (reduced
+      ? preloadAsset(ABOUT_ROOM_MODEL).then(() => {})
+      : import('~/webgl/about/AboutScene').then((m) => m.preloadAboutRoom().then(() => {}))
+    ).catch((error) => console.warn('[about] the room could not be preloaded', error))
+  )
   store.trackLoad(
     document.readyState === 'complete'
       ? Promise.resolve()

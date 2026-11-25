@@ -335,8 +335,9 @@ export class Experience {
 
     // A page shows its own 3D scene (the About room): stand still and stay out of sight
     const paused = state.worldPaused
-    if (this.canvas.style.visibility !== (paused ? 'hidden' : '')) {
-      this.canvas.style.visibility = paused ? 'hidden' : ''
+    // (it fades out with the leaving page and back in with the arriving one: base.scss)
+    if (this.canvas.classList.contains('is-hidden') !== paused) {
+      this.canvas.classList.toggle('is-hidden', paused)
     }
     if (paused) return
 

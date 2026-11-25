@@ -8,11 +8,9 @@ usePageSeo({
 const { data: projects } = await useProjects()
 
 // The Work page, in the same style as About: a plain near-black page (the 3D world rests
-// behind it). The headline, a band of the tools used, the projects as full-screen cards that
-// stack up as you scroll, then an index of every project with a preview under the pointer.
-const store = useAppStore()
-onMounted(() => (store.worldPaused = true))
-onBeforeUnmount(() => (store.worldPaused = false))
+// behind it, hidden: see hidesWorld). The headline, a band of the tools used, the projects as
+// full-screen cards that stack up as you scroll, then an index of every project with a preview
+// under the pointer.
 
 /** Every technology used, the most used first */
 const tools = computed(() => {
