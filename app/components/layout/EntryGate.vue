@@ -245,13 +245,9 @@ function trapFocus(e: KeyboardEvent) {
 .gate__mark {
   display: grid;
   place-items: center;
+  // The "A" on its own, no badge behind it
   width: 3.5rem;
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--foreground);
-  color: var(--background);
-  font-family: var(--font-display);
-  font-size: 1.5rem;
 }
 
 // The two halves of the name fly apart

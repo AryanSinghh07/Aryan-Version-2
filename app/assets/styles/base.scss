@@ -170,13 +170,11 @@ ol[role='list'] {
   }
 }
 
-// The "A" logo inside the round marks (header, loading screen, entry gate)
+// The "A" logo, on a transparent background (header, loading screen, entry gate)
 .site-logo {
   display: block;
-  width: 56%;
+  width: 100%;
   height: auto;
-  // The letter's optical centre sits a little low in the image
-  translate: 0 -4%;
   pointer-events: none;
   user-select: none;
 }

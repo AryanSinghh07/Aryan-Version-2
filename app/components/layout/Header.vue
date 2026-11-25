@@ -97,14 +97,9 @@ function closeMenu() {
 .header__mark {
   display: grid;
   place-items: center;
+  // The "A" on its own, no badge behind it
   width: 2.25rem;
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--foreground);
-  color: var(--background);
-  font-family: var(--font-display);
-  font-size: 1rem;
-  letter-spacing: 0;
 }
 
 .header__nav {
