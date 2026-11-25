@@ -170,6 +170,17 @@ ol[role='list'] {
   }
 }
 
+// The "A" logo inside the round marks (header, loading screen, entry gate)
+.site-logo {
+  display: block;
+  width: 56%;
+  height: auto;
+  // The letter's optical centre sits a little low in the image
+  translate: 0 -4%;
+  pointer-events: none;
+  user-select: none;
+}
+
 // v-scramble: split-colour ghost copies while the text scrambles on hover
 .scramble {
   position: relative;

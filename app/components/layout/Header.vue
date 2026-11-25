@@ -20,7 +20,9 @@ function closeMenu() {
   <header class="header">
     <div class="header__inner container">
       <NuxtLink to="/" class="header__logo t-label">
-        <span class="header__mark" aria-hidden="true">AS</span>
+        <span class="header__mark" aria-hidden="true"
+          ><img class="site-logo" src="/logo.png" alt="" width="192" height="192"
+        /></span>
         <span class="header__name">{{ profile?.name }}</span>
         <span class="sr-only">, home</span>
       </NuxtLink>

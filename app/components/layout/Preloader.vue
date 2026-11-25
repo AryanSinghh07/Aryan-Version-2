@@ -106,7 +106,9 @@ onBeforeUnmount(() => {
     :aria-valuenow="percent"
   >
     <div class="preloader__inner">
-      <span class="preloader__mark" aria-hidden="true">AS</span>
+      <span class="preloader__mark" aria-hidden="true"
+        ><img class="site-logo" src="/logo.png" alt="" width="192" height="192"
+      /></span>
       <p class="preloader__tagline t-label t-muted">Building things that actually matter.</p>
       <p class="preloader__count" aria-hidden="true">
         {{ percent }}<span class="preloader__percent">%</span>

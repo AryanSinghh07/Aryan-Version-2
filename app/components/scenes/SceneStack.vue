@@ -343,16 +343,15 @@ onMounted(async () => {
     gsap.set(metas(el), { autoAlpha: 0 })
   })
 
-  if (store.entered) begin()
+  // (after the entry gate, and after the page portal has opened when arriving through it)
+  const ready = () => store.entered && !store.revealing
+  if (ready()) begin()
   else {
-    stopEnteredWatch = watch(
-      () => store.entered,
-      (entered) => {
-        if (!entered) return
-        stopEnteredWatch?.()
-        begin()
-      }
-    )
+    stopEnteredWatch = watch(ready, (entered) => {
+      if (!entered) return
+      stopEnteredWatch?.()
+      begin()
+    })
   }
 })
 

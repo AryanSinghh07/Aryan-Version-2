@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { gsap } from 'gsap'
 
-// The portal page change: opening the About page from anywhere in the site plays the ring
-// portal (the hero's particle ring, utils/portalReveal.ts). It opens once, from the "keep
-// scrolling" ring when that is on screen (otherwise from the middle), the About page's colour
-// inside it, until it passes the edges of the screen; the page changes underneath; then, once
-// About has arrived, loaded and settled, the colour simply fades away onto it.
+// The portal page change: opening Home, About, Work or Contact from elsewhere in the site plays
+// the smoke portal (utils/portalReveal.ts). It opens once, from the "keep scrolling" ring when
+// that is on screen (otherwise from the middle), the new page's colour inside it, until it
+// passes the edges of the screen; the page changes underneath; then, once the page has arrived,
+// loaded and settled, the colour simply fades away onto it (the page's intro plays as it does).
 //
 // Skipped with reduced motion, before the visitor has entered the site, on the first load of a
 // page, and without WebGL: the normal page change plays instead.
@@ -13,10 +13,14 @@ const router = useRouter()
 const store = useAppStore()
 
 /** Pages that open through the portal */
-const PORTAL_PAGES = ['/about']
+const PORTAL_PAGES = ['/', '/about', '/work', '/contact']
+/** How long the ring takes to open, seconds: About's room deserves the slower walk in */
+const openDuration = (path: string) => (path === '/about' ? 1.9 : 1.4)
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const active = ref(false)
+/** Counts the page changes through the portal (each gets its own canvas) */
+const run = ref(0)
 
 interface Running {
   state: PortalRevealState
@@ -36,14 +40,17 @@ function origin() {
 }
 
 /** Grows the portal until it covers the screen; null when it can't run (no WebGL) */
-async function cover(): Promise<Running | null> {
+async function cover(target: string): Promise<Running | null> {
+  // A fresh canvas every time: a finished portal releases its drawing context, and a canvas
+  // can't get a new one (without this, only the first page change showed the portal)
+  run.value++
   active.value = true
   await nextTick()
   const el = canvas.value
   if (!el) return null
   const state: PortalRevealState = { ...origin(), radius: 0, fade: 0 }
   // The new page's colour inside the ring, the old page outside it
-  const reveal = createPortalReveal(el, state, { inside: aboutColor(), outside: 'clear' })
+  const reveal = createPortalReveal(el, state, { inside: colorOf(target), outside: 'clear' })
   if (!reveal) return null
   const draw = () => reveal.draw()
   gsap.ticker.add(draw)
@@ -54,13 +61,16 @@ async function cover(): Promise<Running | null> {
       reveal.dispose()
     },
   }
-  await openRing(state, { duration: 1.9, alive: () => !disposed })
+  await openRing(state, { duration: openDuration(target), alive: () => !disposed })
   return running
 }
 
-/** The About page's colour: the home black at night, the page colour by day */
-function aboutColor() {
-  return store.theme === 'dark' ? '#121212' : pageColor()
+/**
+ * The new page's colour: About, Work and Contact are near-black at night (their --page-bg),
+ * the home page opens onto the site colour; by day every page uses the site colour
+ */
+function colorOf(path: string) {
+  return store.theme === 'dark' && path !== '/' ? '#121212' : pageColor()
 }
 
 const nuxtApp = useNuxtApp()
@@ -140,7 +150,7 @@ const removeBefore = router.beforeEach(async (to, from) => {
   if (!from.matched.length || !store.entered || prefersReducedMotion()) return true
   busy = true
   store.revealing = true
-  covering = await cover()
+  covering = await cover(target)
   if (!covering) finish()
   return true
 })
@@ -154,7 +164,8 @@ const removeAfter = router.afterEach(async () => {
   await whenArrived()
   await whenLoaded()
   await whenSettled()
-  // The colour fades away onto the new page
+  // The colour fades away onto the new page, and its intro plays meanwhile
+  store.revealing = false
   if (canvas.value) await gsap.to(canvas.value, { opacity: 0, duration: 0.9, ease: 'power2.out' })
   finish()
 })
@@ -168,7 +179,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <canvas v-show="active" ref="canvas" class="portal-transition" aria-hidden="true" />
+  <canvas v-show="active" :key="run" ref="canvas" class="portal-transition" aria-hidden="true" />
 </template>
 
 <style scoped lang="scss">

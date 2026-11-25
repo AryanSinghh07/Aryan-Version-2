@@ -6,7 +6,7 @@ import { gsap } from 'gsap'
 // Visitors who land on another page skip the gate, with sound as they last left it (off at first).
 //
 // Leaving the gate: the buttons fade, "Aryan" glitches off to the left and "Singh" to the
-// right, the AS mark glides to the centre, and the ring portal (the hero's particle ring)
+// right, the "A" logo mark glides to the centre, and the ring portal (the hero's particle ring)
 // opens from it once, the site inside it, until it passes the edges of the screen.
 // With reduced motion, or without WebGL, the gate simply fades.
 const store = useAppStore()
@@ -146,7 +146,7 @@ function openPortal(done: () => void) {
       { x: () => half(), skewX: -14, autoAlpha: 0, duration: 1, ease: 'expo.in' },
       0.05
     )
-    // The AS mark glides to the centre
+    // The logo mark glides to the centre
     .call(() => glitching([mark], true), [], 0.3)
     .to(mark, { ...toCentre, scale: 1.5, duration: 0.9, ease: 'power3.inOut' }, 0.3)
     // The site starts behind the gate. Starting it is heavy (the hero, the 3D world): the ring
@@ -195,7 +195,9 @@ function trapFocus(e: KeyboardEvent) {
     @keydown="trapFocus"
   >
     <div class="gate__inner container">
-      <span class="gate__mark" aria-hidden="true">AS</span>
+      <span class="gate__mark" aria-hidden="true"
+        ><img class="site-logo" src="/logo.png" alt="" width="192" height="192"
+      /></span>
       <h2 id="gate-title" class="t-h2 gate__name">
         <span class="gate__first">Aryan</span> <em class="gate__last">Singh</em>
       </h2>

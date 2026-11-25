@@ -36,17 +36,16 @@ let splits: SplitText[] = []
 let stopEntered: (() => void) | undefined
 let onPointer: ((e: PointerEvent) => void) | null = null
 
+/** Resolves once the visitor is in and the page portal (if it is opening) has opened */
 function whenEntered() {
-  if (store.entered) return Promise.resolve()
+  const ready = () => store.entered && !store.revealing
+  if (ready()) return Promise.resolve()
   return new Promise<void>((resolve) => {
-    stopEntered = watch(
-      () => store.entered,
-      (on) => {
-        if (!on) return
-        stopEntered?.()
-        resolve()
-      }
-    )
+    stopEntered = watch(ready, (on) => {
+      if (!on) return
+      stopEntered?.()
+      resolve()
+    })
   })
 }
 
