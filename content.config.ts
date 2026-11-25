@@ -144,7 +144,15 @@ export default defineContentConfig({
             note: z.string(),
           })
         ),
-        certifications: z.array(z.object({ title: z.string(), issuer: z.string() })),
+        certifications: z.array(
+          z.object({
+            title: z.string(),
+            issuer: z.string(),
+            /** Where the certificate can be checked (opens in a new tab) */
+            url: z.string().url().optional(),
+            credentialId: z.string().optional(),
+          })
+        ),
       }),
     }),
 

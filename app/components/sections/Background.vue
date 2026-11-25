@@ -175,10 +175,27 @@ onBeforeUnmount(() => ctx?.revert())
               </svg>
               <span v-else class="cert__word">{{ mark(c.issuer).word }}</span>
             </span>
-            <span class="cert__index t-label" aria-hidden="true">{{ number(i) }}</span>
+            <span class="cert__index t-label" aria-hidden="true">
+              {{ number(i) }}<span v-if="c.url" class="cert__arrow">↗</span>
+            </span>
           </div>
-          <p class="cert__title">{{ c.title }}</p>
+          <p class="cert__title">
+            <!-- The whole tile opens the certificate (the link's area covers it) -->
+            <a
+              v-if="c.url"
+              :href="c.url"
+              class="cert__link"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ c.title }}<span class="sr-only"> (view certificate, opens in a new tab)</span></a
+            >
+            <template v-else>{{ c.title }}</template>
+          </p>
           <p class="cert__issuer t-label">{{ c.issuer }}</p>
+          <p v-if="c.credentialId" class="cert__id">
+            <span class="cert__id-label t-label">Credential ID</span>
+            <span class="cert__id-value">{{ c.credentialId }}</span>
+          </p>
         </li>
       </ul>
     </div>
@@ -461,8 +478,70 @@ onBeforeUnmount(() => ctx?.revert())
   color: var(--foreground-muted);
 }
 
+// The tile is one big link to the certificate: the title's link covers the whole tile
+.cert {
+  position: relative;
+}
+
+.cert__link {
+  color: inherit;
+  text-decoration: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::after {
+      outline: 2px solid var(--issuer);
+      outline-offset: 3px;
+      border-radius: 1.25rem;
+    }
+  }
+}
+
+.cert__arrow {
+  display: inline-block;
+  margin-left: 0.4em;
+  color: var(--issuer);
+  transition: transform 0.4s var(--ease-out);
+
+  .cert:hover & {
+    transform: translate(2px, -2px);
+  }
+}
+
+.cert__id {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.35rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.cert__id-label {
+  font-size: 0.65rem;
+  color: var(--foreground-muted);
+}
+
+// Long IDs wrap anywhere instead of widening the tile
+.cert__id-value {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+  opacity: 0.8;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cert,
+  .cert__arrow,
   .edu-row__title,
   .edu-row__years {
     transition: none;

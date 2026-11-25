@@ -18,23 +18,31 @@
   "certifications": [
     {
       "title": "AWS Academy Graduate — Cloud Foundations",
-      "issuer": "Amazon Web Services"
+      "issuer": "Amazon Web Services",
+      "url": "https://www.credly.com/badges/6a1fb398-2b8f-450d-b090-61ac66bde294"
     },
     {
       "title": "CCNA Cyber Ops",
-      "issuer": "Cisco"
+      "issuer": "Cisco",
+      "url": "https://www.credly.com/badges/b049d137-4f8d-435e-b312-c8fdd1867797"
     },
     {
       "title": "Machine Learning with Python",
-      "issuer": "IBM"
+      "issuer": "IBM",
+      "url": "https://courses.skillsbuild.skillsnetwork.site/certificates/ca516d15e2e24f62bacb50c915d05e89",
+      "credentialId": "ca516d15e2e24f62bacb50c915d05e89"
     },
     {
       "title": "Web Development",
-      "issuer": "EduSkills by AICTE"
+      "issuer": "EduSkills by AICTE",
+      "url": "https://lmsapi.eduskillsfoundation.org/certificates/certificate_735067_785425.html",
+      "credentialId": "61f3abad08dc46d0496dOOcec399272f"
     },
     {
       "title": "AI for Beginners",
-      "issuer": "HP LIFE"
+      "issuer": "HP LIFE",
+      "url": "https://www.life-global.org/certificate/45eba017-a5f3-4698-b22a-f64bb2c39284",
+      "credentialId": "45eba017-a5f3-4698-b22a-f64bb2c39284"
     }
   ]
 }
